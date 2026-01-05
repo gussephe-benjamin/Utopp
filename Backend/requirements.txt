@@ -9,3 +9,4 @@ pydantic_settings
 python-jose[cryptography]
 passlib
 pyyaml
+email-validator

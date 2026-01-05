@@ -5,7 +5,7 @@ WORKDIR /app
 # Instala deps primero (mejor cache)
 
 COPY package*.json ./
-RUN npm ciNo. 
+RUN npm ci
 
 # Copia el resto
 COPY . .

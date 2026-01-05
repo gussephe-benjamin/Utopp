@@ -20,7 +20,6 @@ async def lifespan(app: FastAPI):
     # --- SHUTDOWN ---
     # aquí cerrarías recursos si tuvieras (clients, colas, etc.)
     
-
 app = FastAPI(lifespan=lifespan)
 
 app.include_router(health.router)

@@ -1,7 +1,6 @@
-from app.main import app
 from fastapi import APIRouter
 
-router = APIRouter(prefix= "/health", tags= ["health"])
+router = APIRouter(prefix="/health", tags=["health"])
 
 @router.get("/")
 def root():

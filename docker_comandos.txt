@@ -40,4 +40,8 @@ docker build -t uttop-mvp-backend .
 docker run -p 8000:8000 -it uttop-mvp-backend
 
 ---
+Docker compose:
 
+docker compose ps
+docker compose down
+docker compose up --build
