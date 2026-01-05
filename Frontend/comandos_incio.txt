@@ -1,0 +1,8 @@
+
+Plantilla oficial de Vite
+
+npm create vite@latest mi-app -- --template react-ts
+cd mi-app
+npm install
+npm run dev
+

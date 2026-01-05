@@ -1,0 +1,1 @@
+modelos Pydantic (lo que recibes y lo que devuelves).

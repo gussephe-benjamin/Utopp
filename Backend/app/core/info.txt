@@ -1,0 +1,1 @@
+config (env vars), y luego auth/seguridad si lo agregas

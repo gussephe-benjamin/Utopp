@@ -1,0 +1,43 @@
+docker build -t fastapi-basic .
+docker build -t utopp-backend .
+docker build -t miapi:v1 .
+
+
+docker run -p 8000:8000 nombre-de-la-imagen
+
+Contenedores activos:
+docker ps
+
+Contenedores activos + detenidos:
+docker ps -a
+
+Detener un contenedor
+docker stop <container_id>
+
+Eliminar un contenedor
+docker rm <container_id>
+
+Eliminar un contenedor que esté corriendo (una sola línea)
+docker rm -f <container_id>
+
+Eliminar TODOS los contenedores detenidos
+docker container prune
+
+- - - 
+
+Para activar el backend
+
+& "D:/Uttop/Utopp - MVP/.venv/Scripts/Activate.ps1"
+
+Desactivar el entorno virtual:
+
+deactivate
+
+Comandos para desplegar el backend:
+
+docker build -t uttop-mvp-backend .
+
+docker run -p 8000:8000 -it uttop-mvp-backend
+
+---
+
