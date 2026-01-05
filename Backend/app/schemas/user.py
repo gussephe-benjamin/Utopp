@@ -1,5 +1,12 @@
 from pydantic import BaseModel, EmailStr, Field
 
+class UserResponse(BaseModel):
+    id: int
+    email: EmailStr
+    full_name: str | None
+    
+    class Config:
+        from_attributes = True
 
 class UserCreate(BaseModel):
     email: EmailStr

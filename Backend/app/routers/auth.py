@@ -19,26 +19,26 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
     token = create_access_token(subject=str(user.id))
     return TokenOut(access_token=token)
 
-@router.post("/register",
-    openapi_extra={
-        "requestBody":{
-            "content": {"application/x-yaml": {"schema": UserCreate.model_json_schema()}},
-            "required": True,
-        },
-    },
-)
-async def register(request:Request):
+# @router.post("/register",
+#     openapi_extra={
+#         "requestBody":{
+#             "content": {"application/x-yaml": {"schema": UserCreate.model_json_schema()}},
+#             "required": True,
+#         },
+#     },
+# )
+# async def register(request:Request):
     
-    raw_body = await request.body()
+#     raw_body = await request.body()
     
-    try:
-        data = yaml.safe_load(raw_body)
-    except yaml.YAMLError:
-        raise HTTPException(status_code=422, detail="Invalid YAML")
+#     try:
+#         data = yaml.safe_load(raw_body)
+#     except yaml.YAMLError:
+#         raise HTTPException(status_code=422, detail="Invalid YAML")
     
-    email = data["email"]
-    password = data["password"]
-    full_name = data["full_name"]
+#     email = data["email"]
+#     password = data["password"]
+#     full_name = data["full_name"]
     
-    create_user(db=get_db,email=email,password=password,full_name=full_name)
+#     create_user(db=get_db,email=email,password=password,full_name=full_name)
     
