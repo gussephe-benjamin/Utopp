@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
-
+from fastapi.middleware.cors import CORSMiddleware
 from app.database.session import engine
 from app.database.base import Base
 
@@ -21,6 +21,16 @@ async def lifespan(app: FastAPI):
     # aquí cerrarías recursos si tuvieras (clients, colas, etc.)
     
 app = FastAPI(lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",  # Vite
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(health.router)
 app.include_router(users.router, prefix="/users", tags=["users"])

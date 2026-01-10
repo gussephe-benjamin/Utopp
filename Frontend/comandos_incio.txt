@@ -6,3 +6,9 @@ cd mi-app
 npm install
 npm run dev
 
+
+--- En caso de tener problemas de inicio por falta de dependencias
+
+PS D:\Uttop\Utopp> cd .\Frontend\
+PS D:\Uttop\Utopp\Frontend> cd .\mi-app\
+PS D:\Uttop\Utopp\Frontend\mi-app> npm install / --> se instalan las dependencias
