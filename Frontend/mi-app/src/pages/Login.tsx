@@ -22,12 +22,20 @@ export default function Login() {
       })
 
       console.log(res.data.access_token)
-      
+    
       // 1️⃣ guardar token en contexto / storage
       login(res.data.access_token)
 
-      // 2️⃣ redirigir
-      navigate("/dashboard")
+      const response = await api.post("/auth/onboarding",{
+        email
+      })
+
+      if (!response.data.onboarding_completed) {
+          navigate("/onboarding");
+        } else {
+          navigate("/dashboard");
+        }
+
     } catch (error) {
       console.error("Error en login", error)
     }

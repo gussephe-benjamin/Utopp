@@ -1,6 +1,7 @@
 import { useAuth } from "../auth/useAuth"
+import type { JSX } from "react"
 
-export default function Dashboard() {
+export default function Dashboard(): JSX.Element {
   const { logout } = useAuth()
 
   return (

@@ -3,8 +3,9 @@ from sqlalchemy.orm import Session
 
 import yaml
 from app.database.session import get_db
-from app.schemas.user import LoginRequest, TokenOut, UserCreate
-from app.services.users_service import authenticate_user, create_user
+from app.schemas.user import LoginRequest, TokenOut, UserOnboarding_Response, OnboardingStatusOut, UserOnboardingData
+from app.models.user import User
+from app.services.users_service import authenticate_user, create_user, get_current_user
 from app.core.security import create_access_token
 
 router = APIRouter()
@@ -19,26 +20,45 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
     token = create_access_token(subject=str(user.id))
     return TokenOut(access_token=token)
 
-# @router.post("/register",
-#     openapi_extra={
-#         "requestBody":{
-#             "content": {"application/x-yaml": {"schema": UserCreate.model_json_schema()}},
-#             "required": True,
-#         },
-#     },
-# )
-# async def register(request:Request):
+
+@router.post("/onboarding", response_model=OnboardingStatusOut)
+def login(payload: UserOnboarding_Response, db: Session = Depends(get_db)):
     
-#     raw_body = await request.body()
+    user = db.query(User).filter(User.email == payload.email).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="Credenciales inválidas")
+
+    return {
+        "user_id": user.id,
+        "onboarding_completed": user.is_onboarding_completed
+    }
+
+@router.post("/onboarding/update")
+def complete_onboarding(
+    data: UserOnboardingData,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     
-#     try:
-#         data = yaml.safe_load(raw_body)
-#     except yaml.YAMLError:
-#         raise HTTPException(status_code=422, detail="Invalid YAML")
+    print("DATA RECIBIDA:", data)
+    print("USER:", user.id)
     
-#     email = data["email"]
-#     password = data["password"]
-#     full_name = data["full_name"]
+    if user.is_onboarding_completed:
+        raise HTTPException(status_code=403, detail="Onboarding already completed")
+
+    user.career = data.career
+    user.interests = data.interests
+    user.availability = data.availability
+    user.is_onboarding_completed = False
+
+    print(user.career)
+    print(user.interests)
+    print(user.availability)
     
-#     create_user(db=get_db,email=email,password=password,full_name=full_name)
-    
+    db.commit()
+    db.refresh(user)
+
+    return {
+        "ok": True,
+        "onboarding_completed": True
+    }

@@ -3,6 +3,7 @@ import { AuthProvider } from "./auth/AuthContext"
 import ProtectedRoute from "./auth/ProtectedRoute"
 import Login from "./pages/Login"
 import Dashboard from "./pages/Dashboard"
+import Onboarding from "./onboardings/Onboarding"
 
 function App() {
   return (
@@ -14,6 +15,8 @@ function App() {
 
           <Route path="/login" element={<Login />} />
 
+          {/* Ruta direccionamiento al dashboard */}
+
           <Route
             path="/dashboard"
             element={
@@ -22,6 +25,18 @@ function App() {
               </ProtectedRoute>
             }
           />
+
+          {/* Ruta direccionamiento al onboarding */}
+
+          <Route
+            path="/onboarding"
+            element={
+              <ProtectedRoute>
+                <Onboarding />
+              </ProtectedRoute>
+            }
+          />
+          
         </Routes>
       </BrowserRouter>
     </AuthProvider>
