@@ -43,7 +43,7 @@ def get_all_users(db: Session):
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
-
+    
 def get_current_user(
     token: str = Depends(oauth2_scheme),
     db: Session = Depends(get_db)
@@ -56,17 +56,41 @@ def get_current_user(
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    
+    print("0")
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+
         user_id: str = payload.get("sub")
+        print(payload)
+        print("user_id: ", user_id)
+        print("1")
         if user_id is None:
             raise credentials_exception
     except JWTError:
         raise credentials_exception
 
+    print("2") 
+       
     user = db.query(User).filter(User.id == int(user_id)).first()
     if user is None:
         raise credentials_exception
 
+    print("3")
+    
+    return user
+
+def create_google_user(
+    db: Session,
+    email: str,
+    name: str,
+    google_id: str
+):
+    user = User(
+        email=email,
+        name=name,
+        google_id=google_id
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
     return user

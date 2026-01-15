@@ -10,3 +10,5 @@ python-jose[cryptography]
 passlib
 pyyaml
 email-validator
+google-auth
+requests
