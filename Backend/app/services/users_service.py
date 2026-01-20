@@ -94,3 +94,22 @@ def create_google_user(
     db.commit()
     db.refresh(user)
     return user
+
+def obtener_organizacion(email):
+    try:
+        # Dividimos el correo en el '@' y tomamos la segunda parte
+        dominio = email.split('@')[1].lower()
+        dominio = dominio.split('.')[0].lower()
+        
+        return dominio
+    except IndexError:
+        return None
+
+def is_domUtec(email):
+    
+    org = obtener_organizacion(email=email)
+    
+    if org != "utec":
+        return False
+    else:
+        return True

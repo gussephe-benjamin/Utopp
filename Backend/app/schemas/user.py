@@ -12,11 +12,12 @@ class UserResponse(BaseModel):
 class UserResponse_total(BaseModel):
     id: int
     email: EmailStr
-    full_name: str 
+    full_name: str| None = None
     hashed_password: str
     career: str | None = None
     interests: list[str] | None = []
     availability: int | None = None
+    cycle: int | None = None
     is_onboarding_completed: bool
     created_at: datetime
     class Config:
@@ -51,6 +52,7 @@ class UserOnboardingData(BaseModel):
     career: str
     interests: list[str]
     availability: int
+    cycle: int
     class Config:
         from_attributes = True
         

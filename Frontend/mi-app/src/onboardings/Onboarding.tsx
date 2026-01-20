@@ -2,6 +2,7 @@ import { useState } from "react";
 import StepCareer from "./StepCareer";
 import StepInterests from "./StepInterests";
 import StepAvailability from "./StepAvailability";
+import CycleStep from "./StepCycle";  
 import { useNavigate } from "react-router-dom";
 import type { JSX } from "react"
 import api from "../api/axios"
@@ -11,6 +12,7 @@ import StepBar from "../componets/StepBar";
 
 export type OnboardingData = {
   career: string;
+  cycle: number | null;
   interests: string[];
   availability: number;
 };
@@ -19,6 +21,7 @@ export default function Onboarding(): JSX.Element {
   const [step, setStep] = useState(1);
   const [data, setData] = useState<OnboardingData>({
     career: "",
+    cycle: null,
     interests: [],
     availability: 0,
   });
@@ -30,15 +33,16 @@ export default function Onboarding(): JSX.Element {
 
   const canContinue = () => {
     if (step === 1) return data.career !== "";
-    if (step === 2) return data.interests.length >= 3;
-    if (step === 3) return data.availability > 0;
+    if (step === 2) return data.cycle !== null;
+    if (step === 3) return data.interests.length >= 3;
+    if (step === 4) return data.availability > 0;
     return false;
   };
 
   const finishOnboarding = async (): Promise<void> => {
     try {
 
-      // console.log(data)
+      console.log(data)
 
       const res = await api.post("/auth/onboarding/update", data);    
 
@@ -70,9 +74,12 @@ export default function Onboarding(): JSX.Element {
           opacity: 1,
         }}
       >
+        
         {step === 1 && <StepCareer data={data} setData={setData} />}
-        {step === 2 && <StepInterests data={data} setData={setData} />}
-        {step === 3 && <StepAvailability data={data} setData={setData} />}
+        {step === 2 && <CycleStep data={data} setData={setData} />}
+        {step === 3 && <StepInterests data={data} setData={setData} />}
+        {step === 4 && <StepAvailability data={data} setData={setData} />}
+
       </div>
 
       {/* BOTONES */}
@@ -91,7 +98,7 @@ export default function Onboarding(): JSX.Element {
         {/* Botón Siguiente / Finalizar */}
         <button
           disabled={!canContinue()}
-          onClick={step < 3 ? next : finishOnboarding}
+          onClick={step < 4 ? next : finishOnboarding}
           className={`flex-1 py-3 rounded-2xl font-semibold transition-all duration-300 transform active:scale-[0.98] 
             ${
               canContinue()
@@ -99,7 +106,7 @@ export default function Onboarding(): JSX.Element {
                 : 'bg-white/10 text-white/50 cursor-not-allowed'
             }`}
         >
-          {step < 3 ? 'Siguiente' : 'Finalizar'}
+          {step < 4 ? 'Siguiente' : 'Finalizar'}
         </button>
       </div>
 

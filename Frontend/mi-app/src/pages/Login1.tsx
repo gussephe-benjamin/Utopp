@@ -10,7 +10,7 @@ import LoginPage from "./LoginPage";
 
 import type { FormEvent } from "react";
 
-export default function Login() {
+export default function Login1() {
   //const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -157,16 +157,6 @@ export default function Login() {
 
             <LoginPage/>
 
-          {/*Registro*/}
-          <p className="text-center mt-6 text-gray-500 text-sm">
-            ¿No tienes cuenta?{" "}
-            <button
-              onClick={() => navigate("/register")}
-              className="text-[#4F46E5] font-semibold hover:underline transition-all"
-            >
-              Regístrate
-            </button>
-          </p>
         </div>
       </div>
     </div>

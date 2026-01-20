@@ -11,8 +11,11 @@ export default function FinishOnboarding({ data }: Props): JSX.Element {
 
   const handleFinish = async () => {
     try {
-      const res = await api.post("/onboarding/update", data)
 
+      console.error("DATA", data)
+
+      const res = await api.post("/onboarding/update", data)
+      
       if (!res.status || res.status >= 400) {
         throw new Error("Error al completar onboarding")
       }

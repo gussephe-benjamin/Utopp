@@ -1,6 +1,6 @@
 import { Check } from "lucide-react";
 
-const steps = [1, 2, 3];
+const steps = [1, 2, 3, 4];
 
 export default function StepBar({ step }: { step: number }) {
   return (

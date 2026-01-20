@@ -6,6 +6,7 @@ export default function LoginPage() {
       <p className="text-center text-gray-500 mb-4"></p>
       
       {/* El componente ya maneja su propia lógica y carga */}
+      
       <GoogleAuthABC />
     </div>
   );

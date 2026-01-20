@@ -16,5 +16,9 @@ class User(Base):
     career: Mapped[str | None] = mapped_column(String(255), nullable=True)
     interests: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
     availability: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    
+    cycle: Mapped[int | None] = mapped_column(Integer, nullable= True)
+    
     google_id: Mapped[String|None] = mapped_column(String, unique= True, nullable= True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+

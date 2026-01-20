@@ -5,7 +5,7 @@ import yaml
 from app.database.session import get_db
 from app.schemas.user import LoginRequest, TokenOut, UserOnboarding_Response, OnboardingStatusOut, UserOnboardingData
 from app.models.user import User
-from app.services.users_service import authenticate_user, create_user, get_current_user, get_user_by_email, create_google_user
+from app.services.users_service import authenticate_user, create_user, get_current_user, get_user_by_email, create_google_user, is_domUtec
 from app.core.security import create_access_token
 
 import os
@@ -14,30 +14,17 @@ from google.oauth2 import id_token
 from google.auth.transport import requests
 
 router = APIRouter()
-
-def obtener_organizacion(email):
-    try:
-        # Dividimos el correo en el '@' y tomamos la segunda parte
-        dominio = email.split('@')[1].lower()
-        return dominio
-    except IndexError:
-        return None
     
-
 @router.post("/login", response_model=TokenOut)
 def login(payload: LoginRequest, db: Session = Depends(get_db)):
     user = authenticate_user(db, payload.email, payload.password)
     if not user:
         raise HTTPException(status_code=401, detail="Credenciales inválidas")
     
-    # org = obtener_organizacion(user.email)
+    dominio_permitido = "utec"
     
-    # dominio_permitido = "Utec"
-    
-    # print(org)
-    
-    # if org != "utec":
-    #     raise ValueError(f"El correo {user.email} no pertenece a la organización {dominio_permitido}")
+    if (is_domUtec(user.email) != True):
+        raise ValueError(f"El correo {user.email} no pertenece a la organización {dominio_permitido}")
         
     token = create_access_token(subject=str(user.id))
     return TokenOut(access_token=token)
@@ -82,10 +69,12 @@ def complete_onboarding(
     user.career = data.career
     user.interests = data.interests
     user.availability = data.availability
+    user.cycle = data.cycle
     user.is_onboarding_completed = True
 
     print(user.career)
     print(user.interests)
+    print(user.cycle)
     print(user.availability)
     
     db.commit()
