@@ -1,1 +1,0 @@
-define endpoints (solo HTTP, delgadito).

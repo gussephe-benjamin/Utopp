@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../api/axios";
-
-import { Button } from "../componets/ui/button";
-import { Input } from "../componets/ui/input";
+import {register} from "../../api/apiFunctions/auth";
+import { Button } from "../../componets/ui/button";
+import { Input } from "../../componets/ui/input";
 import { User, Mail, Lock, Eye, EyeOff } from "lucide-react";
 
 type RegisterFormData = {
@@ -57,12 +56,13 @@ export default function Register() {
       setLoading(true);
       setError(null);
 
-      await api.post("/users/register", {
-        email: form.email,
-        password: form.password,
-        full_name: form.full_name || undefined,
-      });
-
+      try{
+        const res = await register(form.email, form.password, form.full_name)
+        console.log(res.data)
+      } catch(error){
+        console.error(error);
+      }     
+      
       alert("Registro exitoso");
       navigate("/login");
     } catch (err) {

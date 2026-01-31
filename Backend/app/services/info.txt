@@ -1,2 +1,0 @@
-reglas de negocio (crear post, validar, etc.).
-

@@ -45,26 +45,4 @@ class TokenOut(BaseModel):
     access_token: str
     token_type: str = "bearer"
 
-
-## - - - Onboarding
-
-class UserOnboardingData(BaseModel):
-    career: str
-    interests: list[str]
-    availability: int
-    cycle: int
-    class Config:
-        from_attributes = True
-        
-class UserOnboarding_Update(BaseModel):
-    is_onboarding_completed: bool
     
-    class Config:
-        from_attributes = True
-    
-class UserOnboarding_Response(BaseModel):
-    email: EmailStr
-    
-class OnboardingStatusOut(BaseModel):
-    user_id: int
-    onboarding_completed: bool

@@ -1,6 +1,6 @@
 // import { useState } from 'react';
 import { Check } from 'lucide-react';
-import type { OnboardingData } from './OnboardingData';
+import type { OnboardingData } from '../Onboarding';
 
 interface CareerStepProps {
   data: OnboardingData;

@@ -1,14 +1,15 @@
 import { useState } from "react";
-import StepCareer from "./StepCareer";
-import StepInterests from "./StepInterests";
-import StepAvailability from "./StepAvailability";
-import CycleStep from "./StepCycle";  
+import StepCareer from "./steps/StepCareer";
+import StepInterests from "./steps/StepInterests";
+import StepAvailability from "./steps/StepAvailability";
+import CycleStep from "./steps/StepCycle";  
 import { useNavigate } from "react-router-dom";
 import type { JSX } from "react"
-import api from "../api/axios"
+import { updateOnboarding } from "../api/apiFunctions/onboarding";
+import StepBar from "../componets/uiOnboarding/StepBar";
 
-import StepBar from "../componets/StepBar";
-
+import { useEffect } from "react"
+import { checkOnboardingCompleted } from"./functions/isCompleteVerificate";
 
 export type OnboardingData = {
   career: string;
@@ -18,6 +19,12 @@ export type OnboardingData = {
 };
 
 export default function Onboarding(): JSX.Element {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    checkOnboardingCompleted(navigate)
+  }, [navigate])
+
   const [step, setStep] = useState(1);
   const [data, setData] = useState<OnboardingData>({
     career: "",
@@ -25,8 +32,6 @@ export default function Onboarding(): JSX.Element {
     interests: [],
     availability: 0,
   });
-
-  const navigate = useNavigate();
 
   const next = () => setStep((s) => s + 1);
   const back = () => setStep((s) => s - 1);
@@ -44,7 +49,7 @@ export default function Onboarding(): JSX.Element {
 
       console.log(data)
 
-      const res = await api.post("/auth/onboarding/update", data);    
+      const res = await updateOnboarding(data);    
 
       if (!res.status || res.status >= 400) {
         throw new Error("Error al completar onboarding");
@@ -58,10 +63,7 @@ export default function Onboarding(): JSX.Element {
     }
   };
 
-
   return (
-
-    
 
     <div style={{ maxWidth: 400, margin: "40px auto" }}>
 

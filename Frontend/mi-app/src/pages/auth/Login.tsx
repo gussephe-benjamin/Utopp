@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState} from "react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "../componets/ui/button";
-import { Input } from "../componets/ui/input";
+import { Button } from "../../componets/ui/button";
+import { Input } from "../../componets/ui/input";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
-import api from "../api/axios";
+import { isComplete } from "../../api/apiFunctions/onboarding";
+import { login, getMe } from "../../api/apiFunctions/auth";
+
 //import { useAuth } from "../auth/useAuth";
 
 import LoginPage from "./LoginPage";
@@ -25,14 +27,20 @@ export default function Login() {
 
     try {
       // Login real
-      const res = await api.post("/auth/login", { email, password });
+      const res = await  login(email, password);
 
       const token = res.data.access_token;
 
       localStorage.setItem("token", token)
 
+      const user = await getMe()
+      const id = user.id
+
+      console.log(user)
+      console.log(id)
+
       // Revisar onboarding
-      const response = await api.post("/auth/onboarding", { email });
+      const response = await isComplete(id)
 
       if (!response.data.onboarding_completed) {
         navigate("/onboarding");

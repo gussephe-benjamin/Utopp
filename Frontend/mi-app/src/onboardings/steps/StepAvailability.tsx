@@ -1,6 +1,7 @@
 import { Check, Clock, Zap, Coffee, Briefcase, Target } from 'lucide-react';
-import type { OnboardingData } from './OnboardingData';
+import type { OnboardingData } from '../Onboarding';
 import React from 'react';
+
 
 interface AvailabilityStepProps {
   data: OnboardingData;
@@ -16,6 +17,7 @@ const hoursOptions = [
 ];
 
 export default function AvailabilityStep({ data, setData }: AvailabilityStepProps) {
+  
   // seleccion actual
   const selectedOption = data.availability;
 

@@ -2,7 +2,6 @@ docker build -t fastapi-basic .
 docker build -t utopp-backend .
 docker build -t miapi:v1 .
 
-
 docker run -p 8000:8000 nombre-de-la-imagen
 
 Contenedores activos:

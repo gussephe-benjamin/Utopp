@@ -1,4 +1,4 @@
-import GoogleAuthABC from "../auth/GoogleAuth";
+import GoogleAuthABC from "../../auth/GoogleAuth";
 
 export default function LoginPage() {
   return (

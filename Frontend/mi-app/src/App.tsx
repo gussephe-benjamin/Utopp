@@ -1,12 +1,12 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 // import { AuthProvider } from "./auth/AuthContext"
 // import ProtectedRoute from "./auth/ProtectedRoute"
-import Login from "./pages/Login"
-import Login1 from "./pages/Login1"
-import Login2 from "./pages/Login2"
+import Login from "./pages/auth/Login"
+import Login1 from "./pages/auth/Login1"
+import Login2 from "./pages/auth/Login2"
 import Dashboard from "./pages/Dashboard"
 import Onboarding from "./onboardings/Onboarding"
-import Register from "./pages/Register"
+import Register from "./pages/auth/Register"
 
 function App() {
   return (

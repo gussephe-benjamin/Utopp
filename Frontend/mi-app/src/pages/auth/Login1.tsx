@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "../componets/ui/button";
-import { Input } from "../componets/ui/input";
+import { Button } from "../../componets/ui/button";
+import { Input } from "../../componets/ui/input";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
-import api from "../api/axios";
+import api from "../../api/axios";
 //import { useAuth } from "../auth/useAuth";
 
 import LoginPage from "./LoginPage";

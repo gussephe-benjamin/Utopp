@@ -1,12 +1,9 @@
-import api from "../api/axios"
 import { useNavigate } from "react-router-dom"
 import type { JSX } from "react"
+import { updateOnboarding } from "../api/apiFunctions/onboarding";
+import type { OnboardingData } from "../types/OnboardingData";
 
-interface Props {
-  data: Record<string, unknown>;
-}
-
-export default function FinishOnboarding({ data }: Props): JSX.Element {
+export default function FinishOnboarding({ data }: { data: OnboardingData }): JSX.Element {
   const navigate = useNavigate()
 
   const handleFinish = async () => {
@@ -14,9 +11,10 @@ export default function FinishOnboarding({ data }: Props): JSX.Element {
 
       console.error("DATA", data)
 
-      const res = await api.post("/onboarding/update", data)
+      const res = await updateOnboarding(data);
       
-      if (!res.status || res.status >= 400) {
+      
+      if (!res.ok) {
         throw new Error("Error al completar onboarding")
       }
 

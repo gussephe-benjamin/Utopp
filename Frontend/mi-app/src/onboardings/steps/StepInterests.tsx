@@ -1,5 +1,5 @@
 import { Check } from "lucide-react";
-import type { OnboardingData } from "./OnboardingData";
+import type { OnboardingData } from "../Onboarding";
 import React from "react";
 
 interface InterestsStepProps {
