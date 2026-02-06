@@ -7,8 +7,8 @@ import { getMe } from "../../api/apiFunctions/auth";
 import { Button } from "../../componets/ui/button";
 import { Input } from "../../componets/ui/input";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
-
-import LoginPage from "./LoginPage";
+import GoogleLogin from "../../auth/GoogleLogin";
+// import PageTransition from "../../components/PageTransition";
 
 export default function Login() {
   const { login } = useAuth();
@@ -162,7 +162,7 @@ export default function Login() {
 
           {/* Google Login */}
 
-            <LoginPage/>
+          <GoogleLogin/>
 
           {/*Registro*/}
           <p className="text-center mt-6 text-gray-500 text-sm">

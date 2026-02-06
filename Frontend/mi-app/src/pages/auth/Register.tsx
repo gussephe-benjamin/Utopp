@@ -4,6 +4,7 @@ import {register} from "../../api/apiFunctions/auth";
 import { Button } from "../../componets/ui/button";
 import { Input } from "../../componets/ui/input";
 import { User, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import GoogleRegister from "../../auth/GoogleRegister";
 
 type RegisterFormData = {
   full_name?: string;
@@ -21,7 +22,6 @@ export default function Register() {
     password: "",
     confirmPassword: "",
   });
-
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -56,13 +56,13 @@ export default function Register() {
       setLoading(true);
       setError(null);
 
-      try{
-        const res = await register(form.email, form.password, form.full_name)
-        console.log(res.data)
-      } catch(error){
+      try {
+        const res = await register(form.email, form.password, form.full_name);
+        console.log(res.data);
+      } catch (error) {
         console.error(error);
-      }     
-      
+      }
+
       alert("Registro exitoso");
       navigate("/login");
     } catch (err) {
@@ -75,10 +75,15 @@ export default function Register() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#4F46E5] via-[#6366F1] to-[#8B5CF6] flex items-center justify-center p-6 relative overflow-hidden">
-      {/* Background decor */}
+      {/* Background decorativos */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-white/10 rounded-full blur-3xl" />
         <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-purple-400/20 rounded-full blur-3xl" />
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-20 right-10 w-40 h-0.5 bg-white rotate-45" />
+          <div className="absolute top-32 right-20 w-32 h-0.5 bg-white rotate-45" />
+          <div className="absolute bottom-40 left-10 w-48 h-0.5 bg-white rotate-45" />
+        </div>
       </div>
 
       <div className="w-full max-w-md relative z-10">
@@ -135,7 +140,7 @@ export default function Register() {
             <div className="relative">
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
               <Input
-                type={showPassword ? "text" : "password"}
+                type="password"
                 name="password"
                 placeholder="Contraseña"
                 value={form.password}
@@ -146,22 +151,42 @@ export default function Register() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
               >
-                {showPassword ? <EyeOff /> : <Eye />}
+                {showPassword ? (
+                  <EyeOff className="w-5 h-5" />
+                ) : (
+                  <Eye className="w-5 h-5" />
+                )}
               </button>
             </div>
 
             {/* Confirm Password */}
-            <Input
-              type="password"
-              name="confirmPassword"
-              placeholder="Confirmar contraseña"
-              value={form.confirmPassword}
-              onChange={handleChange}
-              required
-              className="h-14 rounded-2xl bg-gray-50"
-            />
+            <div className="relative">
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Input
+                type="password"
+                name="confirmPassword"
+                placeholder="Confirmar contraseña"
+                value={form.confirmPassword}
+                onChange={handleChange}
+                required
+                className="h-14 rounded-2xl bg-gray-50"
+              />
+            </div>
+
+            {/* Separator */}
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-4 bg-white text-gray-500">O regístrate con</span>
+              </div>
+            </div>
+
+            {/* Google Register */}
+            <GoogleRegister />
 
             {error && (
               <p className="text-red-500 text-sm">{error}</p>

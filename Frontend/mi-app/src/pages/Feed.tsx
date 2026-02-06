@@ -27,6 +27,8 @@ type FeedCommunityPost = {
   user_name: string
   created_at: string
   post_type: "Oportunidad Internacional" | "Eventos" | "Proyectos" | "Competencias" | "Convocatorias" | "Programas" | "Publicación General"
+  link_form?: string
+  closing_date?: string
 }
 
 type FeedItem = {
@@ -158,6 +160,38 @@ const PostCard = ({ item, isRecommended = false }: { item: FeedItem; isRecommend
               </p>
             </div>
           )}
+
+          {/* Link del formulario */}
+          {post.link_form && (
+            <div className="border-t border-gray-200 pt-4">
+              <h4 className="font-semibold text-gray-900 mb-2">Formulario:</h4>
+              <a 
+                href={post.link_form} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-purple-600 hover:text-purple-700 text-sm underline break-words"
+              >
+                {post.link_form}
+              </a>
+            </div>
+          )}
+
+          {/* Fecha de cierre */}
+          {post.closing_date && (
+            <div className="border-t border-gray-200 pt-4">
+              <h4 className="font-semibold text-gray-900 mb-2">Fecha de cierre:</h4>
+              <p className="text-gray-700 text-sm">
+                {new Date(post.closing_date).toLocaleString('es-ES', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Footer con acciones y tags */}
@@ -224,11 +258,6 @@ export default function Feed() {
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
   const [loading, setLoading] = useState(false)
-  const [content, setContent] = useState('')
-  const [tags, setTags] = useState('')
-  const [roles, setRoles] = useState('')
-  const [createLoading, setCreateLoading] = useState(false)
-  const [showCreateModal, setShowCreateModal] = useState(false)
   const loaderRef = useRef<HTMLDivElement | null>(null)
 
   const fetchPage = useCallback(async () => {
@@ -287,27 +316,6 @@ export default function Feed() {
     return () => io.disconnect()
   }, [fetchPage])
 
-  const handleCreatePost = async () => {
-    setCreateLoading(true)
-    try {
-      const newPost = {
-        content: content,
-        tags: tags.split(',').map(tag => tag.trim()),
-        roles: roles.split(',').map(role => role.trim()),
-      }
-      console.log("Creando post:", newPost)
-      // Simular la creación del post
-      const event = new CustomEvent('postCreated', { detail: newPost })
-      window.dispatchEvent(event)
-      setContent('')
-      setTags('')
-      setRoles('')
-      setShowCreateModal(false) // Cerrar modal después de crear el post
-    } finally {
-      setCreateLoading(false)
-    }
-  }
-
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-2xl mx-auto p-4">
@@ -315,75 +323,6 @@ export default function Feed() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
           <h1 className="text-2xl font-bold text-gray-900">🏠 Feed UTEC</h1>
         </div>
-
-        {/* Modal para crear post */}
-        {showCreateModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-              {/* Header del modal */}
-              <div className="p-6 border-b border-gray-200">
-                <h2 className="text-xl font-semibold text-gray-900">Crear Nuevo Post</h2>
-              </div>
-
-              {/* Formulario */}
-              <div className="p-6 space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Contenido del post
-                  </label>
-                  <textarea
-                    className="w-full border border-gray-300 rounded-lg p-3 resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    rows={4}
-                    value={content}
-                    onChange={e => setContent(e.target.value)}
-                    placeholder="¿Qué estás pensando?..."
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Etiquetas (separadas por coma)
-                  </label>
-                  <input
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    value={tags}
-                    onChange={e => setTags(e.target.value)}
-                    placeholder="ej: estudio, utec, amigos"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Roles requeridos (separados por coma)
-                  </label>
-                  <input
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    value={roles}
-                    onChange={e => setRoles(e.target.value)}
-                    placeholder="ej: estudiante, profesor"
-                  />
-                </div>
-              </div>
-
-              {/* Footer del modal */}
-              <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200">
-                <button
-                  onClick={() => setShowCreateModal(false)}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleCreatePost} 
-                  disabled={createLoading || !content.trim()}
-                  className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-2 rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {createLoading ? "Publicando..." : "Publicar"}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Posts del feed */}
         <div className="space-y-4">

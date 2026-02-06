@@ -72,21 +72,21 @@ def get_current_user(
 
     user = db.query(User).filter(User.id == int(user_id)).first()
     if user is None:
-        print("❌ User not found for id:", user_id)
+        print("User not found for id:", user_id)
         raise credentials_exception
     
-    print("✅ User authenticated:", user.email)
+    print("User authenticated:", user.email)
     return user
 
 def create_google_user(
     db: Session,
     email: str,
-    name: str,
+    full_name: str,
     google_id: str
 ):
     user = User(
         email=email,
-        name=name,
+        full_name=full_name,
         google_id=google_id
     )
     db.add(user)

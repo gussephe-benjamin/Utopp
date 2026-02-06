@@ -2,6 +2,9 @@ import api from "../axios"
 
 export interface CommunityPostIn {
   content: string
+  post_type?: string
+  link_form?: string | null
+  closing_date?: string | null
   required_roles?: string[]
   tags?: string[]
 }

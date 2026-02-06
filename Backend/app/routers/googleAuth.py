@@ -49,15 +49,12 @@ def google_register(data: dict, db: Session = Depends(get_db)):
         user = create_google_user(
             db=db,
             email=email,
-            name=name,
+            full_name=name,
             google_id=google_id
         )
 
         # ✅ 3. Generar JWT
-        access_token = create_access_token({
-            "sub": str(user.id),
-            "email": user.email
-        })
+        access_token = create_access_token(str(user.id))
 
         return {
             "access_token": access_token,

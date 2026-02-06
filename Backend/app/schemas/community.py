@@ -6,6 +6,8 @@ from typing import List, Optional
 class CommunityPostBase(BaseModel):
     content: str
     post_type: str = "Publicación General"
+    link_form: Optional[str] = None
+    closing_date: Optional[datetime] = None
     required_roles: Optional[List[str]] = None
     tags: Optional[List[str]] = None
 
@@ -17,6 +19,8 @@ class CommunityPostCreate(CommunityPostBase):
 class CommunityPostUpdate(BaseModel):
     content: Optional[str] = None
     post_type: Optional[str] = None
+    link_form: Optional[str] = None
+    closing_date: Optional[datetime] = None
     required_roles: Optional[List[str]] = None
     tags: Optional[List[str]] = None
 
