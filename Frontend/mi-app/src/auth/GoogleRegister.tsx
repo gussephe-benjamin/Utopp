@@ -13,7 +13,7 @@ export default function GoogleRegister() {
     
     setIsLoading(true);
     try {
-      const res = await fetch("http://localhost:8000/google/register", {
+      const res = await fetch("/google/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token: credentialResponse.credential }),
@@ -37,20 +37,24 @@ export default function GoogleRegister() {
 
   return (
     <div className="flex flex-col items-center gap-4 w-full">
-      <GoogleLogin
-        onSuccess={handleGoogleSuccess}
-        onError={() => {
-          console.error("Registro con Google falló");
-          alert("Error al registrar con Google");
-        }}
-        type="standard"
-        theme="outline"
-        size="large"
-        text="continue_with"
-        shape="rectangular"
-        logo_alignment="center"
-        width="100%"
-      />
+      {isLoading ? (
+        <p>Registrando con Google... por favor espera.</p>
+      ) : (
+        <GoogleLogin
+          onSuccess={handleGoogleSuccess}
+          onError={() => {
+            console.error("Registro con Google falló");
+            alert("Error al registrar con Google");
+          }}
+          type="standard"
+          theme="outline"
+          size="large"
+          text="continue_with"
+          shape="rectangular"
+          logo_alignment="center"
+          width="100%"
+        />
+      )}
     </div>
   );
 }

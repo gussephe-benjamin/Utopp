@@ -13,7 +13,7 @@ export default function GoogleLogin() {
     
     setIsLoading(true);
     try {
-      const res = await fetch("http://localhost:8000/google/login", {
+      const res = await fetch("/google/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token: credentialResponse.credential }),
@@ -25,7 +25,7 @@ export default function GoogleLogin() {
       // Usar AuthContext para actualizar el token
       login(data.access_token);
 
-      const userRes = await fetch("http://localhost:8000/auth/me", {
+      const userRes = await fetch("/auth/me", {
         headers: { Authorization: `Bearer ${data.access_token}` },
       });
 
