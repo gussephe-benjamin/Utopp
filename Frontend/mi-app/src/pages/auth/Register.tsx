@@ -88,8 +88,8 @@ export default function Register() {
 
       <div className="w-full max-w-md relative z-10">
         {/* Logo */}
-        <div className="flex justify-center mb-6">
-          <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-2xl">
+        <div className="flex justify-center mb-8">
+          <div className="w-20 h-20 rounded-2xl overflow-hidden shadow-2xl border-2 border-white/20">
             <img
               src="/utopp-logo.png"
               alt="Utopp"
@@ -175,19 +175,6 @@ export default function Register() {
               />
             </div>
 
-            {/* Separator */}
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-white text-gray-500">O regístrate con</span>
-              </div>
-            </div>
-
-            {/* Google Register */}
-            <GoogleRegister />
-
             {error && (
               <p className="text-red-500 text-sm">{error}</p>
             )}
@@ -203,6 +190,19 @@ export default function Register() {
                 "Registrarse"
               )}
             </Button>
+
+            {/* Separator */}
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-4 bg-white text-gray-500">O regístrate con</span>
+              </div>
+            </div>
+
+            {/* Google Register */}
+            <GoogleRegister />
           </form>
 
           <p className="text-center mt-6 text-gray-500 text-sm">

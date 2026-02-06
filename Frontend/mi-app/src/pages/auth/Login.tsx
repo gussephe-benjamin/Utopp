@@ -83,7 +83,7 @@ export default function Login() {
       <div className="w-full max-w-md relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
         {/* Logo */}
         <div className="flex justify-center mb-8">
-          <div className="w-20 h-20 rounded-2xl overflow-hidden shadow-2xl">
+          <div className="w-20 h-20 rounded-2xl overflow-hidden shadow-2xl border-2 border-white/20">
             <img
               src="/utopp-logo.png"
               alt="Utopp"

@@ -38,6 +38,36 @@ def my_profile(db: Session = Depends(get_db), current_user: User = Depends(get_c
     return _to_profile_out(data)
 
 
+@router.get("/{user_id}/posts", response_model=List[dict])
+def get_user_posts(user_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    # Obtener posts del usuario específico
+    from app.models.community_post import CommunityPost
+    from sqlalchemy.orm import select
+    from sqlalchemy import desc
+    
+    posts = db.execute(
+        select(CommunityPost)
+        .where(CommunityPost.user_id == user_id)
+        .order_by(desc(CommunityPost.created_at))
+        .limit(50)
+    ).scalars().all()
+    
+    return [
+        {
+            "id": post.id,
+            "title": post.content.split('\n')[0] if post.content else "",
+            "description": '\n'.join(post.content.split('\n')[1:]) if len(post.content.split('\n')) > 1 else "",
+            "requirements": '\n'.join([line for line in post.content.split('\n') if line.lower().startswith(('requisito', 'requerimiento', 'requirements'))]) if post.content else "",
+            "link_form": post.link_form,
+            "closing_date": post.closing_date.isoformat() if post.closing_date else None,
+            "post_type": post.post_type,
+            "user_name": post.user.full_name if post.user else "",
+            "created_at": post.created_at.isoformat(),
+            "tags": [tag.strip() for tag in post.tags.split(',')] if post.tags else []
+        }
+        for post in posts
+    ]
+
 @router.get("/{user_id}", response_model=ProfileOut)
 def get_profile(user_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     data = svc_get_profile(db, user_id)

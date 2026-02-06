@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import api from "../api/axios"
-import { Heart, MessageCircle, Share2 } from "lucide-react"
+import { Heart, MessageCircle, Share2, MoreVertical } from "lucide-react"
 
 type FeedEvent = {
   title: string
@@ -110,7 +110,7 @@ const PostCard = ({ item, isRecommended = false }: { item: FeedItem; isRecommend
                 {post.user_name || `Usuario ${post.user_id}`}
               </button>
               <div className="text-sm text-gray-500">
-                {new Date(post.created_at || '').toLocaleDateString('es-ES', { 
+                {new Date(post.created_at || new Date()).toLocaleDateString('es-ES', { 
                   month: 'short', 
                   day: 'numeric', 
                   hour: '2-digit', 
@@ -119,15 +119,23 @@ const PostCard = ({ item, isRecommended = false }: { item: FeedItem; isRecommend
               </div>
             </div>
           </div>
-          {isRecommended && (
-            <span className="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-full font-medium">
-              Recomendado
-            </span>
-          )}
+          <div className="flex items-center space-x-2">
+            {isRecommended && (
+              <span className="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-full font-medium">
+                Recomendado
+              </span>
+            )}
+            {/* Menu de tres puntos */}
+            <div className="relative">
+              <button className="p-1 hover:bg-gray-100 rounded-full transition-colors">
+                <MoreVertical className="w-4 h-4 text-gray-500" />
+              </button>
+            </div>
+          </div>
         </div>
 
-        {/* Contenido estructurado del post */}
-        <div className="p-4">
+      {/* Contenido estructurado del post */}
+      <div className="p-4">
           {/* Título con tipo de publicación */}
           <div className="mb-4">
             <div className="flex items-center gap-2 mb-2">
@@ -181,7 +189,7 @@ const PostCard = ({ item, isRecommended = false }: { item: FeedItem; isRecommend
             <div className="border-t border-gray-200 pt-4">
               <h4 className="font-semibold text-gray-900 mb-2">Fecha de cierre:</h4>
               <p className="text-gray-700 text-sm">
-                {new Date(post.closing_date).toLocaleString('es-ES', {
+                {new Date(post.closing_date || new Date()).toLocaleString('es-ES', {
                   weekday: 'long',
                   year: 'numeric',
                   month: 'long',
@@ -196,9 +204,9 @@ const PostCard = ({ item, isRecommended = false }: { item: FeedItem; isRecommend
 
         {/* Footer con acciones y tags */}
         <div className="px-4 pb-4">
-          {post.tags && post.tags.length > 0 && (
+          {(post.tags || []).length > 0 && (
             <div className="flex flex-wrap gap-2 mb-3">
-              {post.tags.map((tag: string, index: number) => (
+              {(post.tags || []).map((tag: string, index: number) => (
                 <span 
                   key={index}
                   className="bg-purple-50 text-purple-600 text-xs px-2 py-1 rounded-full"
