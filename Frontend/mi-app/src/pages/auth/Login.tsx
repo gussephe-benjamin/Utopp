@@ -1,19 +1,17 @@
-import { useState} from "react";
+import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../auth/useAuth";
+import { login as apiLogin } from "../../api/apiFunctions/auth";
+import { isComplete } from "../../api/apiFunctions/onboarding";
+import { getMe } from "../../api/apiFunctions/auth";
 import { Button } from "../../componets/ui/button";
 import { Input } from "../../componets/ui/input";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
-import { isComplete } from "../../api/apiFunctions/onboarding";
-import { login, getMe } from "../../api/apiFunctions/auth";
-
-//import { useAuth } from "../auth/useAuth";
 
 import LoginPage from "./LoginPage";
 
-import type { FormEvent } from "react";
-
 export default function Login() {
-  //const { login } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
@@ -27,11 +25,12 @@ export default function Login() {
 
     try {
       // Login real
-      const res = await  login(email, password);
+      const res = await apiLogin(email, password);
 
       const token = res.data.access_token;
 
-      localStorage.setItem("token", token)
+      // Usar AuthContext para actualizar el token
+      login(token);
 
       const user = await getMe()
       const id = user.id
@@ -45,7 +44,7 @@ export default function Login() {
       if (!response.data.onboarding_completed) {
         navigate("/onboarding");
       } else {
-        navigate("/dashboard");
+        navigate("/app/inicio");
       }
     } catch (error) {
       console.error("Error en login", error);

@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.database.session import engine
 from app.database.base import Base
 
-from app.routers import health, users, auth, posts, onboardings, googleAuth
+from app.routers import health, users, auth, posts, onboardings, googleAuth, feed, events, schedule, community, profile
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -34,3 +34,10 @@ app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(posts.router, prefix="/posts", tags=["posts"])
 app.include_router(onboardings.router, prefix="/onboarding", tags=["posts"])
 app.include_router(googleAuth.router, prefix="/google", tags=["posts"])
+
+# Dashboard: nuevos módulos
+app.include_router(feed.router, tags=["feed"])  # GET /feed
+app.include_router(events.router, prefix="/events", tags=["events"])
+app.include_router(schedule.router, tags=["schedule"])  # /schedule CRUD
+app.include_router(community.router, prefix="/community", tags=["community"])
+app.include_router(profile.router, prefix="/profile", tags=["profile"])

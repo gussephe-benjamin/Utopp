@@ -8,7 +8,7 @@ export const checkOnboardingCompleted = async (
     const user = await getMe()
 
     if (user.onboarding_completed) {
-      navigate("/dashboard", { replace: true })
+      navigate("/app/inicio", { replace: true })
     }
   } catch (error) {
     console.error("Error verificando onboarding", error)

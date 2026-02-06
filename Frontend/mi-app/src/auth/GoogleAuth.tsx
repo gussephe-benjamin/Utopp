@@ -1,26 +1,29 @@
-import * as React from "react"
+import { GoogleLogin } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
-import { GoogleLogin, type CredentialResponse } from "@react-oauth/google";
+import { useAuth } from "./useAuth";
+import { useState } from "react";
 
-export default function GoogleAuthABC() {
-  const [isLoading, setIsLoading] = React.useState(false); // Estado de carga real
+export default function GoogleAuth() {
+  const { login } = useAuth();
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
-    setIsLoading(true); // Empezamos a cargar
-    const token = credentialResponse.credential;
-
+  const handleGoogleSuccess = async (credentialResponse: { credential?: string }) => {
+    if (!credentialResponse.credential) return;
+    
+    setIsLoading(true);
     try {
-      const res = await fetch("http://localhost:8000/auth/google/login", {
+      const res = await fetch("http://localhost:8000/google/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token }),
+        body: JSON.stringify({ token: credentialResponse.credential }),
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Error en login");
 
-      localStorage.setItem("access_token", data.access_token);
+      // Usar AuthContext para actualizar el token
+      login(data.access_token);
 
       const userRes = await fetch("http://localhost:8000/auth/me", {
         headers: { Authorization: `Bearer ${data.access_token}` },
@@ -32,20 +35,15 @@ export default function GoogleAuthABC() {
       if (!user.onboarding_completed) {
         navigate("/onboarding", { replace: true });
       } else {
-        navigate("/dashboard", { replace: true });
+        navigate("/app/inicio", { replace: true });
       }
     } catch (error) {
       console.error("Error:", error);
       alert("Error al iniciar sesión");
     } finally {
-      setIsLoading(false); // Terminamos de cargar (éxito o error)
+      setIsLoading(false);
     }
   };
-
-  return(
-    null
-  ) 
- 
 
   return (
     <div className="flex flex-col items-center gap-4">

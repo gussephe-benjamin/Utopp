@@ -9,7 +9,7 @@ from app.core.security import hash_password, verify_password
 from app.core.config import settings
 from app.database.session import get_db
 
-SECRET_KEY = settings.SECRET_KEY
+SECRET_KEY = settings.JWT_SECRET_KEY
 ALGORITHM = settings.ALGORITHM
 
 def get_user_by_email(db: Session, email: str) -> User | None:
@@ -57,18 +57,25 @@ def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
+        print("🔧 SECRET_KEY:", SECRET_KEY)
+        print("🔧 ALGORITHM:", ALGORITHM)
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        print("🔧 PAYLOAD:", payload)
 
         user_id: str = payload.get("sub")
         if user_id is None:
+            print("❌ No user_id in payload")
             raise credentials_exception
-    except JWTError:
+    except JWTError as e:
+        print("❌ JWT Error:", str(e))
         raise credentials_exception
 
     user = db.query(User).filter(User.id == int(user_id)).first()
     if user is None:
+        print("❌ User not found for id:", user_id)
         raise credentials_exception
     
+    print("✅ User authenticated:", user.email)
     return user
 
 def create_google_user(

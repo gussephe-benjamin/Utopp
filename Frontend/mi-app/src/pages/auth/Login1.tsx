@@ -1,17 +1,15 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../auth/useAuth";
 import { Button } from "../../componets/ui/button";
 import { Input } from "../../componets/ui/input";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import api from "../../api/axios";
-//import { useAuth } from "../auth/useAuth";
 
 import LoginPage from "./LoginPage";
 
-import type { FormEvent } from "react";
-
 export default function Login1() {
-  //const { login } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
@@ -29,7 +27,8 @@ export default function Login1() {
 
       const token = res.data.access_token;
 
-      localStorage.setItem("token", token)
+      // Usar AuthContext para actualizar el token
+      login(token);
 
       // Revisar onboarding
       const response = await api.post("/auth/onboarding", { email });
@@ -37,7 +36,7 @@ export default function Login1() {
       if (!response.data.onboarding_completed) {
         navigate("/onboarding");
       } else {
-        navigate("/dashboard");
+        navigate("/app/inicio");
       }
     } catch (error) {
       console.error("Error en login", error);

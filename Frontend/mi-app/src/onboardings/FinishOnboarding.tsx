@@ -19,7 +19,7 @@ export default function FinishOnboarding({ data }: { data: OnboardingData }): JS
       }
 
       // Redirigir al dashboard
-      navigate("/dashboard", { replace: true })
+      navigate("/app/inicio", { replace: true })
 
     } catch (error) {
       console.error(error)

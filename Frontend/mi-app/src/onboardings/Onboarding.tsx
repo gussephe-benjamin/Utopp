@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import type { JSX } from "react"
 import { updateOnboarding } from "../api/apiFunctions/onboarding";
 import StepBar from "../componets/uiOnboarding/StepBar";
+import { AxiosError } from "axios";
 
 import { useEffect } from "react"
 import { checkOnboardingCompleted } from"./functions/isCompleteVerificate";
@@ -49,16 +50,20 @@ export default function Onboarding(): JSX.Element {
 
       console.log(data)
 
-      const res = await updateOnboarding(data);    
+      await updateOnboarding(data);    
 
-      if (!res.status || res.status >= 400) {
-        throw new Error("Error al completar onboarding");
-      }
-
-      navigate("/dashboard", { replace: true });
+      // Si llegamos aquí, la petición fue exitosa
+      navigate("/app/inicio", { replace: true });
 
     } catch (error) {
       console.error(error);
+      
+      // Si el error es 403 (onboarding ya completado), redirigir al inicio
+      if (error instanceof AxiosError && error.response?.status === 403) {
+        navigate("/app/inicio", { replace: true });
+        return;
+      }
+      
       alert("Error al completar onboarding");
     }
   };

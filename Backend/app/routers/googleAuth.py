@@ -94,8 +94,6 @@ def google_login(data: dict, db: Session = Depends(get_db)):
         # 🔎 1. Buscar usuario en BD
         user = get_user_by_email(db, email)
 
-        user.google_id = google_id
-        
         # ❌ 2. Si no existe → ERROR
         if not user:
             raise HTTPException(
@@ -104,11 +102,16 @@ def google_login(data: dict, db: Session = Depends(get_db)):
             )
 
         # (opcional) validar que tenga Google asociado
+        # if not user.google_id:
+        #     raise HTTPException(
+        #         status_code=403,
+        #         detail="Cuenta no vinculada a Google"
+        #     )
+
+        # Si no tiene google_id, lo asignamos ahora
         if not user.google_id:
-            raise HTTPException(
-                status_code=403,
-                detail="Cuenta no vinculada a Google"
-            )
+            user.google_id = google_id
+            db.commit()
 
         # ✅ 3. Generar JWT
         

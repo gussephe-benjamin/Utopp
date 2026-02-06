@@ -12,3 +12,4 @@ pyyaml
 email-validator
 google-auth
 requests
+alembic
