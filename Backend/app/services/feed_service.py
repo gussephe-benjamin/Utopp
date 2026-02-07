@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from typing import List, Dict, Any, Optional, Iterable
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import select
 
 from app.models.event import Event
@@ -121,7 +121,7 @@ def build_feed(
 
     # Events
     if "event" in tipos:
-        q = select(Event)
+        q = select(Event).options(selectinload(Event.created_by))
         if fecha_from:
             q = q.where(Event.start_time >= fecha_from)
         if fecha_to:
@@ -132,23 +132,60 @@ def build_feed(
                 # fallback filter if "&&" operator is not supported
                 continue
             score = compute_event_score(db, user, ev)
-            items.append({"type": "event", "score": score, "data": ev})
+            event_data = {
+                "id": ev.id,
+                "title": ev.title,
+                "description": ev.description,
+                "start_time": ev.start_time,
+                "end_time": ev.end_time,
+                "location": ev.location,
+                "is_virtual": ev.is_virtual,
+                "tags": ev.tags,
+                "category": ev.category,
+                "min_cycle": ev.min_cycle,
+                "max_cycle": ev.max_cycle,
+                "created_by_id": ev.created_by_id,
+                "popularity": ev.popularity,
+                "user_name": ev.created_by.full_name if ev.created_by else None
+            }
+            items.append({"type": "event", "score": score, "data": event_data})
 
     # Community posts
     if "community_post" in tipos:
-        q = select(CommunityPost)
+        q = select(CommunityPost).options(selectinload(CommunityPost.user))
         posts = db.scalars(q).all()
         for cp in posts:
             score = compute_community_post_score(db, user, cp)
-            items.append({"type": "community_post", "score": score, "data": cp})
+            post_data = {
+                "id": cp.id,
+                "content": cp.content,
+                "tags": cp.tags,
+                "user_id": cp.user_id,
+                "user_name": cp.user.full_name if cp.user else None,
+                "created_at": cp.created_at,
+                "post_type": cp.post_type,
+                "link_form": cp.link_form,
+                "closing_date": cp.closing_date,
+                "required_roles": cp.required_roles
+            }
+            items.append({"type": "community_post", "score": score, "data": post_data})
 
     # Announcements
     if "announcement" in tipos:
-        q = select(Announcement)
+        q = select(Announcement).options(selectinload(Announcement.created_by))
         anns = db.scalars(q).all()
         for an in anns:
             score = compute_announcement_score(db, user, an)
-            items.append({"type": "announcement", "score": score, "data": an})
+            announcement_data = {
+                "id": an.id,
+                "title": an.title,
+                "content": an.content,
+                "tags": an.tags,
+                "created_by_id": an.created_by_id,
+                "user_name": an.created_by.full_name if an.created_by else None,
+                "created_at": an.created_at
+            }
+            items.append({"type": "announcement", "score": score, "data": announcement_data})
 
     # Sort and paginate
     items.sort(key=lambda x: x["score"], reverse=True)

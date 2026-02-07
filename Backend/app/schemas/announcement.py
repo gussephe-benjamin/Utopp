@@ -16,7 +16,14 @@ class AnnouncementCreate(AnnouncementBase):
 class AnnouncementOut(AnnouncementBase):
     id: int
     created_by_id: int | None = None
+    user_name: Optional[str] = None
     created_at: datetime
 
     class Config:
         from_attributes = True
+
+
+class AnnouncementUpdate(BaseModel):
+    title: Optional[str] = None
+    content: Optional[str] = None
+    tags: Optional[List[str]] = None

@@ -60,15 +60,24 @@ def get_current_user(
         print("🔧 SECRET_KEY:", SECRET_KEY)
         print("🔧 ALGORITHM:", ALGORITHM)
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        print("🔧 PAYLOAD:", payload)
+        print(" PAYLOAD:", payload)
 
         user_id: str = payload.get("sub")
         if user_id is None:
-            print("❌ No user_id in payload")
+            print(" No user_id in payload")
             raise credentials_exception
     except JWTError as e:
-        print("❌ JWT Error:", str(e))
-        raise credentials_exception
+        print(" JWT Error:", str(e))
+        if "expired" in str(e).lower() or "signature has expired" in str(e).lower():
+            print(" Token expirado - usuario debe iniciar sesión nuevamente")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token expirado. Por favor inicia sesión nuevamente.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        else:
+            print(" Token inválido o malformado")
+            raise credentials_exception
 
     user = db.query(User).filter(User.id == int(user_id)).first()
     if user is None:

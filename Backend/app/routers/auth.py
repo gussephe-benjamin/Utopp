@@ -43,6 +43,16 @@ def register(payload: UserCreate, db: Session = Depends(get_db)):
     user = create_user(db, payload.email, payload.password, payload.full_name)
     return user
 
+@router.post("/refresh", response_model=TokenOut)
+def refresh_token(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Genera un nuevo token para un usuario autenticado"""
+    print("🔄 Refresh token para usuario:", current_user.email)
+    new_token = create_access_token(subject=str(current_user.id))
+    return TokenOut(access_token=new_token)
+
 @router.get("/me")
 def get_current_user_endpoint(
     current_user: User = Depends(get_current_user)
