@@ -41,18 +41,17 @@ export default function GoogleRegister() {
         <p>Registrando con Google... por favor espera.</p>
       ) : (
         <GoogleLogin
-          onSuccess={handleGoogleSuccess}
-          onError={() => {
-            console.error("Registro con Google falló");
-            alert("Error al registrar con Google");
-          }}
-          type="standard"
-          theme="outline"
-          size="large"
-          text="continue_with"
-          shape="rectangular"
-          logo_alignment="center"
-          width="100%"
+            onSuccess={handleGoogleSuccess}
+            onError={() => {
+              console.error("Registro con Google falló");
+              alert("Error al registrar con Google");
+            }}
+            type="standard"
+            theme="outline"
+            size="large"
+            text="continue_with"
+            shape="rectangular"
+            logo_alignment="center"
         />
       )}
     </div>

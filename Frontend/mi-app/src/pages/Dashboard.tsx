@@ -1,17 +1,27 @@
 import { Outlet, useNavigate, useLocation } from "react-router-dom"
 import { useState } from "react"
-import { Plus, Home, User, X, MoreVertical, LogOut } from "lucide-react"
+import { Home, User, X, MoreVertical, LogOut } from "lucide-react"
 import { useCreatePost } from "../context/CreatePostContext"
 import CreatePostWizardSimple from "../components/CreatePostWizardSimple"
+import PublicationWizard from "../components/PublicationWizard"
 
 export default function DashboardLayout() {
   const navigate = useNavigate()
   const location = useLocation()
   const { showCreateModal, setShowCreateModal } = useCreatePost()
   const [showOptionsModal, setShowOptionsModal] = useState(false)
+  const [showTypeModal, setShowTypeModal] = useState(false)
 
   const isActive = (path: string) =>
-    location.pathname === path ? "bg-purple-100 text-purple-700 border-l-4 border-purple-700" : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+    location.pathname === path
+
+  const handleTypeSelect = (type: string, subtype: string) => {
+    // Aquí podrías redirigir a un formulario específico
+    // Por ahora, mostramos el wizard simple con el tipo seleccionado
+    console.log('Tipo seleccionado:', type, subtype)
+    setShowTypeModal(false)
+    // Futuro: redirigir a formulario específico según tipo/subtipo
+  }
 
   const handleLogout = () => {
     localStorage.removeItem('token')
@@ -19,7 +29,7 @@ export default function DashboardLayout() {
   }
 
   return (
-    <div className={`min-h-screen flex ${showCreateModal ? 'overflow-hidden' : ''}`}>
+    <div className={`min-h-screen flex flex-col ${showCreateModal ? 'overflow-hidden' : ''}`}>
       
       {/* Modal del wizard paso a paso */}
       {showCreateModal && (
@@ -28,107 +38,94 @@ export default function DashboardLayout() {
         />
       )}
 
-      {/* Sidebar con hover expand y transición suave */}
-      <aside 
-        className="sidebar-container bg-white border-r border-gray-200"
-        style={{ 
-          width: '80px',
-          position: 'fixed',
-          left: 0,
-          top: 0,
-          height: '100vh',
-          zIndex: 40,
-          transition: 'width 0.3s ease-in-out',
-          display: 'flex',
-          flexDirection: 'column'
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.width = '256px'
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.width = '80px'
-        }}
-      >
-        {/* Logo - logo a la izquierda, texto a la derecha */}
-        <div style={{ padding: '16px', borderBottom: '1px solid rgb(229 231 235)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '12px' }}>
+      {/* Contenido dinámico */}
+      <main className="flex-1 bg-gray-50 pb-20">
+        <Outlet />
+      </main>
+
+      {/* Bottom Navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
+        <div className="flex justify-around items-center py-3 max-w-sm mx-auto">
+          {/* Logo agrandado */}
+          <div className="flex items-center justify-center">
             <img
               src="/utopp-logo.png"
               alt="Utopp"
-              className="logo-img"
               style={{ 
                 width: '32px', 
                 height: '32px', 
-                objectFit: 'contain',
-                flexShrink: 0
+                objectFit: 'contain'
               }}
             />
-            <span 
-              style={{
-                fontFamily: "'Inter', 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif",
-                fontSize: '20px',
-                fontWeight: '600',
-                color: '#1f2937',
-                letterSpacing: '-0.025em',
-                transition: 'opacity 0.2s ease-in-out',
-                whiteSpace: 'nowrap'
-              }}
-              className="logo-text"
-            >
-              Utopp
-            </span>
           </div>
-        </div>
 
-        {/* Navegación - solo íconos por defecto, texto en hover */}
-        <nav style={{ flex: 1, padding: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          {/* Botón Inicio - solo ícono */}
           <button
             onClick={() => navigate("/app/inicio")}
-            className={`nav-button ${isActive("/app/inicio")}`}
+            className={`p-2 rounded-lg transition-colors ${
+              isActive("/app/inicio") 
+                ? "text-purple-600 bg-purple-50" 
+                : "text-gray-600 hover:text-gray-900"
+            }`}
             title="Inicio"
           >
-            <Home style={{ width: '20px', height: '20px', flexShrink: 0 }} />
-            <span className="nav-text">Inicio</span>
+            <Home style={{ width: '20px', height: '20px' }} />
           </button>
 
-          {/* Botón Crear Publicación */}
+          {/* Botón Central Destacado de Creación */}
           <button
-            onClick={() => setShowCreateModal(true)}
-            className="nav-button"
-            title="Crear"
+            onClick={() => setShowTypeModal(true)}
+            className="relative group"
+            title="Crear Publicación"
           >
-            <Plus style={{ width: '20px', height: '20px', flexShrink: 0 }} />
-            <span className="nav-text">Crear</span>
+            <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full blur opacity-75 group-hover:opacity-100 transition duration-300"></div>
+            <div className="relative bg-gradient-to-r from-purple-600 to-blue-600 rounded-full p-4 shadow-lg transform transition-all duration-300 hover:scale-110 hover:shadow-xl">
+              <svg 
+                width="24" 
+                height="24" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="white" 
+                strokeWidth="3" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+                className="animate-pulse"
+              >
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+            </div>
           </button>
 
-          {/* Botón Perfil - movido abajo */}
+          {/* Botón Perfil - solo ícono */}
           <button
             onClick={() => navigate("/app/perfil")}
-            className={`nav-button ${isActive("/app/perfil")}`}
+            className={`p-2 rounded-lg transition-colors ${
+              isActive("/app/perfil") 
+                ? "text-purple-600 bg-purple-50" 
+                : "text-gray-600 hover:text-gray-900"
+            }`}
             title="Perfil"
           >
-            <User style={{ width: '20px', height: '20px', flexShrink: 0 }} />
-            <span className="nav-text">Perfil</span>
+            <User style={{ width: '20px', height: '20px' }} />
           </button>
-        </nav>
 
-        {/* Más opciones - donde estaba perfil antes */}
-        <div style={{ padding: '8px', borderTop: '1px solid rgb(229 231 235)', marginTop: 'auto' }}>
+          {/* Botón Opciones - solo ícono */}
           <button
             onClick={() => setShowOptionsModal(true)}
-            className="nav-button"
+            className="p-2 rounded-lg text-gray-600 hover:text-gray-900 transition-colors"
             title="Más opciones"
           >
-            <MoreVertical style={{ width: '20px', height: '20px', flexShrink: 0 }} />
-            <span className="nav-text">Opciones</span>
+            <MoreVertical style={{ width: '20px', height: '20px' }} />
           </button>
         </div>
-      </aside>
+      </nav>
 
-      {/* Contenido dinámico - completamente separado */}
-      <main className="flex-1 bg-gray-50">
-        <Outlet />
-      </main>
+      {/* Modal del wizard de publicación */}
+      <PublicationWizard 
+        isOpen={showTypeModal}
+        onClose={() => setShowTypeModal(false)}
+      />
 
       {/* Modal de opciones */}
       {showOptionsModal && (
@@ -176,70 +173,6 @@ export default function DashboardLayout() {
           </div>
         </div>
       )}
-
-      <style>{`
-        .sidebar-container .logo-text {
-          opacity: 0;
-          transition: opacity 0.2s ease-in-out;
-        }
-        
-        .sidebar-container:hover .nav-text,
-        .sidebar-container:hover .logo-text {
-          opacity: 1 !important;
-        }
-        
-        .sidebar-container:hover .nav-icon-plus {
-          opacity: 1;
-        }
-        
-        .sidebar-container:hover .logo-img {
-          width: 32px !important;
-          height: 32px !important;
-          max-height: 32px !important;
-        }
-        
-        .nav-button {
-          width: 100%;
-          display: flex;
-          align-items: center;
-          padding: 12px;
-          border-radius: 8px;
-          transition: all 0.2s ease-in-out;
-          position: relative;
-          background: transparent;
-          border: none;
-          cursor: pointer;
-        }
-        
-        .nav-text {
-          margin-left: 12px;
-          font-weight: 500;
-          white-space: nowrap;
-          opacity: 0;
-          transition: opacity 0.2s ease-in-out;
-        }
-        
-        .nav-icon-plus {
-          width: 16px;
-          height: 16px;
-          margin-left: auto;
-          opacity: 0;
-          transition: opacity 0.2s ease-in-out;
-        }
-
-        .logo-img {
-          transition: all 0.3s ease-in-out !important;
-        }
-
-        @media (min-width: 1024px) {
-          .sidebar-container {
-            position: sticky;
-            top: 0;
-            height: 100vh;
-            z-index: auto;
-          }
-        }
-      `}</style>
     </div>
   )
 }

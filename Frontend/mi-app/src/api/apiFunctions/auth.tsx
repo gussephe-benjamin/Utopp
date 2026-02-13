@@ -13,7 +13,9 @@ export const register = (email_: string, password_: string, full_name_: string |
 
 export const getMe = async () => {
   const token = localStorage.getItem("token")
-  const res = await api.get("auth/me", 
+  console.log("Token enviado:", localStorage.getItem("token"))
+
+  const res = await api.get("/auth/me", 
     {
       headers:{
         Authorization:`Bearer ${token}`

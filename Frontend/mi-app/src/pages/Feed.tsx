@@ -2,11 +2,6 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import api from "../api/axios"
 import { Heart, MessageCircle, Share2, Info } from "lucide-react"
-import FabButton from "../components/FabButton"
-import CreateTypePanel from "../components/CreateTypePanel"
-import CreatePostWizardSimple from "../components/CreatePostWizardSimple"
-import CreateEventWizard from "../components/CreateEventWizard"
-import CreateAnnouncementWizard from "../components/CreateAnnouncementWizard"
 
 // Componente UserAvatar para mostrar iniciales con gradientes
 const UserAvatar = ({ userName, gradient }: { 
@@ -552,18 +547,7 @@ export default function Feed() {
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
   const [loading, setLoading] = useState(false)
-  const [isFabOpen, setIsFabOpen] = useState(false)
-  const [activeWizard, setActiveWizard] = useState<'community_post' | 'event' | 'announcement' | null>(null)
   const loaderRef = useRef<HTMLDivElement | null>(null)
-
-  const handleTypeSelect = (type: 'community_post' | 'event' | 'announcement') => {
-    setActiveWizard(type);
-    setIsFabOpen(false);
-  };
-
-  const handleCloseWizard = () => {
-    setActiveWizard(null);
-  };
 
   const fetchPage = useCallback(async () => {
     if (loading || !hasMore) return
@@ -640,28 +624,6 @@ export default function Feed() {
         <div ref={loaderRef} />
       </div>
 
-      {/* FAB Button */}
-      <FabButton 
-        onClick={() => setIsFabOpen(!isFabOpen)} 
-        isOpen={isFabOpen} 
-      />
-
-      {/* Type Selection Panel */}
-      <CreateTypePanel 
-        isOpen={isFabOpen}
-        onSelect={handleTypeSelect}
-      />
-
-      {/* Creation Wizards */}
-      {activeWizard === 'community_post' && (
-        <CreatePostWizardSimple onClose={handleCloseWizard} />
-      )}
-      {activeWizard === 'event' && (
-        <CreateEventWizard onClose={handleCloseWizard} />
-      )}
-      {activeWizard === 'announcement' && (
-        <CreateAnnouncementWizard onClose={handleCloseWizard} />
-      )}
     </div>
   )
 }
