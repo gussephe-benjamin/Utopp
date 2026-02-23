@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "22f00328-432a-40fe-889c-39c0c30030d5",
     "name": "Utopp API",
-    "description": "Colección completa de endpoints de la API de Utopp.\n\nFlujo recomendado:\n1. Registrar usuario (Auth o Google)\n2. Login para obtener token\n3. Completar onboarding\n4. Crear posts, imágenes, links\n5. Interactuar con feed, follows, participaciones\n\nEl token JWT se guarda automáticamente en la variable {{token}} al hacer login.",
+    "description": "# Utopp API\n\nAPI REST del backend de Utopp, plataforma de publicaciones académicas para la comunidad UTEC. Construida con FastAPI + SQLAlchemy + PostgreSQL.\n\n## Arquitectura\nCapas: Routers (endpoints HTTP) → Services (lógica de negocio) → Models (SQLAlchemy/PostgreSQL) → Schemas (Pydantic). Autenticación: JWT Bearer Token obtenido en `/auth/login` o `/google/login`.\n\n## Tablas y relaciones\n\n**`users`** — Usuarios registrados. Campos: `id`, `email`, `full_name`, `career`, `cycle`, `interests` (JSONB), `availability`, `onboarding_completed`.\n\n**`posts`** — Publicaciones. FK: `user_id → users`. Campos clave: `title` (nullable), `description`, `post_type` (enum), `subtype` (enum), `status` (draft/published/archived), `time_status` (no_deadline/in_time/out_of_time), `deadline_at`, `tags` (JSONB), `specific_fields` (JSONB).\n\nTipos de post: `international_opportunity`, `event`, `academic_project`, `announcement`, `simple_post`.\nSubtipos por tipo: international_opportunity → [intercambio, pasantia, investigacion, 4+1] | event → [conferencia, arte, emprendimiento, hackathon, voluntariado, deporte, visita_academica, empleo] | academic_project → [competencia, proyecto_investigacion] | announcement → [comunicado, urgente] | simple_post → [informativo, pregunta, debate].\n\n**`post_images`** — Imágenes de posts. FK: `post_id → posts`. Campos: `cloudinary_id`, `url`, `position`.\n\n**`post_links`** — Links de posts. FK: `post_id → posts`. Campos: `label`, `url`, `type`, `display_type`, `position`.\n\n**`follows`** — Seguimiento entre usuarios. FKs: `follower_id → users`, `following_id → users`. Clave compuesta única.\n\n**`saved_posts`** — Posts guardados como favoritos. FKs: `user_id → users`, `post_id → posts`. Clave compuesta única.\n\n**`event_participants`** — Participación en eventos/proyectos. FKs: `user_id → users`, `post_id → posts`. Campo: `status` (interested/going/attended).\n\n**`roles`** — Roles del sistema (ej: admin). Campos: `id`, `name`, `description`.\n\n**`user_roles`** — Asignación de roles. FKs: `user_id → users`, `role_id → roles`.\n\n## Flujo recomendado\n1. `POST /auth/register` — Crear usuario\n2. `POST /auth/login` — Obtener token (se guarda en `{{token}}`)\n3. `POST /onboarding/update` — Completar perfil\n4. Crear post con endpoint especializado (academic-projects, simple-posts, announcements) o genérico `POST /posts/`\n5. `POST /posts/{{post_id}}/publish` — Publicar\n6. `GET /feed` — Ver en el feed",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "45592436",
     "_collection_link": "https://go.postman.co/collection/45592436-22f00328-432a-40fe-889c-39c0c30030d5?source=collection_link"
@@ -26,12 +26,12 @@
                 ""
               ]
             },
-            "description": "GET /health — Verifica que la API esté funcionando correctamente."
+            "description": "GET /health — Verifica que el servidor FastAPI esté activo. Devuelve `{\"status\": \"ok\"}`. Útil para health checks de Docker o balanceadores de carga. No requiere autenticación."
           },
           "response": []
         }
       ],
-      "description": "Health check y estado del servidor"
+      "description": "Endpoints de diagnóstico del sistema. Permiten verificar que el servidor esté activo antes de ejecutar cualquier flujo. No requieren autenticación."
     },
     {
       "name": "Auth",
@@ -80,7 +80,7 @@
                 "register"
               ]
             },
-            "description": "POST /auth/register — Registra un nuevo usuario con email UTEC, contraseña y nombre."
+            "description": "POST /auth/register — Crea un nuevo usuario en la tabla `users`. Requiere `email`, `password` y `full_name`. El usuario queda con `onboarding_completed = false`. No requiere autenticación."
           },
           "response": []
         },
@@ -128,7 +128,7 @@
                 "login"
               ]
             },
-            "description": "POST /auth/login — Autentica con email y contraseña. Guarda el token automáticamente."
+            "description": "POST /auth/login — Autentica con `email` y `password`. Devuelve un JWT (`access_token`) que se guarda automáticamente en `{{token}}`. Usar este token como Bearer en todos los endpoints autenticados."
           },
           "response": []
         },
@@ -161,7 +161,7 @@
                 "refresh"
               ]
             },
-            "description": "POST /auth/refresh — Genera un nuevo JWT para el usuario autenticado."
+            "description": "POST /auth/refresh — Renueva el JWT del usuario autenticado sin re-ingresar credenciales. Requiere el token actual en el header. Útil para mantener la sesión activa."
           },
           "response": []
         },
@@ -180,12 +180,12 @@
                 "me"
               ]
             },
-            "description": "GET /auth/me — Devuelve id, email y estado de onboarding del usuario autenticado."
+            "description": "GET /auth/me — Devuelve `id`, `email` y `onboarding_completed` del usuario autenticado. Útil para verificar que el token es válido y conocer el estado de onboarding. Requiere autenticación."
           },
           "response": []
         }
       ],
-      "description": "Registro, login y refresh de tokens JWT"
+      "description": "Autenticación clásica con email y contraseña. Gestiona el ciclo completo de sesión: registro, login, renovación de token y consulta del usuario autenticado. Los endpoints de login y refresh guardan el token automáticamente en `{{token}}`."
     },
     {
       "name": "Google Auth",
@@ -231,7 +231,7 @@
                 "register"
               ]
             },
-            "description": "POST /google/register — Registra un usuario nuevo usando token de Google OAuth. Devuelve JWT."
+            "description": "POST /google/register — Registra un nuevo usuario usando un Google ID Token. El backend verifica el token con Google, extrae `email` y `name`, y crea el usuario en `users`. Devuelve un JWT de Utopp. Error 409 si el email ya existe."
           },
           "response": []
         },
@@ -276,12 +276,12 @@
                 "login"
               ]
             },
-            "description": "POST /google/login — Autentica un usuario existente con token de Google. Devuelve JWT."
+            "description": "POST /google/login — Autentica un usuario existente con un Google ID Token. El backend busca el usuario por email en `users` y devuelve un JWT. Error 404 si el usuario no existe (usar /google/register primero)."
           },
           "response": []
         }
       ],
-      "description": "Registro y login con Google OAuth"
+      "description": "Autenticación mediante Google OAuth 2.0. El frontend obtiene un Google ID Token → lo envía al backend → el backend lo valida con Google, extrae email y nombre, y devuelve un JWT propio de Utopp. Usar `/google/register` la primera vez y `/google/login` en accesos posteriores."
     },
     {
       "name": "Onboarding",
@@ -313,7 +313,7 @@
                 "isComplete"
               ]
             },
-            "description": "POST /onboarding/isComplete — Verifica si el usuario ha completado el onboarding."
+            "description": "POST /onboarding/isComplete — Verifica si un usuario específico completó el onboarding. Recibe `{\"id\": user_id}`. Devuelve `{\"is_complete\": true/false}`. No requiere autenticación."
           },
           "response": []
         },
@@ -332,7 +332,7 @@
                 "me"
               ]
             },
-            "description": "GET /onboarding/me — Devuelve el estado de onboarding del usuario autenticado."
+            "description": "GET /onboarding/me — Devuelve el estado de onboarding y los datos ya guardados (career, interests, availability, cycle) del usuario autenticado. Útil para pre-rellenar formularios de edición."
           },
           "response": []
         },
@@ -360,12 +360,12 @@
                 "update"
               ]
             },
-            "description": "POST /onboarding/update — Completa el onboarding guardando career, interests, availability y cycle. Solo se ejecuta una vez."
+            "description": "POST /onboarding/update — Guarda los datos del onboarding: `career` (string), `interests` (array), `availability` (número o descripción), `cycle` (ciclo académico). Marca `onboarding_completed = true` en `users`. Requiere autenticación."
           },
           "response": []
         }
       ],
-      "description": "Flujo de onboarding del usuario"
+      "description": "Configuración inicial del perfil de usuario. El onboarding se completa una sola vez tras el registro. Hasta completarlo, `onboarding_completed` en `users` es `false`. Recopila: carrera, intereses, disponibilidad y ciclo académico."
     },
     {
       "name": "Users",
@@ -388,7 +388,7 @@
                 "all-users"
               ]
             },
-            "description": "GET /users/all-users — Lista todos los usuarios registrados (endpoint legacy)."
+            "description": "GET /users/all-users — Lista todos los usuarios de la tabla `users`. Endpoint legacy sin paginación. No requiere autenticación."
           },
           "response": []
         },
@@ -407,7 +407,7 @@
                 "me"
               ]
             },
-            "description": "GET /users/me — Devuelve el perfil completo del usuario autenticado."
+            "description": "GET /users/me — Devuelve el perfil completo del usuario autenticado: datos personales, académicos, intereses y conteos de seguidores/seguidos/posts. Requiere autenticación."
           },
           "response": []
         },
@@ -435,7 +435,7 @@
                 "me"
               ]
             },
-            "description": "PATCH /users/me — Actualiza campos del perfil. Solo se actualizan los campos enviados (partial update)."
+            "description": "PATCH /users/me — Actualiza campos del perfil del usuario autenticado (partial update). Campos editables: `full_name`, `career`, `cycle`, `interests`, `availability`. Requiere autenticación."
           },
           "response": []
         },
@@ -464,7 +464,7 @@
                 "interests"
               ]
             },
-            "description": "PUT /users/me/interests — Reemplaza la lista de intereses del usuario autenticado."
+            "description": "PUT /users/me/interests — Reemplaza completamente el array `interests` del usuario. Enviar la lista completa; los intereses anteriores se sobreescriben. Requiere autenticación."
           },
           "response": []
         },
@@ -486,7 +486,7 @@
                 "{{user_id}}"
               ]
             },
-            "description": "GET /users/{user_id} — Devuelve el perfil público de un usuario con conteos de seguidores, seguidos y posts."
+            "description": "GET /users/{user_id} — Devuelve el perfil público de cualquier usuario: nombre, carrera, ciclo, intereses y conteos de seguidores, seguidos y posts publicados. No requiere autenticación."
           },
           "response": []
         },
@@ -519,7 +519,7 @@
                 }
               ]
             },
-            "description": "GET /users/{user_id}/posts — Lista los posts de un usuario con paginación."
+            "description": "GET /users/{user_id}/posts — Lista los posts de un usuario con paginación (`page`, `size`). Devuelve posts en cualquier estado. No requiere autenticación."
           },
           "response": []
         },
@@ -539,7 +539,7 @@
                 "follow"
               ]
             },
-            "description": "POST /users/{user_id}/follow — El usuario autenticado sigue al usuario indicado."
+            "description": "POST /users/{user_id}/follow — El usuario autenticado sigue al usuario con `{user_id}`. Crea registro en `follows`. Error 409 si ya lo sigue. Error 400 si intenta seguirse a sí mismo. Requiere autenticación."
           },
           "response": []
         },
@@ -559,7 +559,7 @@
                 "follow"
               ]
             },
-            "description": "DELETE /users/{user_id}/follow — El usuario autenticado deja de seguir al usuario indicado."
+            "description": "DELETE /users/{user_id}/follow — El usuario autenticado deja de seguir al usuario con `{user_id}`. Elimina el registro de `follows`. Error 404 si no lo seguía. Requiere autenticación."
           },
           "response": []
         },
@@ -592,7 +592,7 @@
                 }
               ]
             },
-            "description": "GET /users/{user_id}/followers — Lista los seguidores de un usuario con paginación."
+            "description": "GET /users/{user_id}/followers — Lista los usuarios que siguen al usuario con `{user_id}`. Consulta `follows` donde `following_id = user_id`. Paginado. No requiere autenticación."
           },
           "response": []
         },
@@ -625,12 +625,12 @@
                 }
               ]
             },
-            "description": "GET /users/{user_id}/following — Lista los usuarios que sigue un usuario con paginación."
+            "description": "GET /users/{user_id}/following — Lista los usuarios a los que sigue el usuario con `{user_id}`. Consulta `follows` donde `follower_id = user_id`. Paginado. No requiere autenticación."
           },
           "response": []
         }
       ],
-      "description": "Gestión de usuarios, perfil, follow y seguidores"
+      "description": "Gestión del perfil de usuario y el sistema social de seguimiento. El perfil incluye datos personales y académicos. El sistema de follows usa la tabla `follows` (many-to-many entre usuarios). Los conteos de seguidores y seguidos se calculan en tiempo real."
     },
     {
       "name": "Posts",
@@ -678,7 +678,7 @@
                 ""
               ]
             },
-            "description": "POST /posts — Crea un post tipo evento en estado draft. Valores válidos para post_type: international_opportunity, event, academic_project, announcement, simple_post."
+            "description": "POST /posts — Endpoint genérico para crear cualquier tipo de post en estado `draft`. Requiere `title`, `description`, `post_type` y `subtype` (validado contra los subtipos permitidos). Opcionales: `tags`, `specific_fields`, `deadline_at`. `time_status` se calcula automáticamente. Requiere autenticación."
           },
           "response": []
         },
@@ -722,7 +722,7 @@
                 "announcements"
               ]
             },
-            "description": "POST /posts — Crea un post tipo anuncio."
+            "description": "POST /posts/announcements — Crea un anuncio. `deadline_at` es obligatorio (indica hasta cuándo es relevante). `title` y `description` requeridos. Subtipos válidos: `comunicado`, `urgente`. `specific_fields` opcional (ej: `{\"max_absences\": 3}`). `time_status` se calcula automáticamente. Requiere autenticación."
           },
           "response": []
         },
@@ -764,7 +764,7 @@
                 ""
               ]
             },
-            "description": "POST /posts — Crea un post tipo oportunidad internacional con subtipo intercambio."
+            "description": "POST /posts — Crea un post de tipo `international_opportunity`. Subtipos válidos: `intercambio`, `pasantia`, `investigacion`, `4+1`. `deadline_at` opcional (fecha límite de postulación). Requiere autenticación."
           },
           "response": []
         },
@@ -809,7 +809,7 @@
                 "academic-projects"
               ]
             },
-            "description": "POST /posts — Crea un post tipo oportunidad internacional con subtipo intercambio."
+            "description": "POST /posts/academic-projects — Crea un proyecto académico. `deadline_at` es opcional (sin fecha = `no_deadline`, abierto indefinidamente). Subtipos válidos: `competencia`, `proyecto_investigacion`. Campos especiales: `participants_needed` (int) y `estimated_time` (string) se guardan en `specific_fields`. Requiere autenticación."
           },
           "response": []
         },
@@ -850,7 +850,7 @@
                 "close"
               ]
             },
-            "description": "POST /posts — Crea un post tipo oportunidad internacional con subtipo intercambio."
+            "description": "POST /posts/{post_id}/close — Cierra manualmente un proyecto académico. Fuerza `time_status = out_of_time` y asigna `deadline_at = now()`. Solo aplica a `academic_project`. Útil cuando el proyecto cubrió sus necesidades antes de la fecha límite. Solo dueño o admin."
           },
           "response": []
         },
@@ -895,7 +895,7 @@
                 "deadline"
               ]
             },
-            "description": "POST /posts — Crea un post tipo oportunidad internacional con subtipo intercambio."
+            "description": "PATCH /posts/{post_id}/deadline — Asigna o reemplaza el `deadline_at` de un proyecto académico. Recalcula `time_status`: fecha futura → `in_time`, fecha pasada → `out_of_time`. Solo aplica a `academic_project`. Funciona en `draft` o `published`. Solo dueño o admin."
           },
           "response": []
         },
@@ -936,7 +936,7 @@
                 "deadline"
               ]
             },
-            "description": "POST /posts — Crea un post tipo oportunidad internacional con subtipo intercambio."
+            "description": "DELETE /posts/{post_id}/deadline — Elimina el `deadline_at` de un proyecto académico. `time_status` pasa a `no_deadline`. Solo aplica a `academic_project`. Funciona en `draft` o `published`. Solo dueño o admin."
           },
           "response": []
         },
@@ -980,7 +980,7 @@
                 "simple-posts"
               ]
             },
-            "description": "POST /posts — Crea un post tipo oportunidad internacional con subtipo intercambio."
+            "description": "POST /posts/simple-posts — Crea una publicación simple. `title` es opcional (puede omitirse). Solo requiere `description` y `subtype`. Subtipos válidos: `informativo`, `pregunta`, `debate`. Sin `deadline_at` ni `specific_fields`. Requiere autenticación."
           },
           "response": []
         },
@@ -1002,7 +1002,7 @@
                 "{{post_id}}"
               ]
             },
-            "description": "GET /posts/{post_id} — Obtiene un post con todas sus relaciones (usuario, imágenes, links)."
+            "description": "GET /posts/{post_id} — Obtiene un post por ID con relaciones cargadas: usuario autor, imágenes (ordenadas por `position`) y links (ordenados por `position`). Actualiza `time_status` si el deadline ya expiró. No requiere autenticación."
           },
           "response": []
         },
@@ -1030,7 +1030,7 @@
                 "{{post_id}}"
               ]
             },
-            "description": "PATCH /posts/{post_id} — Actualiza campos de un post. Solo dueño o admin."
+            "description": "PATCH /posts/{post_id} — Actualiza campos editables: `title`, `description`, `subtype`, `tags`, `specific_fields`, `deadline_at`. Solo los campos enviados se modifican. No editable si está archivado. Si cambia `deadline_at`, `time_status` se recalcula. Solo dueño o admin."
           },
           "response": []
         },
@@ -1050,7 +1050,7 @@
                 "publish"
               ]
             },
-            "description": "POST /posts/{post_id}/publish — Cambia estado de draft a published. Solo el dueño."
+            "description": "POST /posts/{post_id}/publish — Cambia `status` de `draft` a `published`. El post aparece en el feed. No se puede publicar si ya está publicado o archivado. Solo el dueño del post."
           },
           "response": []
         },
@@ -1070,27 +1070,7 @@
                 "archive"
               ]
             },
-            "description": "POST /posts/{post_id}/archive — Archiva un post. Solo dueño o admin."
-          },
-          "response": []
-        },
-        {
-          "name": "out-of-time Post",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/posts/{{post_id}}/archive",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "posts",
-                "{{post_id}}",
-                "archive"
-              ]
-            },
-            "description": "POST /posts/{post_id}/archive — Archiva un post. Solo dueño o admin."
+            "description": "POST /posts/{post_id}/archive — Cambia `status` a `archived`. Posts archivados no aparecen en el feed y no pueden editarse. Acción irreversible. Solo dueño o admin."
           },
           "response": []
         },
@@ -1109,7 +1089,7 @@
                 "{{post_id}}"
               ]
             },
-            "description": "DELETE /posts/{post_id} — Elimina un post (soft delete). Solo dueño o admin."
+            "description": "DELETE /posts/{post_id} — Elimina permanentemente el post y todas sus relaciones (imágenes, links, participaciones, guardados). Solo dueño o admin."
           },
           "response": []
         },
@@ -1127,6 +1107,7 @@
                 }
               }
             },
+            "description": "POST /posts/{post_id}/check-time-status — Fuerza la verificación y actualización del `time_status` según `deadline_at` actual. Si el deadline ya pasó y `time_status` aún es `in_time`, lo corrige a `out_of_time`. Solo dueño o admin.",
             "url": {
               "raw": "{{base_url}}/posts/{{post_id}}/check-time-status",
               "host": [
@@ -1142,7 +1123,7 @@
           "response": []
         }
       ],
-      "description": "CRUD de posts, publicación y archivado"
+      "description": "Gestión completa del ciclo de vida de los posts. Los posts se crean en estado `draft` y deben publicarse para aparecer en el feed.\n\nCiclo de vida: draft → published → archived (irreversible).\n\nEstados de tiempo (`time_status`): `no_deadline` (sin fecha), `in_time` (fecha futura), `out_of_time` (fecha pasada o cerrado manualmente). Se recalcula automáticamente.\n\nEndpoints especializados por tipo: `/posts/academic-projects`, `/posts/simple-posts`, `/posts/announcements`.\n\nGestión de deadline para proyectos académicos: `POST /{id}/close` (cierra manualmente), `PATCH /{id}/deadline` (asigna/reemplaza fecha), `DELETE /{id}/deadline` (elimina fecha)."
     },
     {
       "name": "Post Images",
