@@ -71,9 +71,9 @@ function App() {
           <Route
             path="/register"
             element={
-              <ProtectedRoute>
+          
                 <Register/>
-              </ProtectedRoute>
+          
             }
           />
           

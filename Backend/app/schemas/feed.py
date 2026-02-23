@@ -1,15 +1,50 @@
-from typing import Literal, List, Optional, Dict, Any
-from pydantic import BaseModel
+from datetime import datetime
+from typing import Optional, List
+
+from pydantic import BaseModel, Field
+
+from app.models.post import PostType, SubPostType, TimeStatus
 
 
-class FeedItem(BaseModel):
-    type: Literal["event", "community_post", "announcement"]
-    score: float
-    data: Dict[str, Any]
+class FeedFilters(BaseModel):
+    """Filtros para el feed."""
+    type: Optional[PostType] = None
+    subtype: Optional[SubPostType] = None
+    tags: Optional[List[str]] = None
+
+
+class FeedPostOut(BaseModel):
+    """Schema de post en el feed."""
+    id: int
+    user_id: int
+    title: Optional[str] = None
+    description: str
+    post_type: PostType
+    subtype: Optional[SubPostType] = None
+    tags: Optional[List[str]] = None
+    deadline_at: Optional[datetime] = None
+    time_status: TimeStatus
+    created_at: datetime
+    
+    user_name: Optional[str] = None
+    user_email: Optional[str] = None
+    
+    image_url: Optional[str] = None
+    images_count: int = 0
+    links_count: int = 0
+    
+    is_saved: bool = False
+    participation_status: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
 
 
 class FeedResponse(BaseModel):
+    """Respuesta del feed paginada."""
+    items: List[FeedPostOut]
     page: int
     size: int
-    items: List[FeedItem]
-    next_page: Optional[int] = None
+    total: int
+    has_next: bool
+    has_prev: bool

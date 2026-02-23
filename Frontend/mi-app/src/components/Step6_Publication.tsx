@@ -37,7 +37,7 @@ export default function Step6Publication({
   deadline,
   ctas,
   images = [
-    "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=800&h=600&fit=crop",
+    "https://www1.utec.edu.pe/sites/default/files/styles/noticias_slider/public/noticias/sin_titulo-1_8.jpg",
     "https://cdn.aicad.es/asset/img/3/practicas-profecionales.png",
     "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&h=600&fit=crop",
     "https://www.oit.org.pe/wp-content/uploads/2024/10/Practicas-Profesionales-en-Peru.jpg"
@@ -262,3 +262,5 @@ export default function Step6Publication({
     </div>
   )
 }
+
+

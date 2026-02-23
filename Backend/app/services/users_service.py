@@ -13,11 +13,13 @@ SECRET_KEY = settings.JWT_SECRET_KEY
 ALGORITHM = settings.ALGORITHM
 
 def get_user_by_email(db: Session, email: str) -> User | None:
+    """Busca un usuario por email. Retorna None si no existe."""
     stmt = select(User).where(User.email == email)
     return db.scalar(stmt)
 
 
 def create_user(db: Session, email: str, password: str, full_name: str | None = None) -> User:
+    """Crea un usuario con email y contraseña hasheada."""
     user = User(
         email=email,
         full_name=full_name,
@@ -30,6 +32,7 @@ def create_user(db: Session, email: str, password: str, full_name: str | None = 
 
 
 def authenticate_user(db: Session, email: str, password: str) -> User | None:
+    """Autentica un usuario por email y contraseña. Retorna None si falla."""
     user = get_user_by_email(db, email)
     if not user:
         return None
@@ -37,7 +40,9 @@ def authenticate_user(db: Session, email: str, password: str) -> User | None:
         return None
     return user
 
+
 def get_all_users(db: Session):
+    """Retorna todos los usuarios registrados."""
     stmt = select(User)
     return db.scalars(stmt).all()
 
@@ -48,6 +53,7 @@ def get_current_user(
     token: str = Depends(oauth2_scheme),
     db: Session = Depends(get_db)
 ) -> User:
+    """Decodifica el JWT y retorna el usuario autenticado."""
 
     print("🔑 TOKEN RECIBIDO:", token)
     
@@ -87,12 +93,14 @@ def get_current_user(
     print("User authenticated:", user.email)
     return user
 
+
 def create_google_user(
     db: Session,
     email: str,
     full_name: str,
     google_id: str
 ):
+    """Crea un usuario autenticado vía Google OAuth."""
     user = User(
         email=email,
         full_name=full_name,
@@ -104,6 +112,7 @@ def create_google_user(
     return user
 
 def obtener_organizacion(email):
+    """Extrae el nombre de la organización del dominio del email."""
     try:
         # Dividimos el correo en el '@' y tomamos la segunda parte
         dominio = email.split('@')[1].lower()
@@ -114,6 +123,7 @@ def obtener_organizacion(email):
         return None
 
 def is_domUtec(email):
+    """Verifica si el email pertenece al dominio UTEC."""
     
     org = obtener_organizacion(email=email)
     

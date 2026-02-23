@@ -7,6 +7,8 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
     GOOGLE_CLIENT_ID: str = os.getenv("GOOGLE_CLIENT_ID", "")
+    ENABLE_ADMIN_BOOTSTRAP: bool = os.getenv("ENABLE_ADMIN_BOOTSTRAP", "false").lower() in {"1", "true", "yes"}
+    BOOTSTRAP_ADMIN_TOKEN: str = os.getenv("BOOTSTRAP_ADMIN_TOKEN", "")
 
     class Config:
         env_file = ".env"

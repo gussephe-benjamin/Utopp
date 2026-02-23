@@ -19,6 +19,14 @@ GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 
 router = APIRouter()
 
+
+# ============================================================
+# POST /auth/login
+# Autentica un usuario con email y contraseña.
+# Valida que el correo pertenezca al dominio UTEC.
+# Devuelve un JWT access token.
+# Auth: No requerida
+# ============================================================
 @router.post("/login", response_model=TokenOut)
 def login(payload: LoginRequest, db: Session = Depends(get_db)):
     user = authenticate_user(db, payload.email, payload.password)
@@ -33,6 +41,13 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
     token = create_access_token(subject=str(user.id))
     return TokenOut(access_token=token)
 
+
+# ============================================================
+# POST /auth/register
+# Registra un nuevo usuario con email, contraseña y nombre.
+# Valida que el email no esté en uso y que pertenezca a UTEC.
+# Auth: No requerida
+# ============================================================
 @router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
 def register(payload: UserCreate, db: Session = Depends(get_db)):
     if get_user_by_email(db, payload.email):
@@ -43,6 +58,14 @@ def register(payload: UserCreate, db: Session = Depends(get_db)):
     user = create_user(db, payload.email, payload.password, payload.full_name)
     return user
 
+
+
+# ============================================================
+# POST /auth/refresh
+# Genera un nuevo JWT token para el usuario autenticado.
+# Útil para renovar sesión sin volver a hacer login.
+# Auth: Requerida
+# ============================================================
 @router.post("/refresh", response_model=TokenOut)
 def refresh_token(
     current_user: User = Depends(get_current_user),
@@ -53,6 +76,14 @@ def refresh_token(
     new_token = create_access_token(subject=str(current_user.id))
     return TokenOut(access_token=new_token)
 
+
+
+# ============================================================
+# GET /auth/me
+# Devuelve datos básicos del usuario autenticado
+# (id, email, estado de onboarding).
+# Auth: Requerida
+# ============================================================
 @router.get("/me")
 def get_current_user_endpoint(
     current_user: User = Depends(get_current_user)

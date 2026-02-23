@@ -13,6 +13,13 @@ from google.oauth2 import id_token
 
 router = APIRouter()
 
+
+# ============================================================
+# POST /onboarding/isComplete
+# Verifica si un usuario ha completado el onboarding.
+# Recibe el ID del usuario y devuelve su estado.
+# Auth: No requerida
+# ============================================================
 @router.post("/isComplete", response_model=OnboardingStatusOut)
 def login(payload: OnboardingID, db: Session = Depends(get_db)):
 
@@ -24,7 +31,14 @@ def login(payload: OnboardingID, db: Session = Depends(get_db)):
         "user_id": user.id,
         "onboarding_completed": user.is_onboarding_completed
     }
-
+    
+    
+# ============================================================
+# GET /onboarding/me
+# Devuelve el estado de onboarding del usuario autenticado
+# (id, email, onboarding_completed).
+# Auth: Requerida
+# ============================================================
 @router.get("/me")
 def get_current_user_endpoint(
     current_user: User = Depends(get_current_user)
@@ -35,6 +49,13 @@ def get_current_user_endpoint(
         "onboarding_completed": current_user.is_onboarding_completed
     }
 
+# ============================================================
+# POST /onboarding/update
+# Completa el proceso de onboarding del usuario autenticado.
+# Guarda career, interests, availability y cycle.
+# Solo se puede ejecutar una vez por usuario.
+# Auth: Requerida
+# ============================================================
 @router.post("/update")
 def complete_onboarding(
     data: UserOnboardingData,

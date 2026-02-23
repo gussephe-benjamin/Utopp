@@ -18,6 +18,13 @@ GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 
 router = APIRouter()
 
+# ============================================================
+# POST /register
+# Registra un nuevo usuario usando su token de Google OAuth.
+# Verifica el token con Google, crea el usuario en BD
+# y devuelve un JWT access token.
+# Auth: No requerida (usa token de Google)
+# ============================================================
 @router.post("/register")
 def google_register(data: dict, db: Session = Depends(get_db)):
     token = data.get("token")
@@ -67,6 +74,14 @@ def google_register(data: dict, db: Session = Depends(get_db)):
             detail="Token de Google inválido"
         )
         
+# ============================================================
+# POST /login
+# Autentica un usuario existente usando su token de Google.
+# Verifica el token con Google, busca al usuario en BD
+# y devuelve un JWT access token.
+# Si el usuario no tiene google_id vinculado, lo asigna.
+# Auth: No requerida (usa token de Google)
+# ============================================================
 @router.post("/login")
 def google_login(data: dict, db: Session = Depends(get_db)):
     
