@@ -29,6 +29,8 @@ def create_image(db: Session, post_id: int, data: ImageCreate) -> PostImage:
         cloudinary_id=data.cloudinary_id,
         url=data.url,
         position=data.position if data.position else max_position,
+        object_position=data.object_position,
+        scale=data.scale,
     )
     
     db.add(image)

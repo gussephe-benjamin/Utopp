@@ -1,70 +1,74 @@
 import { useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../auth/useAuth";
-import { login as apiLogin } from "../../api/apiFunctions/auth";
-import { isComplete } from "../../api/apiFunctions/onboarding";
-import { getMe } from "../../api/apiFunctions/auth";
-import { Button } from "../../componets/ui/button";
-import { Input } from "../../componets/ui/input";
-import { Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { login as apiLogin, getMe } from "../../api/auth.api";
+import { isComplete } from "../../api/onboarding.api";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle2 } from "lucide-react";
 import GoogleLogin from "../../auth/GoogleLogin";
-// import PageTransition from "../../components/PageTransition";
+import type { AxiosError } from "axios";
+
+/** Parsea el error de la API y devuelve un mensaje legible en español */
+function parseApiError(err: unknown): string {
+  const axiosErr = err as AxiosError<{ detail?: string }>;
+  const detail = axiosErr?.response?.data?.detail;
+  if (detail) {
+    if (detail.includes("Credenciales") || detail.includes("credenciales"))
+      return "Correo o contraseña incorrectos. Verifica tus datos.";
+    if (detail.includes("organización") || detail.includes("utec"))
+      return "Solo se permiten correos institucionales UTEC (@utec.edu.pe).";
+    if (detail.includes("expirado"))
+      return "Tu sesión expiró. Por favor inicia sesión nuevamente.";
+    return detail;
+  }
+  const status = axiosErr?.response?.status;
+  if (status === 401) return "Correo o contraseña incorrectos.";
+  if (status === 403) return "No tienes permiso para acceder.";
+  if (axiosErr?.code === "ERR_NETWORK") return "No se pudo conectar al servidor. Verifica tu conexión.";
+  return "Error inesperado. Intenta de nuevo.";
+}
 
 export default function Login() {
   const { login } = useAuth();
-  const navigate = useNavigate();
+  const navigate  = useNavigate();
+  const location  = useLocation();
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  // Si viene del registro, el email llega pre-cargado desde el state de navegación
+  const registeredEmail = (location.state as { registeredEmail?: string } | null)?.registeredEmail ?? "";
+
+  const [email, setEmail]           = useState(registeredEmail);
+  const [password, setPassword]     = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading]   = useState(false);
+  const [error, setError]           = useState<string | null>(null);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
 
     try {
-      // Login real
-      const res = await apiLogin(email, password);
-
-      const token = res.data.access_token;
-
-      // Usar AuthContext para actualizar el token
+      const data = await apiLogin(email, password);
+      // La función login() de auth.api ya devuelve el objeto directamente (no .data)
+      const token = data.access_token;
       login(token);
 
-      const user = await getMe()
-      const id = user.id
+      const user = await getMe();
 
-      console.log(user)
-      console.log(id)
-
-      // Revisar onboarding
-      const response = await isComplete(id)
-
-      if (!response.data.onboarding_completed) {
+      // Revisar si completó el onboarding
+      const response = await isComplete(user.id);
+      if (!response.onboarding_completed) {
         navigate("/onboarding");
       } else {
         navigate("/app/inicio");
       }
-    } catch (error) {
-      console.error("Error en login", error);
-      alert("Correo o contraseña incorrectos");
+    } catch (err) {
+      setError(parseApiError(err));
     } finally {
       setIsLoading(false);
     }
   };
-
-  // const handleGoogleLogin = () => {
-  //   setIsLoading(true);
-  //   // Aquí podrías integrar la lógica real de Google login
-
-  //   <LoginPage/>
-      
-  //   setTimeout(() => {
-  //     setIsLoading(false);
-  //     navigate("/onboarding");
-  //   }, 800);
-  // };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#4F46E5] via-[#6366F1] to-[#8B5CF6] flex items-center justify-center p-6 relative overflow-hidden">
@@ -84,21 +88,28 @@ export default function Login() {
         {/* Logo */}
         <div className="flex justify-center mb-8">
           <div className="w-20 h-20 rounded-2xl overflow-hidden shadow-2xl border-2 border-white/20">
-            <img
-              src="/utopp-logo.png"
-              alt="Utopp"
-              className="w-full h-full object-cover"
-            />
+            <img src="/utopp-logo.png" alt="Utopp" className="w-full h-full object-cover" />
           </div>
         </div>
 
         {/* Card */}
         <div className="bg-white rounded-3xl shadow-2xl p-8 backdrop-blur-xl">
           {/* Header */}
-          <div className="text-center mb-8">
+          <div className="text-center mb-6">
             <h1 className="text-2xl font-bold text-[#4F46E5] mb-2">¡Hola!</h1>
             <p className="text-gray-500 text-sm">Inicia sesión para continuar</p>
           </div>
+
+          {/* Banner de registro exitoso */}
+          {registeredEmail && !error && (
+            <div className="flex items-start gap-3 bg-green-50 border border-green-200 rounded-xl px-4 py-3 mb-4">
+              <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-green-800 text-sm font-medium">¡Cuenta creada exitosamente!</p>
+                <p className="text-green-700 text-xs mt-0.5">Ingresa tu contraseña para continuar.</p>
+              </div>
+            </div>
+          )}
 
           {/* Formulario */}
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -109,10 +120,10 @@ export default function Login() {
               </div>
               <Input
                 type="email"
-                placeholder="Email"
+                placeholder="Email institucional UTEC"
                 autoComplete="username"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => { setEmail(e.target.value); setError(null); }}
                 className="w-full h-14 pl-12 pr-4 rounded-2xl border-gray-200 bg-gray-50/50 focus:bg-white focus:border-[#4F46E5] focus:ring-[#4F46E5]/20 transition-all duration-200"
               />
             </div>
@@ -124,10 +135,10 @@ export default function Login() {
               </div>
               <Input
                 type={showPassword ? "text" : "password"}
-                placeholder="Password"
+                placeholder="Contraseña"
                 autoComplete="current-password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => { setPassword(e.target.value); setError(null); }}
                 className="w-full h-14 pl-12 pr-12 rounded-2xl border-gray-200 bg-gray-50/50 focus:bg-white focus:border-[#4F46E5] focus:ring-[#4F46E5]/20 transition-all duration-200"
               />
               <button
@@ -138,6 +149,14 @@ export default function Login() {
                 {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
             </div>
+
+            {/* Banner de error inline */}
+            {error && (
+              <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 shrink-0" />
+                <p className="text-red-700 text-sm leading-snug">{error}</p>
+              </div>
+            )}
 
             {/* Botón login */}
             <Button
@@ -160,11 +179,8 @@ export default function Login() {
             <div className="flex-1 h-px bg-gray-200" />
           </div>
 
-          {/* Google Login */}
+          <GoogleLogin />
 
-          <GoogleLogin/>
-
-          {/*Registro*/}
           <p className="text-center mt-6 text-gray-500 text-sm">
             ¿No tienes cuenta?{" "}
             <button

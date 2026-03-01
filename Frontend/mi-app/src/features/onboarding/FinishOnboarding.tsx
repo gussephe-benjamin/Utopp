@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom"
 import type { JSX } from "react"
-import { updateOnboarding } from "../api/apiFunctions/onboarding";
-import type { OnboardingData } from "../types/OnboardingData";
+import { updateOnboarding } from "../../api/onboarding.api";
+import type { OnboardingData } from "../../api/onboarding.api";
 
 export default function FinishOnboarding({ data }: { data: OnboardingData }): JSX.Element {
   const navigate = useNavigate()
@@ -36,5 +36,3 @@ export default function FinishOnboarding({ data }: { data: OnboardingData }): JS
     </div>
   )
 }
-
-

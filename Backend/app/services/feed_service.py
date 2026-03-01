@@ -20,7 +20,9 @@ def build_feed(
     page: int = 1,
     size: int = 20,
 ) -> FeedResponse:
+    
     """Construye el feed de posts publicados."""
+    
     now = datetime.now(timezone.utc)
     
     # Query base: solo posts publicados con deadline válido

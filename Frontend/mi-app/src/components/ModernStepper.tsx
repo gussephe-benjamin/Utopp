@@ -2,9 +2,9 @@ import React from "react"
 
 const ModernStepper: React.FC<{
   currentStep: number
+  totalSteps?: number
   onStepClick: (step: number) => void
-}> = ({ currentStep, onStepClick }) => {
-  const totalSteps = 5
+}> = ({ currentStep, totalSteps = 5, onStepClick: _onStepClick }) => {
 
   return (
     <div className="w-full flex justify-center items-center py-3">

@@ -127,6 +127,8 @@ class PostImageOut(BaseModel):
     """Schema de imagen embebida en post."""
     id: int
     url: str
+    object_position: Optional[str] = None
+    scale: Optional[float] = None
     position: int
     
     class Config:

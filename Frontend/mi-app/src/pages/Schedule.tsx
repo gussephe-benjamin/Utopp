@@ -4,8 +4,8 @@ import timeGridPlugin from "@fullcalendar/timegrid"
 import interactionPlugin from "@fullcalendar/interaction"
 import type { DateSelectArg, EventClickArg, DatesSetArg } from "@fullcalendar/core"
 import type { AxiosError } from "axios"
-import { createSchedule, deleteSchedule, getSchedule, updateSchedule } from "../api/apiFunctions/schedule"
-import type { ScheduleItem } from "../api/apiFunctions/schedule"
+import { createSchedule, deleteSchedule, getSchedule, updateSchedule } from "../api/schedule.api"
+import type { ScheduleItem } from "../api/schedule.api"
 
 // Tipos estructurales locales para evitar dependencias frágiles de tipos de FullCalendar
 type DropInfo = {

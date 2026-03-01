@@ -1,277 +1,266 @@
-import { useState } from 'react'
-import IntercambioForm from './IntercambioForm'
+import { useRef, useState, useEffect } from 'react'
+import { ChevronLeft, ChevronRight, MoreVertical } from 'lucide-react'
+import { getMyProfile } from '../api/users.api'
+import {
+  type PostType,
+  type SubPostType,
+  type WizardImage,
+  type WizardLink,
+  POST_TYPE_LABELS,
+  POST_TYPE_ICONS,
+  SUBTYPE_LABELS,
+} from '../types/post.types'
 
 interface Step5PreviewProps {
-  publicationType: string
-  subtype: string
+  postType: PostType
+  subtype: SubPostType | ''
   title: string
-  content: string
-  tags: string[]
-  links: Array<{ title: string; url: string; type: string }>
-  specificFields: Record<string, unknown>
-  onChange: (data: { specific_fields: Record<string, unknown> }) => void
+  description: string
+  deadline_at: string
+  images: WizardImage[]
+  links: WizardLink[]
 }
 
-export default function Step5Preview({ 
-  publicationType, 
-  subtype, 
-  title, 
-  content, 
-  tags, 
-  links, 
-  specificFields, 
-  onChange 
+/** Formato legible de fecha ISO YYYY-MM-DD → "12 de enero de 2026" */
+function formatDate(isoDate: string): string {
+  if (!isoDate) return ''
+  return new Intl.DateTimeFormat('es-ES', {
+    day: '2-digit', month: 'long', year: 'numeric', timeZone: 'UTC',
+  }).format(new Date(isoDate + 'T00:00:00Z'))
+}
+
+/**
+ * Paso de preview: replica pixel-perfecta del PostCard del feed.
+ * Mismo layout responsive, overflow link button, avatar real, escala de imagen.
+ */
+export default function Step5Preview({
+  postType, subtype, title, description, deadline_at, images, links,
 }: Step5PreviewProps) {
-  const [showPreview, setShowPreview] = useState(false)
+  const [currentImage, setCurrentImage]   = useState(0)
+  const [userName, setUserName]           = useState<string | null>(null)
+  const [userEmail, setUserEmail]         = useState<string | null>(null)
+  const [avatarUrl, setAvatarUrl]         = useState<string | null>(null)
+  const [extraMenuOpen, setExtraMenuOpen] = useState(false)
+  const extraMenuRef                      = useRef<HTMLDivElement>(null)
 
-  const renderSpecificForm = () => {
-    switch (publicationType) {
-      case 'oportunidad_internacional':
-        switch (subtype) {
-          case 'intercambio':
-            return (
-              <IntercambioForm
-                data={specificFields as {
-                  duration?: string
-                  country?: string
-                  requirements?: string[]
-                }}
-                onChange={(data) => onChange({ specific_fields: data })}
-              />
-            )
-          case 'pasantia':
-            return (
-              <div className="p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <h3 className="text-lg font-semibold text-yellow-900 mb-2">🚧 En Desarrollo</h3>
-                <p className="text-yellow-800">
-                  El formulario para Pasantías está siendo desarrollado. 
-                  Por ahora, esta publicación usará el formulario genérico.
-                </p>
-              </div>
-            )
-          case 'investigacion':
-            return (
-              <div className="p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <h3 className="text-lg font-semibold text-yellow-900 mb-2">🚧 En Desarrollo</h3>
-                <p className="text-yellow-800">
-                  El formulario para Investigación está siendo desarrollado. 
-                  Por ahora, esta publicación usará el formulario genérico.
-                </p>
-              </div>
-            )
-          case '4+1':
-            return (
-              <div className="p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <h3 className="text-lg font-semibold text-yellow-900 mb-2">🚧 En Desarrollo</h3>
-                <p className="text-yellow-800">
-                  El formulario para 4+1 está siendo desarrollado. 
-                  Por ahora, esta publicación usará el formulario genérico.
-                </p>
-              </div>
-            )
-          default:
-            return null
-        }
-      default:
-        return (
-          <div className="p-6 bg-gray-50 border border-gray-200 rounded-lg">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Formulario Genérico</h3>
-            <p className="text-gray-800">
-              Este tipo de publicación utiliza el formulario estándar sin campos específicos.
-            </p>
-          </div>
-        )
-    }
-  }
+  useEffect(() => {
+    getMyProfile()
+      .then(profile => {
+        setUserName(profile.full_name || profile.email)
+        setUserEmail(profile.email ?? null)
+        const saved = localStorage.getItem(`avatar_${profile.id}`)
+        if (saved) setAvatarUrl(saved)
+      })
+      .catch(() => setUserName('Tú'))
+  }, [])
 
-  const getPublicationIcon = (type: string) => {
-    const icons: Record<string, string> = {
-      'oportunidad_internacional': '🌍',
-      'evento': '📅',
-      'proyecto_academico': '🔬',
-      'anuncio': '📢',
-      'publicacion_simple': '💬'
-    }
-    return icons[type] || '📄'
-  }
-
-  const getSubtypeLabel = (type: string, subtype: string) => {
-    const labels: Record<string, Record<string, string>> = {
-      'oportunidad_internacional': {
-        'intercambio': 'Intercambio',
-        'pasantia': 'Pasantía',
-        'investigacion': 'Investigación',
-        '4+1': '4+1'
-      },
-      'evento': {
-        'conferencia': 'Conferencia',
-        'arte': 'Arte',
-        'emprendimiento': 'Emprendimiento',
-        'voluntariado': 'Voluntariado',
-        'deporte': 'Deporte',
-        'visita_academica': 'Visita Académica',
-        'empleo': 'Empleo'
-      },
-      'proyecto_academico': {
-        'competencia': 'Competencia',
-        'investigacion': 'Investigación'
-      },
-      'anuncio': {
-        'comunicado': 'Comunicado',
-        'urgente': 'Urgente'
-      },
-      'publicacion_simple': {
-        'informativo': 'Informativo',
-        'pregunta': 'Pregunta',
-        'debate': 'Debate'
+  // Cierra el overflow menu al hacer clic fuera
+  useEffect(() => {
+    if (!extraMenuOpen) return
+    const handler = (e: MouseEvent) => {
+      if (extraMenuRef.current && !extraMenuRef.current.contains(e.target as Node)) {
+        setExtraMenuOpen(false)
       }
     }
-    return labels[type]?.[subtype] || subtype
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [extraMenuOpen])
+
+  const readyImages = images.filter(img => img.status === 'done' && img.cloudinaryUrl)
+  const prevImage   = () => setCurrentImage(i => (i - 1 + readyImages.length) % readyImages.length)
+  const nextImage   = () => setCurrentImage(i => (i + 1) % readyImages.length)
+
+  const initial = (userName ?? 'T').charAt(0).toUpperCase()
+
+  // Tipo de post → gradiente de avatar igual que Feed.tsx
+  const typeGradients: Record<string, string> = {
+    international_opportunity: 'bg-gradient-to-br from-blue-500 to-cyan-500',
+    event:                     'bg-gradient-to-br from-purple-500 to-pink-500',
+    academic_project:          'bg-gradient-to-br from-green-500 to-emerald-500',
+    announcement:              'bg-gradient-to-br from-orange-500 to-red-500',
+    simple_post:               'bg-gradient-to-br from-gray-500 to-slate-500',
   }
+  const gradient = typeGradients[postType] ?? typeGradients.simple_post
 
   return (
-    <div className="space-y-6">
-      {/* Toggle Button */}
-      <div className="flex justify-center">
-        <div className="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-1">
-          <button
-            onClick={() => setShowPreview(false)}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              !showPreview
-                ? 'bg-white text-purple-600 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            Formulario Específico
-          </button>
-          <button
-            onClick={() => setShowPreview(true)}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-              showPreview
-                ? 'bg-white text-purple-600 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            Vista Previa
-          </button>
+    <div className="space-y-3">
+      <p className="text-sm text-gray-500 text-center font-medium">
+        Así se verá tu publicación en el feed
+      </p>
+
+      {/* Fondo gris simulando el feed */}
+      <div className="bg-gray-100 rounded-2xl p-3">
+
+        {/* Tarjeta — misma estructura exacta que PostCard */}
+        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden w-full max-w-[500px] mx-auto">
+
+          {/* Header: avatar + nombre + email + tiempo + badges */}
+          <div className="flex items-start justify-between px-4 pt-4 pb-4 sm:pb-3">
+            <div className="flex items-center gap-3">
+              {avatarUrl ? (
+                <img src={avatarUrl} alt={userName ?? 'Tú'} className="w-10 h-10 rounded-full object-cover border border-gray-200" />
+              ) : (
+                <div className={`w-10 h-10 ${gradient} rounded-full flex items-center justify-center text-white font-semibold text-sm shrink-0`}>
+                  {initial}
+                </div>
+              )}
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-gray-900 text-sm leading-tight">{userName ?? 'Cargando...'}</span>
+                  <span className="hidden sm:inline text-gray-300 text-xs">·</span>
+                  <span className="hidden sm:inline text-xs text-gray-400">Ahora</span>
+                </div>
+                {userEmail && (
+                  <p className="text-xs text-gray-400 leading-tight mt-0.5">{userEmail}</p>
+                )}
+                <p className="sm:hidden text-xs text-gray-400 leading-tight mt-0.5">Ahora</p>
+              </div>
+            </div>
+
+            {/* Badges en columna (sm+) */}
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="hidden sm:flex sm:flex-col gap-1 items-end">
+                <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                  {POST_TYPE_ICONS[postType]} {POST_TYPE_LABELS[postType]}
+                </span>
+                {subtype && (
+                  <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
+                    {SUBTYPE_LABELS[subtype]}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Badges en móvil (fila) */}
+          <div className="flex gap-1 px-4 mb-2 sm:hidden items-center flex-wrap">
+            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+              {POST_TYPE_ICONS[postType]} {POST_TYPE_LABELS[postType]}
+            </span>
+            {subtype && (
+              <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
+                {SUBTYPE_LABELS[subtype]}
+              </span>
+            )}
+          </div>
+
+          {/* Carrusel de imágenes — aspect-ratio 4:5 */}
+          {readyImages.length > 0 && (
+            <div className="relative w-full max-w-[500px] mx-auto aspect-[4/5] bg-gray-100 overflow-hidden">
+              <img
+                src={readyImages[currentImage].cloudinaryUrl!}
+                alt={`Imagen ${currentImage + 1}`}
+                className="w-full h-full object-cover object-center"
+                style={(() => {
+                  const objPos = readyImages[currentImage].objectPosition ?? 'center center'
+                  const sc     = readyImages[currentImage].scale ?? 1
+                  return { objectPosition: objPos, transform: `scale(${sc})`, transformOrigin: objPos }
+                })()}
+              />
+              {readyImages.length > 1 && (
+                <>
+                  <button
+                    onClick={prevImage}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/40 hover:bg-black/60 rounded-full flex items-center justify-center text-white transition-colors"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={nextImage}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/40 hover:bg-black/60 rounded-full flex items-center justify-center text-white transition-colors"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                    {readyImages.map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setCurrentImage(i)}
+                        className={`rounded-full transition-all ${i === currentImage ? 'w-5 h-2 bg-white' : 'w-2 h-2 bg-white/60'}`}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Contenido: título, descripción, deadline */}
+          <div className="px-4 pt-3 pb-2">
+            {title && (
+              <h3 className="font-bold text-gray-900 text-base mb-1 leading-snug">{title}</h3>
+            )}
+            <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-line line-clamp-4">{description}</p>
+            {deadline_at && (
+              <div className="flex items-center gap-1.5 mt-2 text-xs text-gray-500">
+                <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span>Fecha límite: {formatDate(deadline_at)}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Botones CTA + overflow (idéntico al PostCard del feed) */}
+          {links.length > 0 && (
+            <div className="px-4 pb-3 flex gap-2 items-stretch">
+              {links[0] && (
+                <a
+                  href={links[0].url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 text-center py-2.5 px-3 rounded-xl text-sm font-medium bg-gradient-to-r from-[#4F46E5] to-[#7C3AED] text-white shadow hover:shadow-md transition-all"
+                >
+                  {links[0].label}
+                </a>
+              )}
+              {links[1] && (
+                <a
+                  href={links[1].url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 text-center py-2.5 px-3 rounded-xl text-sm font-medium bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200 transition-all"
+                >
+                  {links[1].label}
+                </a>
+              )}
+              {links.length > 2 && (
+                <div className="relative" ref={extraMenuRef}>
+                  <button
+                    onClick={() => setExtraMenuOpen(v => !v)}
+                    className="py-2.5 px-2.5 rounded-xl bg-gray-100 border border-gray-200 text-gray-600 hover:bg-gray-200 transition-colors flex items-center justify-center"
+                    title="Más enlaces"
+                  >
+                    <MoreVertical className="w-4 h-4" />
+                  </button>
+                  {extraMenuOpen && (
+                    <div className="absolute right-0 bottom-full mb-1 w-52 bg-white rounded-xl shadow-lg border border-gray-200 z-30 overflow-hidden">
+                      {links.slice(2).map(link => (
+                        <a
+                          key={link.tempId}
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={() => setExtraMenuOpen(false)}
+                          className="flex items-center gap-2.5 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                          <span className="text-base">🔗</span>
+                          <span className="truncate">{link.label}</span>
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Content */}
-      {!showPreview ? (
-        <div>
-          <h3 className="text-xl font-semibold mb-4">Información Específica</h3>
-          {renderSpecificForm()}
-        </div>
-      ) : (
-        <div>
-          <h3 className="text-xl font-semibold mb-4">Vista Previa de la Publicación</h3>
-          
-          {/* Preview Card */}
-          <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-6">
-              <div className="flex items-center gap-3">
-                <div className="text-3xl">{getPublicationIcon(publicationType)}</div>
-                <div>
-                  <h4 className="text-xl font-bold">{title}</h4>
-                  <p className="text-purple-100 text-sm">
-                    {getPublicationIcon(publicationType)} {getSubtypeLabel(publicationType, subtype)}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Content */}
-            <div className="p-6 space-y-6">
-              {/* Description */}
-              <div>
-                <h5 className="font-semibold text-gray-900 mb-2">Descripción</h5>
-                <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-                  {content}
-                </p>
-              </div>
-
-              {/* Specific Fields */}
-              {Object.keys(specificFields).length > 0 && (
-                <div>
-                  <h5 className="font-semibold text-gray-900 mb-2">Información Adicional</h5>
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    {Object.entries(specificFields).map(([key, value]) => (
-                      <div key={key} className="mb-2 last:mb-0">
-                        <span className="font-medium text-gray-700 capitalize">
-                          {key.replace('_', ' ')}:
-                        </span>
-                        <span className="ml-2 text-gray-600">
-                          {Array.isArray(value) ? value.join(', ') : String(value)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Links */}
-              {links.length > 0 && (
-                <div>
-                  <h5 className="font-semibold text-gray-900 mb-2">Enlaces</h5>
-                  <div className="space-y-2">
-                    {links.map((link, index) => (
-                      <a
-                        key={index}
-                        href={link.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors text-blue-700"
-                      >
-                        <span className="text-lg">
-                          {link.type === 'formulario' ? '📝' :
-                           link.type === 'documento' ? '📄' :
-                           link.type === 'video' ? '🎥' :
-                           link.type === 'redes' ? '📱' :
-                           link.type === 'sitio_web' ? '🌐' : '🔗'}
-                        </span>
-                        <div className="flex-1">
-                          <div className="font-medium">{link.title}</div>
-                          <div className="text-sm text-blue-600 truncate">{link.url}</div>
-                        </div>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
-                      </a>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Tags */}
-              {tags.length > 0 && (
-                <div>
-                  <h5 className="font-semibold text-gray-900 mb-2">Etiquetas</h5>
-                  <div className="flex flex-wrap gap-2">
-                    {tags.map((tag, index) => (
-                      <span
-                        key={index}
-                        className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium"
-                      >
-                        #{tag}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Footer */}
-            <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
-              <div className="flex items-center justify-between text-sm text-gray-600">
-                <span>Publicación lista para revisar</span>
-                <span className="text-green-600 font-medium">
-                  ✓ Campos completados
-                </span>
-              </div>
-            </div>
-          </div>
+      {/* Advertencia si hay imágenes aún subiendo */}
+      {images.some(img => img.status === 'uploading') && (
+        <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700 text-center">
+          Hay imágenes que aún se están subiendo. Espera a que terminen antes de publicar.
         </div>
       )}
     </div>

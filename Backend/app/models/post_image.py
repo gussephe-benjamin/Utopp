@@ -1,5 +1,6 @@
 from datetime import datetime
-from sqlalchemy import BigInteger, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, func
+from typing import Optional
+from sqlalchemy import BigInteger, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.base import Base
@@ -21,6 +22,10 @@ class PostImage(Base):
     url: Mapped[str] = mapped_column(Text, nullable=False)
     
     position: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    object_position: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+
+    scale: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 

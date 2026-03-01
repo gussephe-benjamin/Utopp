@@ -5,8 +5,8 @@ import StepAvailability from "./steps/StepAvailability";
 import CycleStep from "./steps/StepCycle";  
 import { useNavigate } from "react-router-dom";
 import type { JSX } from "react"
-import { updateOnboarding } from "../api/apiFunctions/onboarding";
-import StepBar from "../componets/uiOnboarding/StepBar";
+import { updateOnboarding } from "../../api/onboarding.api";
+import StepBar from "./components/StepBar";
 import { AxiosError } from "axios";
 
 import { useEffect } from "react"

@@ -2,59 +2,55 @@ import { GoogleLogin as GoogleLoginButton } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "./useAuth";
 import { useState } from "react";
+import { googleLogin, getMe } from "../api/auth.api";
+import { isComplete } from "../api/onboarding.api";
 
 export default function GoogleLogin() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleGoogleSuccess = async (credentialResponse: { credential?: string }) => {
     if (!credentialResponse.credential) return;
-    
+
     setIsLoading(true);
+    setError(null);
     try {
-      const res = await fetch("/google/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: credentialResponse.credential }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || "Error en login");
-
-      // Usar AuthContext para actualizar el token
+      // Usa el interceptor de axios (base URL, headers, refresh automático)
+      const data = await googleLogin(credentialResponse.credential);
       login(data.access_token);
 
-      const userRes = await fetch("/auth/me", {
-        headers: { Authorization: `Bearer ${data.access_token}` },
-      });
+      const user = await getMe();
+      const response = await isComplete(user.id);
 
-      const user = await userRes.json();
-
-      // Redirección basada en datos reales
-      if (!user.onboarding_completed) {
+      if (!response.onboarding_completed) {
         navigate("/onboarding", { replace: true });
       } else {
         navigate("/app/inicio", { replace: true });
       }
-    } catch (error) {
-      console.error("Error:", error);
-      alert("Error al iniciar sesión");
+    } catch (err) {
+      console.error("Error en Google login:", err);
+      setError("No se pudo iniciar sesión con Google. Intenta de nuevo.");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="flex flex-col items-center gap-4">
+    <div className="flex flex-col items-center gap-3 w-full">
       {isLoading ? (
-        <p>Validando cuenta... por favor espera.</p> 
+        <div className="flex items-center gap-2 text-gray-500 text-sm py-2">
+          <div className="w-4 h-4 border-2 border-gray-300 border-t-indigo-500 rounded-full animate-spin" />
+          <span>Validando con Google...</span>
+        </div>
       ) : (
         <GoogleLoginButton
           onSuccess={handleGoogleSuccess}
-          onError={() => console.error("Login con Google falló")}
+          onError={() => setError("Login con Google falló. Intenta de nuevo.")}
         />
       )}
+      {error && <p className="text-red-500 text-xs text-center">{error}</p>}
     </div>
   );
 }

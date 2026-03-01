@@ -1,112 +1,59 @@
-// @ts-check
-// @filename: PublicationWizard.tsx
-// Este archivo es el único archivo que debe modificarse en este contexto
-// NO modificar otros archivos bajo ninguna circunstancia
-
-import { useState, useReducer } from 'react'
+import { useReducer, useState, useEffect } from 'react'
+import {
+  type PostType,
+  type SubPostType,
+  type WizardImage,
+  type WizardLink,
+  type WizardFormData,
+} from '../types/post.types'
 import Step1TypeSelection from './Step1_TypeSelection'
 import Step2SubtypeSelection from './Step2_SubtypeSelection'
-import Step3CTAForm from './Step3_LinksForm'
+import Step3LinksForm from './Step3_LinksForm'
 import Step4GeneralInfo from './Step4_GeneralInfo'
-import Step6Publication from './Step6_Publication'
+import StepFrameEditor from './StepFrameEditor'
+import Step5Preview from './Step5_Preview'
 import ModernStepper from './ModernStepper'
-import { useEffect } from "react"
+import { createPost, publishPost } from '../api/posts.api'
+import { addImage } from '../api/post-images.api'
+import { addLink } from '../api/post-links.api'
 
-// Tipos para el formulario
-interface CTAItem 
-{
-  id: string
-  label: string
-  url: string
-}
-
-interface PublicationFormData {
-  // Paso 1-2: Tipo y Subtipo
-  publication_type: string
-  subtype: string
-  
-  // Paso 3: CTAs (Botones de acción)
-  ctas: CTAItem[]
-  
-  // Paso 4: Información General
-  title: string
-  content: string
-  deadline?: Date
-  
-  specific_fields?: any  
-
-  // Metadatos
-  user_id: number
-  current_step: number
-  is_valid: boolean
-}
-
-// Estado inicial
-const initialState: PublicationFormData = {
-  publication_type: '',
+// Estado inicial vacío del formulario
+const initialFormData: WizardFormData = {
+  post_type: '',
   subtype: '',
-  ctas: [
-    { id: crypto.randomUUID(), label: '¡Aplica ahora!', url: '' },
-    { id: crypto.randomUUID(), label: 'Más información', url: '' }
-  ],
-  specific_fields: {},   
+  links: [],
+  images: [],
   title: '',
-  content: '',
-  deadline: undefined,
-  user_id: 0,
-  current_step: 1,
-  is_valid: false
+  description: '',
+  deadline_at: '',
+  tags: [],
 }
 
-// Acciones del reducer
-type PublicationAction = 
-  | { type: 'SET_TYPE'; payload: { publication_type: string; subtype: string } }
-  | { type: 'SET_CTAS'; payload: CTAItem[] }
-  | { type: 'SET_GENERAL_INFO'; payload: { title: string; content: string; deadline?: Date } }
-  | { type: 'SET_USER_ID'; payload: number }
-  | { type: 'NEXT_STEP' }
-  | { type: 'PREV_STEP' }
-  | { type: 'SET_STEP'; payload: number }
+// Acciones del reducer para actualizar el estado del wizard
+type WizardAction =
+  | { type: 'SET_POST_TYPE'; payload: PostType }
+  | { type: 'SET_SUBTYPE'; payload: SubPostType }
+  | { type: 'SET_LINKS'; payload: WizardLink[] }
+  | { type: 'SET_IMAGES'; payload: WizardImage[] }
+  | { type: 'SET_GENERAL_INFO'; payload: { title: string; description: string; deadline_at: string } }
   | { type: 'RESET' }
 
-// Reducer para manejar el estado
-function publicationReducer(state: PublicationFormData, action: PublicationAction): PublicationFormData {
+/** Reducer puro que maneja todas las actualizaciones de estado del formulario */
+function wizardReducer(state: WizardFormData, action: WizardAction): WizardFormData {
   switch (action.type) {
-    case 'SET_TYPE':
-      return {
-        ...state,
-        publication_type: action.payload.publication_type,
-        subtype: action.payload.subtype
-      }
-    
-    case 'SET_CTAS':
-      return { ...state, ctas: action.payload }
-    
+    case 'SET_POST_TYPE':
+      // Al cambiar el tipo, resetear el subtipo para forzar nueva selección
+      return { ...state, post_type: action.payload, subtype: '' }
+    case 'SET_SUBTYPE':
+      return { ...state, subtype: action.payload }
+    case 'SET_LINKS':
+      return { ...state, links: action.payload }
+    case 'SET_IMAGES':
+      return { ...state, images: action.payload }
     case 'SET_GENERAL_INFO':
-      return {
-        ...state,
-        title: action.payload.title,
-        content: action.payload.content,
-        deadline: action.payload.deadline
-      }
-    
-    case 'SET_USER_ID':
-      return { ...state, user_id: action.payload }
-    
-    case 'NEXT_STEP':
-      return { ...state, current_step: Math.min(state.current_step + 1, 5) }
-    
-    case 'PREV_STEP':
-      return { ...state, current_step: Math.max(state.current_step - 1, 1) }
-    
-    case 'SET_STEP':
-      return { ...state, current_step: Math.max(1, Math.min(5, action.payload)) }
-    
-    
-
+      return { ...state, ...action.payload }
     case 'RESET':
-      return initialState
-    
+      return initialFormData
     default:
       return state
   }
@@ -115,59 +62,92 @@ function publicationReducer(state: PublicationFormData, action: PublicationActio
 interface PublicationWizardProps {
   isOpen: boolean
   onClose: () => void
-  initialUserId?: number
 }
 
-export default function PublicationWizard({ isOpen, onClose, initialUserId = 0 }: PublicationWizardProps) {
-  const [formData, dispatch] = useReducer(publicationReducer, initialState)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+/**
+ * Wizard de 5 pasos para crear y publicar un post.
+ *
+ * Flujo completo:
+ *   Paso 1: Seleccionar tipo de publicación
+ *   Paso 2: Seleccionar subtipo
+ *   Paso 3: Configurar enlaces/botones de acción
+ *   Paso 4: Escribir título, descripción, subir imágenes y fijar deadline
+ *   Paso 5: Vista previa → clic en "Publicar" llama al backend:
+ *           (a) POST /posts/        → crea borrador, obtiene post.id
+ *           (b) POST /posts/{id}/images  → registra cada imagen en el backend
+ *           (c) POST /posts/{id}/links   → registra cada enlace
+ *           (d) POST /posts/{id}/publish → cambia status a published
+ */
+export default function PublicationWizard({ isOpen, onClose }: PublicationWizardProps) {
+  const [formData, dispatch] = useReducer(wizardReducer, initialFormData)
+  const [currentStep, setCurrentStep] = useState(1)
+  const [isPublishing, setIsPublishing] = useState(false)
+  // Mensaje de progreso durante la publicación (visible en el botón)
+  const [publishProgress, setPublishProgress] = useState<string | null>(null)
+  const [publishError, setPublishError] = useState<string | null>(null)
   const [showConfirmClose, setShowConfirmClose] = useState(false)
 
+  // Bloquear el scroll del body mientras el modal está abierto
   useEffect(() => {
-  if (isOpen) {
-    const scrollbarWidth =
-      window.innerWidth - document.documentElement.clientWidth
-
-    document.body.style.overflow = "hidden"
+    if (!isOpen) return
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth
+    document.body.style.overflow = 'hidden'
     document.body.style.paddingRight = `${scrollbarWidth}px`
-  } else {
-    document.body.style.overflow = "auto"
-    document.body.style.paddingRight = "0px"
-  }
+    return () => {
+      document.body.style.overflow = ''
+      document.body.style.paddingRight = ''
+    }
+  }, [isOpen])
 
-  return () => {
-    document.body.style.overflow = "auto"
-    document.body.style.paddingRight = "0px"
-  }
-}, [isOpen])
+  // Determina si el paso actual es válido para permitir avanzar
+  // Imágenes listas (subidas a Cloudinary) que habilitan el paso de encuadre
+  const readyImages = formData.images.filter(img => img.status === 'done' && img.cloudinaryUrl)
+  const hasImages   = readyImages.length > 0
 
-  
-  // Validación por paso
-  const isValidUrl = (url: string): boolean => {
-    try {
-      new URL(url)
-      return true
-    } catch {
-      return false
+  // Flujo de pasos:
+  //   Sin imágenes: 1→2→3→4→5(Preview)
+  //   Con imágenes: 1→2→3→4→5(FrameEditor)→6(Preview)
+  const TOTAL_STEPS   = hasImages ? 6 : 5
+  const PREVIEW_STEP  = TOTAL_STEPS
+
+  const canAdvance = (): boolean => {
+    switch (currentStep) {
+      case 1: return formData.post_type !== ''
+      case 2: return formData.subtype !== ''
+      case 3: return true // Los links son opcionales
+      case 4:
+        return (
+          formData.title.trim().length > 0 &&
+          formData.description.trim().length > 0 &&
+          // Los announcements requieren deadline obligatorio
+          (formData.post_type !== 'announcement' || formData.deadline_at !== '') &&
+          // No permitir avanzar si hay imágenes aún subiendo
+          !formData.images.some(img => img.status === 'uploading')
+        )
+      case 5: return true // Frame editor siempre puede avanzar
+      case 6: return true
+      default: return false
     }
   }
 
-  const hasUnsavedChanges = (): boolean => {
-    // Verificar si hay cambios significativos en el formulario
-    return (
-      formData.publication_type !== '' ||
-      formData.subtype !== '' ||
-      formData.title.trim() !== '' ||
-      formData.content.trim() !== '' ||
-      formData.deadline !== undefined ||
-      formData.ctas.some(cta => cta.label.trim() !== '' || cta.url.trim() !== '') ||
-      Object.keys(formData.specific_fields).length > 0
-    )
+  const handleNext = () => {
+    if (canAdvance() && currentStep < TOTAL_STEPS) setCurrentStep(s => s + 1)
   }
 
+  const handlePrevious = () => {
+    if (currentStep > 1) setCurrentStep(s => s - 1)
+  }
+
+  // Detecta si el usuario ingresó algo (para mostrar confirmación al cerrar)
+  const hasChanges = () =>
+    formData.post_type !== '' ||
+    formData.title.trim() !== '' ||
+    formData.description.trim() !== '' ||
+    formData.links.length > 0 ||
+    formData.images.length > 0
+
   const handleClose = () => {
-    if (hasUnsavedChanges()) {
+    if (hasChanges()) {
       setShowConfirmClose(true)
     } else {
       handleForceClose()
@@ -176,187 +156,159 @@ export default function PublicationWizard({ isOpen, onClose, initialUserId = 0 }
 
   const handleForceClose = () => {
     dispatch({ type: 'RESET' })
+    setCurrentStep(1)
+    setPublishError(null)
+    setPublishProgress(null)
     setShowConfirmClose(false)
     onClose()
   }
 
-  const validateStep = (step: number): boolean => {
-    switch (step) {
-      case 1:
-        return formData.publication_type !== ''
-      case 2:
-        return formData.subtype !== ''
-      case 3:
-        // Requerir que TODOS los CTAs tengan URLs válidas
-        if (formData.ctas.length === 0) return true // Permitir avanzar sin CTAs
-        return formData.ctas.every(cta => cta.url.trim() !== '' && isValidUrl(cta.url))
-      case 4:
-        return formData.title.trim() !== '' && formData.content.trim() !== '' && formData.deadline !== undefined
-      case 5:
-        return validateSpecificFields() // Paso final de publicación
-      default:
-        return false
-    }
-  }
-
-  
-  const validateSpecificFields = (): boolean => {
-    if (formData.publication_type === 'oportunidad_internacional') {
-      const fields = formData.specific_fields
-      
-      switch (formData.subtype) {
-        case 'intercambio':
-          return !!(fields?.duration && 
-                  fields?.country && 
-                  Array.isArray(fields?.requirements) && 
-                  fields.requirements.length > 0)
-        case 'pasantia':
-          return !!(fields?.company && 
-                  fields?.duration && 
-                  fields?.remuneration !== undefined)
-        case 'investigacion':
-          return !!(fields?.institution && 
-                  fields?.field && 
-                  fields?.funding)
-        case '4+1':
-          return !!(fields?.university && 
-                  Array.isArray(fields?.requirements) && 
-                  fields.requirements.length > 0 && 
-                  fields?.credits)
-        default:
-          return false
-      }
-    }
-    // Para otros tipos, no se requiere validación específica por ahora
-    return true
-  }
-
-  // Navegación
-  const handleNext = () => {
-    if (validateStep(formData.current_step)) {
-      dispatch({ type: 'NEXT_STEP' })
-    }
-  }
-
-  const handlePrevious = () => {
-    dispatch({ type: 'PREV_STEP' })
-  }
-
-  const handleStepClick = (step: number) => {
-    if (validateStep(step - 1)) {
-      dispatch({ type: 'SET_STEP', payload: step })
-    }
-  }
-
-  // Publicación final
+  /**
+   * Ejecuta el flujo completo de publicación en 4 pasos secuenciales:
+   * draft → imágenes → links → publish
+   */
   const handlePublish = async () => {
-    // Eliminar validación de términos - solo validar paso 4
-    if (!validateStep(4)) return
+    if (!formData.post_type || !formData.subtype) return
 
-    setIsLoading(true)
-    setError(null)
-  
+    setIsPublishing(true)
+    setPublishError(null)
+
     try {
-      const token = localStorage.getItem('token')
-      if (!token) {
-        throw new Error('No se encontró token de autenticación')
-      }
-
-      // Obtener user_id del token si no se proporcionó
-      let userId = initialUserId
-      if (!userId) {
-        const payload = JSON.parse(atob(token.split('.')[1]))
-        userId = payload.user_id
-      }
-
-      const publicationData = {
-        ...formData,
-        user_id: userId
-      }
-
-      const response = await fetch('http://localhost:8000/publications/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(publicationData)
+      // 1. Crear el post en estado draft
+      setPublishProgress('Creando publicación...')
+      const post = await createPost({
+        title: formData.title,
+        description: formData.description,
+        post_type: formData.post_type,
+        subtype: formData.subtype,
+        deadline_at: formData.deadline_at || undefined,
+        tags: formData.tags.length > 0 ? formData.tags : undefined,
       })
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.detail || 'Error al crear publicación')
+      const postId: number = post.id
+
+      // 2. Registrar imágenes (solo las que subieron exitosamente a Cloudinary)
+      const readyImages = formData.images.filter(
+        img => img.status === 'done' && img.cloudinaryId && img.cloudinaryUrl
+      )
+      if (readyImages.length > 0) {
+        setPublishProgress(`Guardando imágenes (${readyImages.length})...`)
+        for (let i = 0; i < readyImages.length; i++) {
+          const img = readyImages[i]
+          await addImage(postId, {
+            cloudinary_id: img.cloudinaryId!,
+            url: img.cloudinaryUrl!,
+            position: i,
+            object_position: img.objectPosition,
+            scale: img.scale,
+          })
+        }
       }
 
-      // Éxito
+      // 3. Registrar enlaces
+      if (formData.links.length > 0) {
+        setPublishProgress(`Guardando enlaces (${formData.links.length})...`)
+        for (const link of formData.links) {
+          await addLink(postId, {
+            label: link.label,
+            url: link.url,
+            type: link.type,
+            display_type: link.display_type,
+            position: link.position,
+          })
+        }
+      }
+
+      // 4. Publicar el post → aparece en el feed
+      setPublishProgress('Publicando...')
+      await publishPost(postId)
+
+      // Éxito: resetear wizard y cerrar
       dispatch({ type: 'RESET' })
+      setCurrentStep(1)
+      setPublishProgress(null)
       onClose()
-      // Recargar la página o mostrar mensaje de éxito
-      window.location.reload()
+
+      // Notificar al Feed para que recargue los posts
+      window.dispatchEvent(new CustomEvent('postPublished'))
 
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error desconocido')
+      setPublishError(err instanceof Error ? err.message : 'Error desconocido al publicar')
+      setPublishProgress(null)
     } finally {
-      setIsLoading(false)
+      setIsPublishing(false)
     }
   }
 
-  // Renderizado de componentes de paso
+  // Renderiza el contenido del paso actual
   const renderStep = () => {
-
-    switch (formData.current_step) {
+    switch (currentStep) {
       case 1:
         return (
           <Step1TypeSelection
-            selectedType={formData.publication_type}
-            onSelectType={(type, subtype) => dispatch({ 
-              type: 'SET_TYPE', 
-              payload: { publication_type: type, subtype } 
-            })}
+            selectedType={formData.post_type}
+            onSelectType={type => dispatch({ type: 'SET_POST_TYPE', payload: type })}
           />
         )
       case 2:
         return (
           <Step2SubtypeSelection
-            publicationType={formData.publication_type}
-            selectedSubtype={formData.subtype}
-            onSelectSubtype={(subtype) => dispatch({ 
-              type: 'SET_TYPE', 
-              payload: { publication_type: formData.publication_type, subtype } 
-            })}
+            publicationType={formData.post_type as PostType}
+            selectedSubtype={formData.subtype as SubPostType | ''}
+            onSelectSubtype={sub => dispatch({ type: 'SET_SUBTYPE', payload: sub })}
           />
         )
       case 3:
         return (
-          <Step3CTAForm
-            ctas={formData.ctas}
-            onChange={(ctas) => dispatch({ type: 'SET_CTAS', payload: ctas })}
+          <Step3LinksForm
+            links={formData.links}
+            onChange={links => dispatch({ type: 'SET_LINKS', payload: links })}
           />
         )
       case 4:
         return (
           <Step4GeneralInfo
             title={formData.title}
-            content={formData.content}
-            deadline={formData.deadline}
-            onChange={(data) => dispatch({ 
-              type: 'SET_GENERAL_INFO', 
-              payload: data 
-            })}
+            description={formData.description}
+            deadline_at={formData.deadline_at}
+            images={formData.images}
+            requiresDeadline={formData.post_type === 'announcement'}
+            onChange={data => dispatch({ type: 'SET_GENERAL_INFO', payload: data })}
+            onImagesChange={images => dispatch({ type: 'SET_IMAGES', payload: images })}
           />
         )
       case 5:
+        // Con imágenes → editor de encuadre; sin imágenes → preview directamente
+        if (hasImages) {
+          return (
+            <StepFrameEditor
+              images={formData.images}
+              onUpdate={images => dispatch({ type: 'SET_IMAGES', payload: images })}
+            />
+          )
+        }
+        // fallthrough to preview
         return (
-          <Step6Publication
-            publicationType={formData.publication_type}
-            subtype={formData.subtype}
+          <Step5Preview
+            postType={formData.post_type as PostType}
+            subtype={formData.subtype as SubPostType | ''}
             title={formData.title}
-            content={formData.content}
-            deadline={formData.deadline}
-            ctas ={formData.ctas}
-            onPublish={handlePublish}
-            onBack={handlePrevious}
-            isLoading={isLoading}
+            description={formData.description}
+            deadline_at={formData.deadline_at}
+            images={formData.images}
+            links={formData.links}
+          />
+        )
+      case 6:
+        return (
+          <Step5Preview
+            postType={formData.post_type as PostType}
+            subtype={formData.subtype as SubPostType | ''}
+            title={formData.title}
+            description={formData.description}
+            deadline_at={formData.deadline_at}
+            images={formData.images}
+            links={formData.links}
           />
         )
       default:
@@ -366,113 +318,103 @@ export default function PublicationWizard({ isOpen, onClose, initialUserId = 0 }
 
   if (!isOpen) return null
 
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className={`relative isolate bg-white rounded-2xl shadow-2xl max-w-4xl w-full flex flex-col ${currentStep === PREVIEW_STEP ? 'max-h-[95vh]' : 'max-h-[90vh]'}`}>
 
-return (
-  
-  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col">
-      {/* Header */}
-      <div className="pt-3 pb-1 px-3 border-b border-gray-100">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-gray-900">Crear Publicación</h2>
-          <button
-            onClick={handleClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-lg"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+        {/* Encabezado con título y stepper */}
+        <div className={`pt-3 pb-1 px-6 border-b border-gray-100 ${showConfirmClose ? 'pointer-events-none select-none' : ''}`}>
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold text-gray-900">Crear Publicación</h2>
+            <button
+              onClick={handleClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-lg"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <div className="mt-1 mb-2">
+            <ModernStepper currentStep={currentStep} totalSteps={TOTAL_STEPS} onStepClick={() => {}} />
+          </div>
         </div>
 
-        {/* Stepper Moderno */}
-        <div className="mt-1 mb-2">
-          <ModernStepper 
-            currentStep={formData.current_step}
-            onStepClick={handleStepClick}
-          />
+        {/* Área de contenido del paso actual */}
+        <div className={`p-6 flex-1 overflow-y-auto ${showConfirmClose ? 'pointer-events-none select-none' : ''}`}>
+          {publishError && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+              {publishError}
+            </div>
+          )}
+          {renderStep()}
         </div>
-      </div>
 
-      {/* Content */}
-      <div className="p-6 flex-1 overflow-y-auto">
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-            {error}
+        {/* Botones de navegación */}
+        <div className={`px-6 py-4 border-t border-gray-200 ${showConfirmClose ? 'pointer-events-none select-none' : ''}`}>
+          <div className="flex justify-between items-center">
+            <button
+              onClick={handlePrevious}
+              disabled={currentStep === 1}
+              className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Anterior
+            </button>
+
+            {currentStep === PREVIEW_STEP ? (
+              // En el último paso el botón publica directamente
+              <button
+                onClick={handlePublish}
+                disabled={isPublishing || formData.images.some(img => img.status === 'uploading')}
+                className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed min-w-[140px]"
+              >
+                {isPublishing ? (publishProgress ?? 'Publicando...') : 'Publicar'}
+              </button>
+            ) : (
+              <button
+                onClick={handleNext}
+                disabled={!canAdvance()}
+                className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Siguiente
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Confirmación de cierre cuando hay cambios sin guardar */}
+        {showConfirmClose && (
+          <div className="absolute inset-0 z-50 bg-black/50 backdrop-blur-sm rounded-2xl flex items-center justify-center p-4">
+            <div className="relative z-[51] bg-white rounded-xl shadow-2xl max-w-sm w-full p-6">
+              <div className="flex items-center mb-4">
+                <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mr-3">
+                  <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900">¿Cerrar sin guardar?</h3>
+              </div>
+              <p className="text-gray-500 text-sm mb-6">
+                Perderás todo el progreso de esta publicación.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowConfirmClose(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleForceClose}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
           </div>
         )}
-        
-        {renderStep()}
       </div>
-
-      {/* Footer */}
-      <div className="p-6 border-t border-gray-200">
-        <div className="flex justify-between items-center">
-          <button
-            onClick={handlePrevious}
-            disabled={formData.current_step === 1}
-            className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Anterior
-          </button>
-
-          {formData.current_step === 5 ? (
-            <button
-              onClick={handlePublish}
-              disabled={isLoading || !validateStep(4)}
-              className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? 'Publicando...' : 'Publicar'}
-            </button>
-          ) : (
-            <button
-              onClick={handleNext}
-              disabled={!validateStep(formData.current_step)}
-              className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Siguiente
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Modal de Confirmación de Cierre */}
-      {showConfirmClose && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
-            <div className="flex items-center mb-4">
-              <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mr-3">
-                <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900">
-                ¿Cerrar sin guardar?
-              </h3>
-            </div>
-            
-            <p className="text-gray-600 mb-6">
-              Tienes cambios sin guardar en tu publicación. Si cierras ahora, perderás toda la información ingresada.
-            </p>
-            
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowConfirmClose(false)}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleForceClose}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-              >
-                Cerrar sin guardar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
-  </div>
-)
+  )
 }

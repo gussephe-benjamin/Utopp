@@ -1,4 +1,4 @@
-import { getMe } from "../../api/apiFunctions/auth"
+import { getMe } from "../../../api/auth.api"
 import type { NavigateFunction } from "react-router-dom"
 
 export const checkOnboardingCompleted = async (

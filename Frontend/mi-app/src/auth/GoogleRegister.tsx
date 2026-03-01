@@ -2,58 +2,58 @@ import { GoogleLogin } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "./useAuth";
 import { useState } from "react";
+import { googleRegister } from "../api/auth.api";
 
 export default function GoogleRegister() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleGoogleSuccess = async (credentialResponse: { credential?: string }) => {
     if (!credentialResponse.credential) return;
-    
+
     setIsLoading(true);
+    setError(null);
     try {
-      const res = await fetch("/google/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: credentialResponse.credential }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || "Error en registro");
-
-      // Usar AuthContext para actualizar el token
+      // Usa el interceptor de axios (base URL, headers, refresh automático)
+      const data = await googleRegister(credentialResponse.credential);
       login(data.access_token);
-
-      // Redirigir directamente al onboarding
       navigate("/onboarding", { replace: true });
-    } catch (error) {
-      console.error("Error:", error);
-      alert("Error al registrar con Google");
+    } catch (err: unknown) {
+      console.error("Error en Google register:", err);
+      const axiosErr = err as { response?: { data?: { detail?: string } } };
+      const detail = axiosErr?.response?.data?.detail;
+      if (detail?.includes("ya está registrado")) {
+        setError("Ya tienes una cuenta. Usa 'Iniciar sesión' con Google.");
+      } else {
+        setError("No se pudo registrar con Google. Intenta de nuevo.");
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="flex flex-col items-center gap-4 w-full">
+    <div className="flex flex-col items-center gap-3 w-full">
       {isLoading ? (
-        <p>Registrando con Google... por favor espera.</p>
+        <div className="flex items-center gap-2 text-gray-500 text-sm py-2">
+          <div className="w-4 h-4 border-2 border-gray-300 border-t-indigo-500 rounded-full animate-spin" />
+          <span>Registrando con Google...</span>
+        </div>
       ) : (
         <GoogleLogin
-            onSuccess={handleGoogleSuccess}
-            onError={() => {
-              console.error("Registro con Google falló");
-              alert("Error al registrar con Google");
-            }}
-            type="standard"
-            theme="outline"
-            size="large"
-            text="continue_with"
-            shape="rectangular"
-            logo_alignment="center"
+          onSuccess={handleGoogleSuccess}
+          onError={() => setError("Registro con Google falló. Intenta de nuevo.")}
+          type="standard"
+          theme="outline"
+          size="large"
+          text="continue_with"
+          shape="rectangular"
+          logo_alignment="center"
         />
       )}
+      {error && <p className="text-red-500 text-xs text-center">{error}</p>}
     </div>
   );
 }

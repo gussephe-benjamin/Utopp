@@ -41,6 +41,7 @@ api.interceptors.response.use(
         
       } catch (refreshError) {
         console.log(" Refresh falló, redirigiendo al login")
+        console.log(refreshError)
         localStorage.removeItem("token")
         window.location.href = "/login"
       }

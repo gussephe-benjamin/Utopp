@@ -3,10 +3,8 @@ import { AuthProvider } from "./auth/AuthContext"
 import ProtectedRoute from "./auth/ProtectedRoute"
 import AppRoute from "./auth/AppRoute"
 import Login from "./pages/auth/Login"
-import Login1 from "./pages/auth/Login1"
-import Login2 from "./pages/auth/Login2"
 import DashboardLayout from "./pages/Dashboard"
-import Onboarding from "./onboardings/Onboarding"
+import Onboarding from "./features/onboarding/Onboarding"
 import Register from "./pages/auth/Register"
 import Feed from "./pages/Feed"
 import Schedule from "./pages/Schedule"
@@ -36,26 +34,6 @@ function App() {
             <Route path="horario" element={<Schedule />} />
             <Route path="perfil/:id?" element={<Profile />} />
           </Route>
-
-          {/* Ruta direccionamiento al Login sin register */}
-          <Route
-            path="/login1"
-            element={
-              <ProtectedRoute>
-                <Login1 />
-              </ProtectedRoute>
-            }
-          />
-
-          {/* Ruta direccionamiento al Login Only Google */}
-          <Route
-            path="/login2"
-            element={
-              <ProtectedRoute>
-                <Login2 />
-              </ProtectedRoute>
-            }
-          />
 
           {/* Ruta direccionamiento al onboarding */}
           <Route

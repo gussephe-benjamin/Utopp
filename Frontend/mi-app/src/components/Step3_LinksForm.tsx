@@ -1,212 +1,224 @@
 import { useState } from 'react'
+import {
+  type WizardLink,
+  type PostLinkType,
+  LINK_TYPE_OPTIONS,
+} from '../types/post.types'
 
-interface CTAItem {
-  id: string
-  label: string
-  url: string
+// Máximo de links permitidos por post (los primeros 2 se muestran como botones prominentes,
+// los siguientes en una lista desplegable dentro del post)
+const MAX_LINKS = 5
+
+interface Step3LinksFormProps {
+  /** Lista de links actualmente configurados en el wizard. */
+  links: WizardLink[]
+  /** Callback que se llama con la lista actualizada de links. */
+  onChange: (links: WizardLink[]) => void
 }
 
-interface Step3CTAFormProps {
-  ctas: CTAItem[]
-  onChange: (ctas: CTAItem[]) => void
+/** Estado vacío para el formulario de nuevo link */
+const emptyNewLink = () => ({
+  label: '',
+  url: '',
+  type: 'action' as PostLinkType,
+  display_type: 'button' as const,
+})
+
+/** Valida que la URL tenga formato correcto */
+function isValidUrl(url: string): boolean {
+  try {
+    new URL(url)
+    return true
+  } catch {
+    return false
+  }
 }
 
-export default function Step3CTAForm({ ctas = [], onChange }: Step3CTAFormProps) {
-  // Asegurar que ctas siempre sea un array
-  const safeCtas = Array.isArray(ctas) ? ctas : []
-  
-  const [newCTA, setNewCTA] = useState<CTAItem>({
-    id: '',
-    label: '',
-    url: ''
-  })
+export default function Step3LinksForm({ links, onChange }: Step3LinksFormProps) {
+  // Estado local del formulario para agregar un nuevo link
+  const [newLink, setNewLink] = useState(emptyNewLink)
 
-  const isValidUrl = (url: string): boolean => {
-    try {
-      new URL(url)
-      return true
-    } catch {
-      return false
+  /** Añade un nuevo link a la lista y resetea el formulario */
+  const addLink = () => {
+    if (!newLink.label.trim() || !newLink.url.trim() || !isValidUrl(newLink.url)) return
+    if (links.length >= MAX_LINKS) return
+
+    // La posición equivale al índice en la lista: 0 = botón principal, 1 = secundario, 2+ = dropdown
+    const newWizardLink: WizardLink = {
+      tempId: crypto.randomUUID(),
+      label: newLink.label.trim(),
+      url: newLink.url.trim(),
+      type: newLink.type,
+      display_type: newLink.display_type,
+      position: links.length,
     }
+    onChange([...links, newWizardLink])
+    setNewLink(emptyNewLink())
   }
 
-  const addCTA = () => {
-    if (
-      newCTA.label.trim() &&
-      newCTA.url.trim() &&
-      isValidUrl(newCTA.url) &&
-      safeCtas.length < 2
-    ) {
-      onChange([
-        ...safeCtas,
-        { ...newCTA, id: crypto.randomUUID() }
-      ])
-      setNewCTA({ id: '', label: '', url: '' })
-    }
+  /** Elimina un link por su tempId */
+  const removeLink = (tempId: string) => {
+    // Al eliminar, recalcular posiciones para mantener el orden correcto
+    const updated = links
+      .filter(l => l.tempId !== tempId)
+      .map((l, idx) => ({ ...l, position: idx }))
+    onChange(updated)
   }
 
-  const removeCTA = (id: string) => {
-    // No permitir eliminar si solo queda un botón
-    if (safeCtas.length <= 1) return
-    onChange(safeCtas.filter(cta => cta.id !== id))
+  /** Actualiza un campo específico de un link existente */
+  const updateLink = (tempId: string, field: keyof WizardLink, value: string) => {
+    onChange(links.map(l => l.tempId === tempId ? { ...l, [field]: value } : l))
   }
 
-  const updateCTA = (id: string, field: 'label' | 'url', value: string) => {
-    onChange(
-      safeCtas.map(cta =>
-        cta.id === id ? { ...cta, [field]: value } : cta
-      )
-    )
+  /** Etiqueta de posición para mostrar al usuario */
+  const getPositionLabel = (index: number) => {
+    if (index === 0) return '⭐ Botón principal'
+    if (index === 1) return 'Botón secundario'
+    return `Enlace adicional ${index - 1}`
   }
 
   return (
-    <div>
+    <div className="space-y-6">
 
-      {/* Existing CTAs */}
-      {safeCtas.length > 0 && (
-        <div className="mb-6">
-          <h4 className="font-medium text-gray-900 mb-3">
-            Botones configurados
+      {/* Explicación del sistema de posiciones */}
+      <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
+        <p className="font-medium mb-1">¿Cómo funcionan los botones?</p>
+        <ul className="list-disc list-inside space-y-1 text-blue-700">
+          <li><strong>Posición 1:</strong> Botón principal destacado (siempre visible)</li>
+          <li><strong>Posición 2:</strong> Botón secundario (siempre visible)</li>
+          <li><strong>Posición 3+:</strong> Se muestran en una lista expandible</li>
+        </ul>
+      </div>
+
+      {/* Lista de links ya configurados */}
+      {links.length > 0 && (
+        <div className="space-y-3">
+          <h4 className="font-medium text-gray-900">
+            Botones configurados ({links.length}/{MAX_LINKS})
           </h4>
 
-          <div className="space-y-4">
-            {safeCtas.map((cta) => (
-              <div
-                key={cta.id}
-                className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200"
-              >
-                <div className="flex-1 space-y-2">
-                  <input
-                    type="text"
-                    value={cta.label}
-                    onChange={(e) =>
-                      updateCTA(cta.id, 'label', e.target.value)
-                    }
-                    placeholder="Texto del botón (Ej: Aplica ahora)"
-                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 ${
-                      cta.label.trim() !== '' ? 'border-green-300 bg-green-50' : 'border-gray-300'
-                    }`}
-                  />
-
-                  <input
-                    type="url"
-                    value={cta.url}
-                    onChange={(e) =>
-                      updateCTA(cta.id, 'url', e.target.value)
-                    }
-                    placeholder="https://ejemplo.com"
-                    className={`w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500 ${
-                      cta.url.trim() !== '' && isValidUrl(cta.url) ? 'border-green-300 bg-green-50' : 'border-gray-300'
-                    }`}
-                  />
-                </div>
-
-                <button
-                  onClick={() => removeCTA(cta.id)}
-                  disabled={safeCtas.length <= 1}
-                  className={`p-2 rounded-lg transition-colors ${
-                    safeCtas.length <= 1
-                      ? 'text-gray-400 cursor-not-allowed'
-                      : 'text-red-600 hover:bg-red-50'
-                  }`}
-                  title={safeCtas.length <= 1 ? 'Debe mantener al menos un botón' : 'Eliminar botón'}
-                >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 7l-.867 12.142A2 2 0 0116.138 
-                         21H7.862a2 2 0 01-1.995-1.858L5 
-                         7m5 4v6m4-6v6m1-10V4a1 1 
-                         0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                    />
-                  </svg>
-                </button>
+          {links.map((link, index) => (
+            <div
+              key={link.tempId}
+              className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200"
+            >
+              {/* Indicador de posición */}
+              <div className="pt-1 min-w-0 shrink-0">
+                <span className="text-xs font-medium text-purple-600 bg-purple-100 px-2 py-1 rounded-full whitespace-nowrap">
+                  {getPositionLabel(index)}
+                </span>
               </div>
-            ))}
-          </div>
+
+              <div className="flex-1 space-y-2 min-w-0">
+                {/* Etiqueta del botón */}
+                <input
+                  type="text"
+                  value={link.label}
+                  onChange={e => updateLink(link.tempId, 'label', e.target.value)}
+                  placeholder="Texto del botón"
+                  className={`w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-purple-500 ${
+                    link.label.trim() ? 'border-green-300 bg-green-50' : 'border-gray-300'
+                  }`}
+                />
+
+                {/* URL */}
+                <input
+                  type="url"
+                  value={link.url}
+                  onChange={e => updateLink(link.tempId, 'url', e.target.value)}
+                  placeholder="https://ejemplo.com"
+                  className={`w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-purple-500 ${
+                    link.url && isValidUrl(link.url) ? 'border-green-300 bg-green-50' : 'border-gray-300'
+                  }`}
+                />
+
+                {/* Tipo del enlace (propósito) */}
+                <select
+                  value={link.type}
+                  onChange={e => updateLink(link.tempId, 'type', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-purple-500"
+                >
+                  {LINK_TYPE_OPTIONS.map(opt => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.icon} {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Botón eliminar */}
+              <button
+                onClick={() => removeLink(link.tempId)}
+                className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors shrink-0"
+                title="Eliminar enlace"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          ))}
         </div>
       )}
 
-      {/* Add CTA */}
-      {safeCtas.length < 2 && (
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
+      {/* Formulario para agregar un nuevo link */}
+      {links.length < MAX_LINKS && (
+        <div className="border-2 border-dashed border-gray-300 rounded-lg p-5">
           <h4 className="font-medium text-gray-900 mb-4">
-            Agregar botón de acción
+            {links.length === 0 ? 'Agregar primer enlace' : 'Agregar otro enlace'}
           </h4>
 
-          <div className="space-y-4">
+          <div className="space-y-3">
+            {/* Etiqueta */}
             <input
               type="text"
-              value={newCTA.label}
-              onChange={(e) =>
-                setNewCTA({ ...newCTA, label: e.target.value })
-              }
-              placeholder="Texto del botón"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500"
+              value={newLink.label}
+              onChange={e => setNewLink(prev => ({ ...prev, label: e.target.value }))}
+              placeholder="Texto del botón (ej: Aplica ahora)"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-purple-500"
             />
 
+            {/* URL */}
             <input
               type="url"
-              value={newCTA.url}
-              onChange={(e) =>
-                setNewCTA({ ...newCTA, url: e.target.value })
-              }
+              value={newLink.url}
+              onChange={e => setNewLink(prev => ({ ...prev, url: e.target.value }))}
               placeholder="https://ejemplo.com"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-purple-500"
             />
-
-            {newCTA.url && !isValidUrl(newCTA.url) && (
-              <p className="text-sm text-red-600">
-                Ingresa una URL válida (https://...)
-              </p>
+            {newLink.url && !isValidUrl(newLink.url) && (
+              <p className="text-xs text-red-500">Ingresa una URL válida (debe comenzar con https://)</p>
             )}
 
-            <button
-              onClick={addCTA}
-              disabled={
-                !newCTA.label.trim() ||
-                !newCTA.url.trim() ||
-                !isValidUrl(newCTA.url)
-              }
-              className="w-full px-4 py-3 bg-gradient-to-r 
-                         from-purple-600 to-blue-600 
-                         text-white rounded-lg 
-                         hover:from-purple-700 
-                         hover:to-blue-700 
-                         transition-all 
-                         disabled:opacity-50 
-                         disabled:cursor-not-allowed"
+            {/* Tipo del enlace */}
+            <select
+              value={newLink.type}
+              onChange={e => setNewLink(prev => ({ ...prev, type: e.target.value as PostLinkType }))}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-purple-500"
             >
-              Agregar Botón
+              {LINK_TYPE_OPTIONS.map(opt => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.icon} {opt.label}
+                </option>
+              ))}
+            </select>
+
+            <button
+              onClick={addLink}
+              disabled={!newLink.label.trim() || !newLink.url.trim() || !isValidUrl(newLink.url)}
+              className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              + Agregar enlace
             </button>
           </div>
         </div>
       )}
 
-      {/* Info */}
-      <div className="mt-4 text-sm text-gray-500">
-        Configura los botones de acción para tu publicación. Los bordes <span className="text-green-600 font-medium">verdes</span> indican que el campo es válido, los <span className="text-gray-400">grises</span> necesitan completarse. Debes agregar enlaces válidos para continuar.
-      </div>
-
-      {/* Validación */}
-      {safeCtas.length > 0 && !safeCtas.every(cta => cta.url.trim() !== '' && isValidUrl(cta.url)) && (
-        <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-          <div className="flex items-center">
-            <svg className="w-5 h-5 text-amber-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
-            <span className="text-amber-800 text-sm font-medium">
-              Todos los enlaces deben ser válidos para continuar
-            </span>
-          </div>
-        </div>
+      {/* Nota: los links son opcionales */}
+      {links.length === 0 && (
+        <p className="text-center text-sm text-gray-400">
+          Los enlaces son opcionales. Puedes continuar sin agregar ninguno.
+        </p>
       )}
     </div>
   )

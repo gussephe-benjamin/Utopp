@@ -1,7 +1,7 @@
 import { Navigate } from "react-router-dom"
 import { useAuth } from "./useAuth"
 import { useEffect, useState } from "react"
-import { getMe } from "../api/apiFunctions/auth"
+import { getMe } from "../api/auth.api"
 
 
 

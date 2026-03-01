@@ -116,3 +116,33 @@ def run_migrations(engine: Engine) -> None:
         """))
 
         conn.commit()
+
+        # 8. Agregar columna object_position a post_images si no existe
+        conn.execute(text("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name = 'post_images' AND column_name = 'object_position'
+                ) THEN
+                    ALTER TABLE post_images ADD COLUMN object_position VARCHAR(64);
+                END IF;
+            END$$;
+        """))
+
+        conn.commit()
+
+        # 9. Agregar columna scale a post_images si no existe
+        conn.execute(text("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name = 'post_images' AND column_name = 'scale'
+                ) THEN
+                    ALTER TABLE post_images ADD COLUMN scale FLOAT;
+                END IF;
+            END$$;
+        """))
+
+        conn.commit()

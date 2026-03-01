@@ -1,174 +1,211 @@
-import { Outlet, useNavigate, useLocation } from "react-router-dom"
-import { useState } from "react"
-import { Home, User, X, MoreVertical, LogOut } from "lucide-react"
-import { useCreatePost } from "../context/CreatePostContext"
-import CreatePostWizardSimple from "../components/CreatePostWizardSimple"
-import PublicationWizard from "../components/PublicationWizard"
+import { Outlet, useNavigate, useLocation } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Home, User, X, MoreVertical, LogOut, Settings } from 'lucide-react'
+import PublicationWizard from '../components/PublicationWizard'
+import { useAuth } from '../auth/useAuth'
+import { getMyProfile } from '../api/users.api'
 
+/**
+ * Layout principal de la app tras el login.
+ * Contiene la navegación inferior y el wizard de creación de posts.
+ */
 export default function DashboardLayout() {
-  const navigate = useNavigate()
-  const location = useLocation()
-  const { showCreateModal, setShowCreateModal } = useCreatePost()
+  const navigate  = useNavigate()
+  const location  = useLocation()
+  const { logout } = useAuth()
+
+  const [showWizard, setShowWizard]           = useState(false)
   const [showOptionsModal, setShowOptionsModal] = useState(false)
-  const [showTypeModal, setShowTypeModal] = useState(false)
+  const [confirmLogout, setConfirmLogout]     = useState(false)
 
-  const isActive = (path: string) =>
-    location.pathname === path
+  // Datos básicos del usuario para mostrar en el panel de opciones
+  const [userName, setUserName]   = useState<string | null>(null)
+  const [userEmail, setUserEmail] = useState<string | null>(null)
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
 
-  const handleTypeSelect = (type: string, subtype: string) => {
-    // Aquí podrías redirigir a un formulario específico
-    // Por ahora, mostramos el wizard simple con el tipo seleccionado
-    console.log('Tipo seleccionado:', type, subtype)
-    setShowTypeModal(false)
-    // Futuro: redirigir a formulario específico según tipo/subtipo
-  }
+  useEffect(() => {
+    getMyProfile()
+      .then(d => {
+        setUserName(d.full_name ?? null)
+        setUserEmail(d.email ?? null)
+        const saved = localStorage.getItem(`avatar_${d.id}`)
+        if (saved) setAvatarUrl(saved)
+      })
+      .catch(() => {})
+  }, [])
+
+  const isActive = (path: string) => location.pathname === path
 
   const handleLogout = () => {
-    localStorage.removeItem('token')
+    logout()
     navigate('/login')
   }
 
-  return (
-    <div className={`min-h-screen flex flex-col ${showCreateModal ? 'overflow-hidden' : ''}`}>
-      
-      {/* Modal del wizard paso a paso */}
-      {showCreateModal && (
-        <CreatePostWizardSimple 
-          onClose={() => setShowCreateModal(false)}
-        />
-      )}
+  const displayName = userName || userEmail || 'Usuario'
+  const initial     = displayName.charAt(0).toUpperCase()
 
-      {/* Contenido dinámico */}
+  return (
+    <div className={`min-h-screen flex flex-col ${showWizard ? 'overflow-hidden' : ''}`}>
+
+      {/* Contenido dinámico de cada subruta */}
       <main className="flex-1 bg-gray-50 pb-20">
         <Outlet />
       </main>
 
-      {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
-        <div className="flex justify-around items-center py-3 max-w-sm mx-auto">
-          {/* Logo agrandado */}
-          <div className="flex items-center justify-center">
-            <img
-              src="/utopp-logo.png"
-              alt="Utopp"
-              style={{ 
-                width: '32px', 
-                height: '32px', 
-                objectFit: 'contain'
-              }}
-            />
+      {/* ── Bottom Navigation ─────────────────────────────── */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-gray-200 z-50 shadow-[0_-2px_16px_rgba(0,0,0,0.06)]">
+        <div className="flex justify-around items-center py-2 max-w-sm mx-auto">
+          {/* Logo */}
+          <div className="flex items-center justify-center p-2">
+            <img src="/utopp-logo.png" alt="Utopp" className="w-7 h-7 object-contain" />
           </div>
 
-          {/* Botón Inicio - solo ícono */}
+          {/* Inicio */}
           <button
             onClick={() => navigate("/app/inicio")}
-            className={`p-2 rounded-lg transition-colors ${
-              isActive("/app/inicio") 
-                ? "text-purple-600 bg-purple-50" 
-                : "text-gray-600 hover:text-gray-900"
+            className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors ${
+              isActive("/app/inicio") ? "text-[#4F46E5] bg-indigo-50" : "text-gray-500 hover:text-gray-800"
             }`}
-            title="Inicio"
           >
-            <Home style={{ width: '20px', height: '20px' }} />
+            <Home className="w-5 h-5" />
+            <span className="text-[10px] font-medium">Inicio</span>
           </button>
 
-          {/* Botón Central Destacado de Creación */}
+          {/* Botón central de creación */}
           <button
-            onClick={() => setShowTypeModal(true)}
+            onClick={() => setShowWizard(true)}
             className="relative group"
             title="Crear Publicación"
           >
-            <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full blur opacity-75 group-hover:opacity-100 transition duration-300"></div>
-            <div className="relative bg-gradient-to-r from-purple-600 to-blue-600 rounded-full p-4 shadow-lg transform transition-all duration-300 hover:scale-110 hover:shadow-xl">
-              <svg 
-                width="24" 
-                height="24" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="white" 
-                strokeWidth="3" 
-                strokeLinecap="round" 
-                strokeLinejoin="round"
-                className="animate-pulse"
-              >
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
+            <div className="absolute -inset-1 bg-gradient-to-r from-[#4F46E5] to-[#7C3AED] rounded-full blur opacity-60 group-hover:opacity-90 transition duration-300" />
+            <div className="relative bg-gradient-to-r from-[#4F46E5] to-[#7C3AED] rounded-full p-3.5 shadow-lg transform transition-all duration-200 hover:scale-105">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
             </div>
           </button>
 
-          {/* Botón Perfil - solo ícono */}
+          {/* Perfil */}
           <button
             onClick={() => navigate("/app/perfil")}
-            className={`p-2 rounded-lg transition-colors ${
-              isActive("/app/perfil") 
-                ? "text-purple-600 bg-purple-50" 
-                : "text-gray-600 hover:text-gray-900"
+            className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-colors ${
+              isActive("/app/perfil") ? "text-[#4F46E5] bg-indigo-50" : "text-gray-500 hover:text-gray-800"
             }`}
-            title="Perfil"
           >
-            <User style={{ width: '20px', height: '20px' }} />
+            <User className="w-5 h-5" />
+            <span className="text-[10px] font-medium">Perfil</span>
           </button>
 
-          {/* Botón Opciones - solo ícono */}
+          {/* Más opciones */}
           <button
             onClick={() => setShowOptionsModal(true)}
-            className="p-2 rounded-lg text-gray-600 hover:text-gray-900 transition-colors"
-            title="Más opciones"
+            className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl text-gray-500 hover:text-gray-800 transition-colors"
           >
-            <MoreVertical style={{ width: '20px', height: '20px' }} />
+            <MoreVertical className="w-5 h-5" />
+            <span className="text-[10px] font-medium">Más</span>
           </button>
         </div>
       </nav>
 
-      {/* Modal del wizard de publicación */}
-      <PublicationWizard 
-        isOpen={showTypeModal}
-        onClose={() => setShowTypeModal(false)}
-      />
+      {/* Wizard de publicación */}
+      <PublicationWizard isOpen={showWizard} onClose={() => setShowWizard(false)} />
 
-      {/* Modal de opciones */}
+      {/* ── Panel de opciones (bottom sheet) ─────────────── */}
       {showOptionsModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full mx-4">
-            {/* Header del modal */}
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900">Opciones</h2>
-                <button
-                  onClick={() => setShowOptionsModal(false)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end justify-center"
+          onClick={() => { setShowOptionsModal(false); setConfirmLogout(false) }}
+        >
+          <div
+            className="bg-white w-full max-w-md rounded-t-3xl shadow-2xl p-6 pb-10 animate-in slide-in-from-bottom-4 duration-300"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Handle */}
+            <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-5" />
+
+            {/* Header con info del usuario */}
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt={displayName} className="w-12 h-12 rounded-xl object-cover shadow" />
+                ) : (
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#4F46E5] to-[#7C3AED] flex items-center justify-center text-white text-lg font-bold shadow">
+                    {initial}
+                  </div>
+                )}
+                <div>
+                  <p className="font-semibold text-gray-900 leading-tight">{displayName}</p>
+                  {userEmail && <p className="text-xs text-gray-400 mt-0.5">{userEmail}</p>}
+                </div>
               </div>
+              <button
+                onClick={() => { setShowOptionsModal(false); setConfirmLogout(false) }}
+                className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
-            {/* Contenido del modal */}
-            <div className="p-6 space-y-4">
-              {/* Botón de logout */}
-              <div className="pt-4 border-t border-gray-200">
+            {/* Opciones del menú */}
+            <div className="space-y-2 mb-4">
+              <button
+                onClick={() => { navigate("/app/perfil"); setShowOptionsModal(false) }}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors text-left"
+              >
+                <div className="w-9 h-9 rounded-xl bg-indigo-100 flex items-center justify-center">
+                  <User className="w-4 h-4 text-indigo-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Mi perfil</p>
+                  <p className="text-xs text-gray-400">Ver y editar tu perfil</p>
+                </div>
+              </button>
+
+              <button
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors text-left opacity-50 cursor-not-allowed"
+                disabled
+              >
+                <div className="w-9 h-9 rounded-xl bg-gray-200 flex items-center justify-center">
+                  <Settings className="w-4 h-4 text-gray-500" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Configuración</p>
+                  <p className="text-xs text-gray-400">Próximamente</p>
+                </div>
+              </button>
+            </div>
+
+            {/* Separador */}
+            <div className="border-t border-gray-100 pt-4">
+              {!confirmLogout ? (
                 <button
-                  onClick={() => {
-                    handleLogout()
-                    setShowOptionsModal(false)
-                  }}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                  onClick={() => setConfirmLogout(true)}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-red-200 text-red-600 font-medium hover:bg-red-50 transition-colors"
                 >
                   <LogOut className="w-4 h-4" />
-                  <span>Cerrar sesión</span>
+                  Cerrar sesión
                 </button>
-              </div>
-            </div>
-
-            {/* Footer del modal */}
-            <div className="flex items-center justify-end p-6 border-t border-gray-200">
-              <button
-                onClick={() => setShowOptionsModal(false)}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-              >
-                Cerrar
-              </button>
+              ) : (
+                <div className="bg-red-50 rounded-xl p-4 space-y-3 border border-red-200">
+                  <p className="text-sm text-red-700 text-center font-medium">¿Seguro que deseas cerrar sesión?</p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setConfirmLogout(false)}
+                      className="flex-1 py-2.5 rounded-xl bg-white border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={handleLogout}
+                      className="flex-1 py-2.5 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Salir
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

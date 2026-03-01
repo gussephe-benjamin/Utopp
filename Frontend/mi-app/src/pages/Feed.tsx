@@ -1,93 +1,117 @@
-import { useCallback, useEffect, useRef, useState } from "react"
-import { useNavigate } from "react-router-dom"
-import api from "../api/axios"
-import { Heart, MessageCircle, Share2, Info } from "lucide-react"
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Info, MoreVertical, Bookmark, BookmarkCheck, ChevronLeft, ChevronRight } from 'lucide-react'
+import { getFeed } from '../api/feed.api'
+import { listImages, type PostImage } from '../api/post-images.api'
+import { listLinks } from '../api/post-links.api'
+import { savePost, unsavePost } from '../api/saved-posts.api'
+import {
+  type FeedPostOut,
+  type FeedResponse,
+  POST_TYPE_LABELS,
+  POST_TYPE_ICONS,
+  SUBTYPE_LABELS,
+} from '../types/post.types'
 
-// Componente UserAvatar para mostrar iniciales con gradientes
-const UserAvatar = ({ userName, gradient }: { 
-  userName?: string; 
-  gradient: string 
-}) => {
-  const initial = userName?.charAt(0).toUpperCase() || 'U'
-  
+// ── Helpers de UI ────────────────────────────────────────
+
+/** Avatar del usuario: muestra foto de Cloudinary si está en localStorage, si no iniciales */
+const UserAvatar = ({ userName, userId, gradient }: { userName?: string; userId?: number; gradient: string }) => {
+  const avatarUrl = userId ? localStorage.getItem(`avatar_${userId}`) : null
+  const initial = (userName ?? 'U').charAt(0).toUpperCase()
+  if (avatarUrl) {
+    return (
+      <img
+        src={avatarUrl}
+        alt={userName ?? 'Usuario'}
+        className="w-10 h-10 rounded-full object-cover border border-gray-200"
+      />
+    )
+  }
   return (
-    <div className={`w-10 h-10 ${gradient} rounded-full flex items-center justify-center text-white font-semibold`}>
+    <div className={`w-10 h-10 ${gradient} rounded-full flex items-center justify-center text-white font-semibold text-sm shrink-0`}>
       {initial}
     </div>
   )
 }
 
-// Helper functions para manejo de nombres
+/** Devuelve el nombre visible del usuario o un fallback */
 const getDisplayName = (userName?: string, userId?: number) => {
-  if (userName && userName.trim()) return userName
+  if (userName?.trim()) return userName
   return userId ? `Usuario ${userId}` : 'Usuario Anónimo'
 }
 
-// Componente TypeBadge para identificar tipos de publicación
-const TypeBadge = ({ type, score }: { type: string; score: number }) => {
-  const config = {
-    community_post: { icon: '📝', color: 'purple', label: 'Publicación' },
-    event: { icon: '📅', color: 'blue', label: 'Evento' },
-    announcement: { icon: '📢', color: 'green', label: 'Anuncio' }
-  }
-  
-  const typeConfig = config[type as keyof typeof config] || config.community_post
-  
-  return (
-    <div className={`flex items-center space-x-2 bg-${typeConfig.color}-100 px-3 py-1 rounded-full`}>
-      <span>{typeConfig.icon}</span>
-      <span className="text-xs font-medium text-gray-700">{typeConfig.label}</span>
-      <span className="text-xs text-gray-500">({score.toFixed(1)})</span>
-    </div>
-  )
+/** Formatea una fecha ISO a texto legible en español */
+const formatDate = (iso?: string) => {
+  if (!iso) return ''
+  return new Intl.DateTimeFormat('es-ES', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(iso))
 }
 
-// Componente ScoreExplanation para explicar relevancia
-const ScoreExplanation = ({ score }: { score: number }) => {
-  const [showDetails, setShowDetails] = useState(false)
-  
+/** Convierte fecha ISO a tiempo relativo en español */
+function timeAgo(iso?: string): string {
+  if (!iso) return ''
+  const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 1000)
+  if (diff < 60)       return 'hace un momento'
+  if (diff < 3600)     return `hace ${Math.floor(diff / 60)} min`
+  if (diff < 86400)    return `hace ${Math.floor(diff / 3600)} h`
+  if (diff < 604800)   return `hace ${Math.floor(diff / 86400)} días`
+  if (diff < 2592000)  return `hace ${Math.floor(diff / 604800)} sem`
+  return `hace ${Math.floor(diff / 2592000)} meses`
+}
+
+interface PostLink  { id: number; label: string; url: string; display_type: string; position: number }
+
+// ── Componente de explicación de relevancia ───────────────
+
+/**
+ * Botón de información que explica al usuario por qué se le muestra este post.
+ * Muestra un popover con los factores de relevancia del algoritmo.
+ */
+const ScoreExplanation = ({ score }: { score?: number }) => {
+  const [show, setShow] = useState(false)
+  if (!score) return null
+
   const factors = [
-    { name: 'Intereses匹配', percentage: 40, weight: 0.4 },
-    { name: 'Proximidad Social', percentage: 25, weight: 0.25 },
-    { name: 'Recencia', percentage: 20, weight: 0.2 },
-    { name: 'Ciclo Académico', percentage: 10, weight: 0.1 },
-    { name: 'Disponibilidad', percentage: 5, weight: 0.05 }
+    { name: 'Intereses', pct: 40 },
+    { name: 'Proximidad social', pct: 25 },
+    { name: 'Recencia', pct: 20 },
+    { name: 'Ciclo académico', pct: 10 },
+    { name: 'Disponibilidad', pct: 5 },
   ]
-  
+
   return (
     <div className="relative">
-      <button 
-        onClick={() => setShowDetails(!showDetails)}
+      <button
+        onClick={() => setShow(v => !v)}
         className="p-1 hover:bg-gray-100 rounded-full transition-colors"
-        title="¿Por qué es relevante?"
+        title="¿Por qué te recomendamos esto?"
       >
-        <Info className="w-4 h-4 text-gray-500" />
+        <Info className="w-4 h-4 text-gray-400" />
       </button>
-      
-      {showDetails && (
-        <div className="absolute top-full right-0 w-80 bg-white rounded-lg shadow-lg p-4 z-50 border border-gray-200">
-          <h4 className="font-semibold mb-3 text-gray-900">¿Por qué te recomendamos esto?</h4>
-          <div className="space-y-3">
-            {factors.map(factor => (
-              <div key={factor.name} className="flex justify-between items-center">
-                <span className="text-sm text-gray-700">{factor.name}</span>
-                <div className="flex items-center space-x-2">
-                  <div className="w-20 bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-purple-500 h-2 rounded-full transition-all duration-300" 
-                      style={{ width: `${factor.percentage}%` }}
-                    />
+      {show && (
+        <div className="absolute top-full right-0 w-72 bg-white rounded-lg shadow-lg p-4 z-50 border border-gray-200">
+          <h4 className="font-semibold mb-3 text-gray-900 text-sm">¿Por qué te lo recomendamos?</h4>
+          <div className="space-y-2">
+            {factors.map(f => (
+              <div key={f.name} className="flex justify-between items-center">
+                <span className="text-xs text-gray-700">{f.name}</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-16 bg-gray-200 rounded-full h-1.5">
+                    <div className="bg-purple-500 h-1.5 rounded-full" style={{ width: `${f.pct}%` }} />
                   </div>
-                  <span className="text-xs text-gray-500">{factor.percentage}%</span>
+                  <span className="text-xs text-gray-400">{f.pct}%</span>
                 </div>
               </div>
             ))}
           </div>
-          <div className="mt-4 pt-3 border-t border-gray-200">
-            <div className="flex justify-between items-center">
-              <span className="font-medium text-gray-700">Score Total</span>
-              <span className="font-bold text-purple-600">{score.toFixed(2)}</span>
-            </div>
+          <div className="mt-3 pt-2 border-t border-gray-100 flex justify-between text-xs">
+            <span className="text-gray-500">Score total</span>
+            <span className="font-bold text-purple-600">{score.toFixed(2)}</span>
           </div>
         </div>
       )}
@@ -95,535 +119,390 @@ const ScoreExplanation = ({ score }: { score: number }) => {
   )
 }
 
-type FeedEvent = {
-  id: number
-  title: string
-  description?: string
-  start_time: string
-  end_time: string
-  location?: string
-  is_virtual: boolean
-  tags?: string[]
-  category?: string
-  min_cycle?: number
-  max_cycle?: number
-  created_by_id: number
-  popularity: number
-  user_name?: string
-}
+// ── Tarjeta de post unificada ────────────────────────────
 
-type FeedAnnouncement = {
-  id: number
-  title: string
-  content: string
-  tags?: string[]
-  created_by_id?: number
-  user_name?: string
-  created_at: string
-}
-
-type FeedCommunityPost = {
-  id: number
-  content: string
-  tags?: string[]
-  user_id: number
-  user_name?: string
-  created_at: string
-  post_type: "Oportunidad Internacional" | "Eventos" | "Proyectos" | "Competencias" | "Convocatorias" | "Programas" | "Publicación General"
-  link_form?: string
-  closing_date?: string
-  required_roles?: string[]
-}
-
-type FeedItem = {
-  type: "event" | "community_post" | "announcement"
-  score: number
-  data: FeedEvent | FeedCommunityPost | FeedAnnouncement
-}
-
-interface FeedResponse {
-  page: number
-  size: number
-  items: FeedItem[]
-  next_page?: number | null
-}
-
-const PostCard = ({ item }: { item: FeedItem }) => {
+/**
+ * PostCard: renderiza cualquier tipo de post del feed usando el schema FeedPostOut.
+ * Incluye carrusel de imágenes (carga lazy), botones de links, avatar real,
+ * email + tiempo relativo, menú de guardar post.
+ */
+const PostCard = ({ post }: { post: FeedPostOut }) => {
   const navigate = useNavigate()
-  
-  const handleUserClick = (userId?: number) => {
-    if (userId) {
-      navigate(`/app/perfil/${userId}`)
+
+  // ── Estado local del post card ────────────────────────
+  const [images, setImages]           = useState<PostImage[]>([])
+  const [imgIndex, setImgIndex]       = useState(0)
+  const [links, setLinks]             = useState<PostLink[]>([])
+  const [isSaved, setIsSaved]           = useState(post.is_saved)
+  const [menuOpen, setMenuOpen]         = useState(false)
+  const [savingPost, setSavingPost]     = useState(false)
+  const [extraMenuOpen, setExtraMenuOpen] = useState(false)
+  const menuRef                         = useRef<HTMLDivElement>(null)
+  const extraMenuRef                    = useRef<HTMLDivElement>(null)
+
+  // Gradientes de color por tipo de post para el avatar de usuario
+  const typeGradients: Record<string, string> = {
+    international_opportunity: 'bg-gradient-to-br from-blue-500 to-cyan-500',
+    event:                     'bg-gradient-to-br from-purple-500 to-pink-500',
+    academic_project:          'bg-gradient-to-br from-green-500 to-emerald-500',
+    announcement:              'bg-gradient-to-br from-orange-500 to-red-500',
+    simple_post:               'bg-gradient-to-br from-gray-500 to-slate-500',
+  }
+  const gradient = typeGradients[post.post_type] ?? typeGradients.simple_post
+
+  // Carga lazy de imágenes y links al montar
+  useEffect(() => {
+    if (post.images_count > 0) {
+      listImages(post.id).then(setImages).catch(() => {})
     }
+    if (post.links_count > 0) {
+      listLinks(post.id).then(setLinks).catch(() => {})
+    }
+  }, [post.id, post.images_count, post.links_count])
+
+  // Cierra los menús al hacer clic fuera
+  useEffect(() => {
+    if (!menuOpen && !extraMenuOpen) return
+    const handler = (e: MouseEvent) => {
+      if (menuOpen && menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false)
+      }
+      if (extraMenuOpen && extraMenuRef.current && !extraMenuRef.current.contains(e.target as Node)) {
+        setExtraMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [menuOpen, extraMenuOpen])
+
+  // ── Acciones ─────────────────────────────────────────
+  const handleSaveToggle = async () => {
+    setSavingPost(true)
+    try {
+      if (isSaved) { await unsavePost(post.id); setIsSaved(false) }
+      else         { await savePost(post.id);   setIsSaved(true)  }
+    } catch (e) { console.error(e) }
+    finally { setSavingPost(false); setMenuOpen(false) }
   }
 
-  if (item.type === "community_post") {
-    const post = item.data as FeedCommunityPost
-    
-    // Validar que post.content exista
-    if (!post.content) {
-      return (
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
-          <p className="text-gray-500">Post sin contenido disponible</p>
-        </div>
-      )
-    }
-    
-    // Parsear el contenido para extraer título, descripción y requisitos
-    const parseContent = (content?: string) => {
-      if (!content || typeof content !== 'string') {
-        return {
-          title: 'Sin título',
-          description: '',
-          requirements: ''
-        }
-      }
-      
-      const lines = content.split('\n').filter(line => line.trim())
-      
-      let title = ''
-      const description: string[] = []
-      const requirements: string[] = []
-      let currentSection = 'description'
-      
-      lines.forEach((line, index) => {
-        const trimmedLine = line.trim()
-        
-        // Primera línea como título
-        if (index === 0) {
-          title = trimmedLine
-        }
-        // Detectar sección de requisitos
-        else if (trimmedLine.toLowerCase().includes('requisito') || 
-                trimmedLine.toLowerCase().includes('requerimiento') ||
-                trimmedLine.toLowerCase().includes('requirements')) {
-          currentSection = 'requirements'
-        }
-        // Agregar a la sección correspondiente
-        else if (currentSection === 'requirements') {
-          requirements.push(trimmedLine)
-        }
-        else {
-          description.push(trimmedLine)
-        }
-      })
-      
-      return {
-        title,
-        description: description.join('\n'),
-        requirements: requirements.join('\n')
-      }
-    }
-    
-    const { title, description, requirements } = parseContent(post.content)
-    
-    return (
-      <div className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200">
-        {/* Header con info de usuario */}
-        <div className="flex items-center justify-between p-3 border-b border-gray-100">
-          <div className="flex items-center space-x-3">
-            <UserAvatar 
-              userName={post.user_name} 
-              gradient="bg-gradient-to-br from-purple-500 to-pink-500" 
-            />
-            <div>
-              <button 
-                onClick={() => handleUserClick(post.user_id)}
-                className="font-semibold text-gray-900 hover:text-purple-600 transition-colors"
+  const prevImg = () => setImgIndex(i => (i - 1 + images.length) % images.length)
+  const nextImg = () => setImgIndex(i => (i + 1) % images.length)
+
+  // Determinar qué imagen mostrar: si las lazy-images cargaron úsalas, si no usa image_url
+  const displayImages: { url: string }[] =
+    images.length > 0 ? images : post.image_url ? [{ url: post.image_url }] : []
+  const currentImgUrl = displayImages[imgIndex]?.url
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+
+      {/* ── Header: avatar + nombre + email + tiempo + badges + menú ── */}
+      <div className="flex items-start justify-between px-4 pt-4 pb-4 sm:pb-3">
+        <div className="flex items-center gap-3">
+          <UserAvatar userName={post.user_name} userId={post.user_id} gradient={gradient} />
+          <div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => navigate(`/app/perfil/${post.user_id}`)}
+                className="font-semibold text-gray-900 hover:text-[#4F46E5] transition-colors text-sm leading-tight"
               >
                 {getDisplayName(post.user_name, post.user_id)}
               </button>
-              <div className="text-sm text-gray-500">
-                {new Date(post.created_at || new Date()).toLocaleDateString('es-ES', { 
-                  month: 'short', 
-                  day: 'numeric', 
-                  hour: '2-digit', 
-                  minute: '2-digit' 
-                })}
-              </div>
+              <span className="hidden sm:inline text-gray-300 text-xs">·</span>
+              <span className="hidden sm:inline text-xs text-gray-400">{timeAgo(post.created_at)}</span>
             </div>
-          </div>
-          <div className="flex items-center space-x-2">
-            <TypeBadge type={item.type} score={item.score} />
-            <ScoreExplanation score={item.score} />
+            {post.user_email && (
+              <p className="text-xs text-gray-400 leading-tight mt-0.5">{post.user_email}</p>
+            )}
+            <p className="sm:hidden text-xs text-gray-400 leading-tight mt-0.5">
+              {timeAgo(post.created_at)}
+            </p>
           </div>
         </div>
 
-      {/* Contenido estructurado del post */}
-      <div className="p-4">
-          {/* Título con tipo de publicación */}
-          <div className="mb-4">
-            <div className="flex items-center gap-2 mb-2">
-              <h3 className="text-xl font-bold text-gray-900 leading-tight">
-                {title || 'Sin título'}
-              </h3>
-              {post.post_type && (
-                <span className="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap">
-                  {post.post_type}
-                </span>
+        {/* Badges + menú ⋮ */}
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="hidden sm:flex sm:flex-col gap-1 items-end">
+            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+              {POST_TYPE_ICONS[post.post_type]} {POST_TYPE_LABELS[post.post_type]}
+            </span>
+            {post.subtype && (
+              <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
+                {SUBTYPE_LABELS[post.subtype]}
+              </span>
+            )}
+          </div>
+          <ScoreExplanation />
+          {/* Tres puntos — menú de opciones */}
+          <div className="relative" ref={menuRef}>
+            <button
+              onClick={() => setMenuOpen(v => !v)}
+              className="p-1.5 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+            >
+              <MoreVertical className="w-4 h-4" />
+            </button>
+            {menuOpen && (
+              <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-xl shadow-lg border border-gray-200 z-20 overflow-hidden">
+                <button
+                  onClick={handleSaveToggle}
+                  disabled={savingPost}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  {isSaved
+                    ? <><BookmarkCheck className="w-4 h-4 text-[#4F46E5]" /> Quitar de guardados</>
+                    : <><Bookmark className="w-4 h-4 text-gray-500" /> Guardar publicación</>
+                  }
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Tipo/Subtipo en móvil (en fila) ───────────────── */}
+      <div className="flex gap-1 px-4 mb-2 sm:hidden items-center flex-wrap">
+        <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+          {POST_TYPE_ICONS[post.post_type]} {POST_TYPE_LABELS[post.post_type]}
+        </span>
+        {post.subtype && (
+          <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
+            {SUBTYPE_LABELS[post.subtype]}
+          </span>
+        )}
+      </div>
+
+      {/* ── Carrusel de imágenes ────────────────────────── */}
+      {currentImgUrl && (
+        <div className="relative w-full max-w-[500px] mx-auto aspect-[4/5] bg-gray-100 overflow-hidden">
+          <img
+            src={currentImgUrl}
+            alt={`Imagen ${imgIndex + 1}`}
+            className="w-full h-full object-cover"
+            onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+            style={(() => {
+              const imgData = displayImages[imgIndex] as PostImage | { url: string }
+              const objPos = 'object_position' in imgData ? (imgData.object_position ?? 'center center') : 'center center'
+              const sc     = 'scale' in imgData ? (imgData.scale ?? 1) : 1
+              return {
+                objectPosition: objPos,
+                transform: `scale(${sc})`,
+                transformOrigin: objPos,
+              }
+            })()}
+          />
+          {/* Flechas de navegación (solo si hay más de 1 imagen cargada) */}
+          {displayImages.length > 1 && (
+            <>
+              <button
+                onClick={prevImg}
+                className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/40 hover:bg-black/60 rounded-full flex items-center justify-center text-white transition-colors"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <button
+                onClick={nextImg}
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/40 hover:bg-black/60 rounded-full flex items-center justify-center text-white transition-colors"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+              {/* Dots indicadores */}
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                {displayImages.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setImgIndex(i)}
+                    className={`rounded-full transition-all ${i === imgIndex ? 'w-5 h-2 bg-white' : 'w-2 h-2 bg-white/60'}`}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ── Contenido: título, descripción, deadline, tags ─ */}
+      <div className="px-4 pt-3 pb-2">
+        {post.title && (
+          <h3 className="font-bold text-gray-900 text-base mb-1 leading-snug">{post.title}</h3>
+        )}
+        <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-line line-clamp-4">
+          {post.description}
+        </p>
+
+        {post.deadline_at && (
+          <div className="flex items-center gap-1.5 mt-2 text-xs text-gray-500">
+            <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <span>
+              Fecha límite: {formatDate(post.deadline_at)}
+              {post.time_status === 'out_of_time' && (
+                <span className="ml-1 text-red-500 font-medium">(Vencido)</span>
+              )}
+            </span>
+          </div>
+        )}
+
+        {post.tags && post.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mt-2">
+            {post.tags.map(tag => (
+              <span key={tag} className="text-xs bg-purple-50 text-purple-600 px-2 py-0.5 rounded-full">#{tag}</span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ── Botones CTA + overflow de links extra ──────── */}
+      {links.length > 0 && (
+        <div className="px-4 pb-3 flex gap-2 items-stretch">
+          {/* Link 0: botón primario gradiente */}
+          {links[0] && (
+            <a
+              href={links[0].url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 text-center py-2.5 px-3 rounded-xl text-sm font-medium bg-gradient-to-r from-[#4F46E5] to-[#7C3AED] text-white shadow hover:shadow-md transition-all"
+            >
+              {links[0].label}
+            </a>
+          )}
+          {/* Link 1: botón secundario gris */}
+          {links[1] && (
+            <a
+              href={links[1].url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 text-center py-2.5 px-3 rounded-xl text-sm font-medium bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200 transition-all"
+            >
+              {links[1].label}
+            </a>
+          )}
+          {/* Botón overflow ⋮ para links[2+] */}
+          {links.length > 2 && (
+            <div className="relative" ref={extraMenuRef}>
+              <button
+                onClick={() => setExtraMenuOpen(v => !v)}
+                className="py-2.5 px-2.5 rounded-xl bg-gray-100 border border-gray-200 text-gray-600 hover:bg-gray-200 transition-colors flex items-center justify-center"
+                title="Más enlaces"
+              >
+                <MoreVertical className="w-4 h-4" />
+              </button>
+              {extraMenuOpen && (
+                <div className="absolute right-0 bottom-full mb-1 w-52 bg-white rounded-xl shadow-lg border border-gray-200 z-30 overflow-hidden">
+                  {links.slice(2).map(link => (
+                    <a
+                      key={link.id}
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => setExtraMenuOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <span className="text-base">🔗</span>
+                      <span className="truncate">{link.label}</span>
+                    </a>
+                  ))}
+                </div>
               )}
             </div>
-          </div>
-          
-          {/* Descripción */}
-          {description && (
-            <div className="mb-4">
-              <p className="text-gray-800 whitespace-pre-wrap break-words">
-                {description}
-              </p>
-            </div>
-          )}
-          
-          {/* Requisitos */}
-          {requirements && (
-            <div className="border-t border-gray-200 pt-4">
-              <h4 className="font-semibold text-gray-900 mb-2">Requisitos:</h4>
-              <p className="text-gray-700 whitespace-pre-wrap break-words text-sm">
-                {requirements}
-              </p>
-            </div>
-          )}
-
-          {/* Link del formulario */}
-          {post.link_form && (
-            <div className="border-t border-gray-200 pt-4">
-              <h4 className="font-semibold text-gray-900 mb-2">Formulario:</h4>
-              <a 
-                href={post.link_form} 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="text-purple-600 hover:text-purple-700 text-sm underline break-words"
-              >
-                {post.link_form}
-              </a>
-            </div>
-          )}
-
-          {/* Fecha de cierre */}
-          {post.closing_date && (
-            <div className="border-t border-gray-200 pt-4">
-              <h4 className="font-semibold text-gray-900 mb-2">Fecha de cierre:</h4>
-              <p className="text-gray-700 text-sm">
-                {new Date(post.closing_date || new Date()).toLocaleString('es-ES', {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}
-              </p>
-            </div>
           )}
         </div>
-
-        {/* Footer con acciones y tags */}
-        <div className="px-4 pb-4">
-          {(post.tags || []).length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-3">
-              {(post.tags || []).map((tag: string, index: number) => (
-                <span 
-                  key={index}
-                  className="bg-purple-50 text-purple-600 text-xs px-2 py-1 rounded-full"
-                >
-                  #{tag}
-                </span>
-              ))}
-            </div>
-          )}
-          
-          <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-            <div className="flex items-center space-x-4">
-              <button className="flex items-center space-x-1 text-gray-500 hover:text-red-500 transition-colors">
-                <Heart className="w-5 h-5" />
-                <span className="text-sm">Me gusta</span>
-              </button>
-              <button className="flex items-center space-x-1 text-gray-500 hover:text-blue-500 transition-colors">
-                <MessageCircle className="w-5 h-5" />
-                <span className="text-sm">Comentar</span>
-              </button>
-            </div>
-            <button className="flex items-center space-x-1 text-gray-500 hover:text-green-500 transition-colors">
-              <Share2 className="w-5 h-5" />
-                <span className="text-sm">Compartir</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // Componente para Eventos
-  if (item.type === "event") {
-    const event = item.data as FeedEvent
-    return (
-      <div className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200">
-        {/* Header con info de usuario */}
-        <div className="flex items-center justify-between p-3 border-b border-gray-100">
-          <div className="flex items-center space-x-3">
-            <UserAvatar 
-              userName={event.user_name} 
-              gradient="bg-gradient-to-br from-blue-500 to-cyan-500" 
-            />
-            <div>
-              <button 
-                onClick={() => event.created_by_id && handleUserClick(event.created_by_id)}
-                className="font-semibold text-gray-900 hover:text-purple-600 transition-colors"
-              >
-                {getDisplayName(event.user_name, event.created_by_id)}
-              </button>
-              <div className="text-sm text-gray-500">
-                {new Date(event.start_time || new Date()).toLocaleDateString('es-ES', { 
-                  month: 'short', 
-                  day: 'numeric', 
-                  hour: '2-digit', 
-                  minute: '2-digit' 
-                })}
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center space-x-2">
-            <TypeBadge type={item.type} score={item.score} />
-            <ScoreExplanation score={item.score} />
-          </div>
-        </div>
-
-        {/* Contenido del evento */}
-        <div className="p-4">
-          <h3 className="text-xl font-bold text-gray-900 mb-2">{event.title}</h3>
-          {event.description && (
-            <p className="text-gray-800 mb-4">{event.description}</p>
-          )}
-          
-          <div className="space-y-2 text-sm text-gray-600">
-            {event.location && (
-              <div className="flex items-center space-x-2">
-                <span className="font-medium">�</span>
-                <span>{event.location}</span>
-              </div>
-            )}
-            <div className="flex items-center space-x-2">
-              <span className="font-medium">�🕐</span>
-              <span>
-                {new Date(event.start_time || new Date()).toLocaleString('es-ES')} - 
-                {new Date(event.end_time || new Date()).toLocaleString('es-ES')}
-              </span>
-            </div>
-            {event.is_virtual && (
-              <div className="flex items-center space-x-2">
-                <span className="font-medium">💻</span>
-                <span>Evento virtual</span>
-              </div>
-            )}
-          </div>
-
-          {/* Tags */}
-          {(event.tags || []).length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-4">
-              {(event.tags || []).map((tag: string, index: number) => (
-                <span 
-                  key={index}
-                  className="bg-blue-50 text-blue-600 text-xs px-2 py-1 rounded-full"
-                >
-                  #{tag}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Footer con acciones */}
-        <div className="px-4 pb-4">
-          <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-            <div className="flex items-center space-x-4">
-              <button className="flex items-center space-x-1 text-gray-500 hover:text-red-500 transition-colors">
-                <Heart className="w-5 h-5" />
-                <span className="text-sm">Me gusta</span>
-              </button>
-              <button className="flex items-center space-x-1 text-gray-500 hover:text-blue-500 transition-colors">
-                <MessageCircle className="w-5 h-5" />
-                <span className="text-sm">Comentar</span>
-              </button>
-            </div>
-            <button className="flex items-center space-x-1 text-gray-500 hover:text-green-500 transition-colors">
-              <Share2 className="w-5 h-5" />
-              <span className="text-sm">Compartir</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // Componente para Anuncios
-  if (item.type === "announcement") {
-    const announcement = item.data as FeedAnnouncement
-    return (
-      <div className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200">
-        {/* Header con info de usuario */}
-        <div className="flex items-center justify-between p-3 border-b border-gray-100">
-          <div className="flex items-center space-x-3">
-            <UserAvatar 
-              userName={announcement.user_name} 
-              gradient="bg-gradient-to-br from-green-500 to-emerald-500" 
-            />
-            <div>
-              <button 
-                onClick={() => announcement.created_by_id && handleUserClick(announcement.created_by_id)}
-                className="font-semibold text-gray-900 hover:text-purple-600 transition-colors"
-              >
-                {getDisplayName(announcement.user_name, announcement.created_by_id)}
-              </button>
-              <div className="text-sm text-gray-500">
-                {new Date(announcement.created_at || new Date()).toLocaleDateString('es-ES', { 
-                  month: 'short', 
-                  day: 'numeric', 
-                  hour: '2-digit', 
-                  minute: '2-digit' 
-                })}
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center space-x-2">
-            <TypeBadge type={item.type} score={item.score} />
-            <ScoreExplanation score={item.score} />
-          </div>
-        </div>
-
-        {/* Contenido del anuncio */}
-        <div className="p-4">
-          <h3 className="text-xl font-bold text-gray-900 mb-2">{announcement.title}</h3>
-          <p className="text-gray-800 whitespace-pre-wrap break-words">{announcement.content}</p>
-
-          {/* Tags */}
-          {(announcement.tags || []).length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-4">
-              {(announcement.tags || []).map((tag: string, index: number) => (
-                <span 
-                  key={index}
-                  className="bg-green-50 text-green-600 text-xs px-2 py-1 rounded-full"
-                >
-                  #{tag}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Footer con acciones */}
-        <div className="px-4 pb-4">
-          <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-            <div className="flex items-center space-x-4">
-              <button className="flex items-center space-x-1 text-gray-500 hover:text-red-500 transition-colors">
-                <Heart className="w-5 h-5" />
-                <span className="text-sm">Me gusta</span>
-              </button>
-              <button className="flex items-center space-x-1 text-gray-500 hover:text-blue-500 transition-colors">
-                <MessageCircle className="w-5 h-5" />
-                <span className="text-sm">Comentar</span>
-              </button>
-            </div>
-            <button className="flex items-center space-x-1 text-gray-500 hover:text-green-500 transition-colors">
-              <Share2 className="w-5 h-5" />
-              <span className="text-sm">Compartir</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // Fallback para tipos desconocidos
-  return (
-    <div className="bg-white border border-gray-200 rounded-lg p-4">
-      <div className="text-sm text-gray-500">{item.type} · score {item.score.toFixed(2)}</div>
-      <div className="text-gray-700 mt-2">Contenido no disponible</div>
+      )}
     </div>
   )
 }
 
+// ── Componente principal del Feed ─────────────────────────
+
+/**
+ * Página Feed: lista paginada de posts publicados.
+ * Carga automáticamente más posts al hacer scroll (infinite scroll).
+ * Escucha el evento 'postPublished' para recargar desde el inicio
+ * cuando el usuario crea un nuevo post desde el wizard.
+ */
 export default function Feed() {
-  const [items, setItems] = useState<FeedItem[]>([])
+  const [posts, setPosts] = useState<FeedPostOut[]>([])
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
   const [loading, setLoading] = useState(false)
   const loaderRef = useRef<HTMLDivElement | null>(null)
 
-  const fetchPage = useCallback(async () => {
-    if (loading || !hasMore) return
+  /** Carga una página del feed y la agrega al estado */
+  const fetchPage = useCallback(async (pageNum: number) => {
+    if (loading) return
     setLoading(true)
     try {
-      console.log("Cargando feed...")
-      const { data } = await api.get<FeedResponse>("/feed", {
-        params: { page, size: 10 },
-      })
-      console.log("Feed cargado:", data)
-      setItems(prev => [...prev, ...data.items])
-      if (!data.next_page) setHasMore(false)
-      else setPage(data.next_page)
+      const data: FeedResponse = await getFeed({ page: pageNum, size: 10 })
+      setPosts(prev => pageNum === 1 ? data.items : [...prev, ...data.items])
+      setHasMore(data.has_next)
+      if (data.has_next) setPage(pageNum + 1)
+    } catch (err) {
+      console.error('Error cargando feed:', err)
     } finally {
       setLoading(false)
     }
-  }, [page, hasMore, loading])
+  }, [loading])
 
-  // Escuchar eventos globales de posts creados
+  // Escucha el evento global emitido por PublicationWizard al publicar.
+  // Recarga el feed desde la página 1 para mostrar el nuevo post.
   useEffect(() => {
-    const handlePostCreated = (event: Event) => {
-      const customEvent = event as CustomEvent
-      if (!customEvent.detail) return
-      
-      const newPost = customEvent.detail
-      console.log("Nuevo post recibido en Feed:", newPost)
-      
-      const newPostItem: FeedItem = {
-        type: "community_post",
-        score: 1.0,
-        data: {
-          ...newPost,
-          user_name: "Tú", // El post creado por el usuario actual
-        }
-      }
-      setItems(prev => [newPostItem, ...prev])
+    const handlePublished = () => {
+      setPage(1)
+      setHasMore(true)
+      fetchPage(1)
     }
+    window.addEventListener('postPublished', handlePublished)
+    return () => window.removeEventListener('postPublished', handlePublished)
+  }, [fetchPage])
 
-    window.addEventListener('postCreated', handlePostCreated)
-    
-    return () => {
-      window.removeEventListener('postCreated', handlePostCreated)
-    }
-  }, [])
-
+  // Infinite scroll: observa el div loader al final de la lista
   useEffect(() => {
     const el = loaderRef.current
     if (!el) return
-    const io = new IntersectionObserver((entries: IntersectionObserverEntry[]) => {
-      entries.forEach((e: IntersectionObserverEntry) => {
-        if (e.isIntersecting) fetchPage()
-      })
+    const io = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore && !loading) {
+        fetchPage(page)
+      }
     })
     io.observe(el)
     return () => io.disconnect()
-  }, [fetchPage])
+  }, [fetchPage, hasMore, loading, page])
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-2xl mx-auto p-4">
-        {/* Header */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">🏠 Feed UTEC</h1>
+      <div className="w-full max-w-[550px] mx-auto p-4 space-y-4">
+
+        {/* Header del feed — branding Utopp */}
+        <div className="bg-gradient-to-r from-[#4F46E5] to-[#8B5CF6] rounded-2xl shadow-md px-6 py-4 flex items-center gap-4">
+          <div className="w-10 h-10 rounded-xl overflow-hidden shadow-lg border-2 border-white/30 shrink-0">
+            <img src="/utopp-logo.png" alt="Utopp" className="w-full h-full object-cover" />
+          </div>
+          <div>
+            <h1 className="text-xl font-extrabold text-white tracking-tight leading-none">Utopp</h1>
+            <p className="text-indigo-200 text-xs mt-0.5">Publicaciones de la comunidad UTEC</p>
+          </div>
         </div>
 
-        {/* Posts del feed */}
-        <div className="space-y-4">
-          {items.map((item: FeedItem, idx: number) => (
-            <PostCard key={idx} item={item} />
-          ))}
-        </div>
-        
-        {loading && <div className="text-center text-sm text-gray-500">Cargando más contenido...</div>}
+        {/* Lista de posts */}
+        {posts.map(post => (
+          <PostCard key={post.id} post={post} />
+        ))}
+
+        {/* Estado vacío */}
+        {!loading && posts.length === 0 && (
+          <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+            <p className="text-4xl mb-3">📭</p>
+            <p className="font-medium text-gray-700">Aún no hay publicaciones</p>
+            <p className="text-sm text-gray-400 mt-1">Sé el primero en crear una publicación</p>
+          </div>
+        )}
+
+        {/* Loader de paginación */}
+        {loading && (
+          <div className="text-center py-4 text-sm text-gray-400">Cargando más...</div>
+        )}
         <div ref={loaderRef} />
       </div>
-
     </div>
   )
 }
