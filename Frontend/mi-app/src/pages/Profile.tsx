@@ -413,14 +413,14 @@ export default function Profile() {
       />
 
       {/* ── Cover / Banner ─────────────────────────────── */}
-      <div className="relative h-36 bg-gradient-to-r from-[#4F46E5] via-[#7C3AED] to-[#EC4899]">
+      <div className="relative z-0 h-36 bg-gradient-to-r from-[#4F46E5] via-[#7C3AED] to-[#EC4899]">
         <div className="absolute inset-0 opacity-20"
           style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)', backgroundSize: '60px 60px' }}
         />
       </div>
 
       {/* ── Contenedor principal ───────────────────────── */}
-      <div className="max-w-2xl mx-auto px-4 -mt-16 pb-24">
+      <div className="relative z-10 max-w-2xl mx-auto px-4 -mt-16 pb-24">
 
         {/* ── Card de cabecera ───────────────────────────── */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 px-6 pt-4 pb-6 mb-4">
