@@ -4,6 +4,8 @@ import { Home, User, X, MoreVertical, LogOut, Settings } from 'lucide-react'
 import PublicationWizard from '../components/PublicationWizard'
 import { useAuth } from '../auth/useAuth'
 import { getMyProfile } from '../api/users.api'
+import Feed from '../pages/Feed'
+import Profile from '../pages/Profile'
 
 /**
  * Layout principal de la app tras el login.
@@ -19,6 +21,7 @@ export default function DashboardLayout() {
   const [confirmLogout, setConfirmLogout]     = useState(false)
 
   // Datos básicos del usuario para mostrar en el panel de opciones
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null)
   const [userName, setUserName]   = useState<string | null>(null)
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
@@ -26,15 +29,67 @@ export default function DashboardLayout() {
   useEffect(() => {
     getMyProfile()
       .then(d => {
+        setCurrentUserId(d.id)
         setUserName(d.full_name ?? null)
         setUserEmail(d.email ?? null)
         const saved = localStorage.getItem(`avatar_${d.id}`)
-        if (saved) setAvatarUrl(saved)
+        setAvatarUrl(saved || null)
       })
       .catch(() => {})
   }, [])
 
+  useEffect(() => {
+    if (!currentUserId) return
+    const avatarKey = `avatar_${currentUserId}`
+
+    const syncFromStorage = () => {
+      const saved = localStorage.getItem(avatarKey)
+      setAvatarUrl(saved || null)
+    }
+
+    const onAvatarUpdated = (evt: Event) => {
+      const detail = (evt as CustomEvent<{ userId?: number; avatarUrl?: string } | undefined>).detail
+      if (!detail || detail.userId !== currentUserId) return
+      setAvatarUrl(detail.avatarUrl ?? null)
+    }
+
+    const onStorage = (evt: StorageEvent) => {
+      if (evt.key === avatarKey) {
+        setAvatarUrl(evt.newValue || null)
+      }
+    }
+
+    window.addEventListener('avatarUpdated', onAvatarUpdated as EventListener)
+    window.addEventListener('storage', onStorage)
+    window.addEventListener('focus', syncFromStorage)
+
+    return () => {
+      window.removeEventListener('avatarUpdated', onAvatarUpdated as EventListener)
+      window.removeEventListener('storage', onStorage)
+      window.removeEventListener('focus', syncFromStorage)
+    }
+  }, [currentUserId])
+
+  // Bloquea scroll del documento mientras haya un modal/sheet abierto
+  useEffect(() => {
+    if (!showWizard && !showOptionsModal) return
+
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth
+    const prevOverflow = document.body.style.overflow
+    const prevPaddingRight = document.body.style.paddingRight
+
+    document.body.style.overflow = 'hidden'
+    document.body.style.paddingRight = `${scrollbarWidth}px`
+
+    return () => {
+      document.body.style.overflow = prevOverflow
+      document.body.style.paddingRight = prevPaddingRight
+    }
+  }, [showWizard, showOptionsModal])
+
   const isActive = (path: string) => location.pathname === path
+  const isFeedActive    = location.pathname === '/app/inicio'
+  const isProfileActive = location.pathname.startsWith('/app/perfil')
 
   const handleLogout = () => {
     logout()
@@ -45,11 +100,24 @@ export default function DashboardLayout() {
   const initial     = displayName.charAt(0).toUpperCase()
 
   return (
-    <div className={`min-h-screen flex flex-col ${showWizard ? 'overflow-hidden' : ''}`}>
+    <div className={`min-h-screen flex flex-col ${showWizard || showOptionsModal ? 'overflow-hidden' : ''}`}>
 
-      {/* Contenido dinámico de cada subruta */}
-      <main className="flex-1 bg-gray-50 pb-20">
-        <Outlet />
+      {/* Contenido dinámico — Feed y Perfil siempre montados en sus propios contenedores */}
+      <main className="flex-1 relative overflow-hidden">
+        {/* Feed — siempre montado, invisible cuando no está activo */}
+        <div className={`absolute inset-0 overflow-y-auto pb-20 bg-gray-50${isFeedActive ? '' : ' invisible pointer-events-none'}`}>
+          <Feed />
+        </div>
+        {/* Perfil — siempre montado, invisible cuando no está activo */}
+        <div className={`absolute inset-0 overflow-y-auto pb-20 bg-gray-50${isProfileActive ? '' : ' invisible pointer-events-none'}`}>
+          <Profile />
+        </div>
+        {/* Otras rutas (Horario, etc.) via Outlet */}
+        {!isFeedActive && !isProfileActive && (
+          <div className="absolute inset-0 overflow-y-auto pb-20 bg-gray-50">
+            <Outlet />
+          </div>
+        )}
       </main>
 
       {/* ── Bottom Navigation ─────────────────────────────── */}
@@ -114,7 +182,7 @@ export default function DashboardLayout() {
       {/* ── Panel de opciones (bottom sheet) ─────────────── */}
       {showOptionsModal && (
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end justify-center"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[70] flex items-end justify-center"
           onClick={() => { setShowOptionsModal(false); setConfirmLogout(false) }}
         >
           <div

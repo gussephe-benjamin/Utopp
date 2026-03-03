@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.database.session import get_db
 from app.dependencies.auth import get_current_user
-from app.dependencies.permissions import require_owner_or_admin, require_post_owner
+from app.dependencies.permissions import require_owner_or_admin, require_owner_or_admin_archived, require_post_owner
 from app.dependencies.pagination import PaginationParams
 from app.models.user import User
 from app.models.post import Post
@@ -146,6 +146,21 @@ def archive_post(
 
 
 # ============================================================
+# POST /posts/{post_id}/unarchive
+# Desarchiva un post. Vuelve a estado published.
+# Auth: Requerida
+# Permisos: Solo el dueño del post o un admin
+# ============================================================
+@router.post("/{post_id}/unarchive", response_model=PostOut)
+def unarchive_post(
+    post: Post = Depends(require_owner_or_admin_archived),
+    db: Session = Depends(get_db),
+):
+    unarchived = post_service.unarchive_post(db, post)
+    return post_service.get_post(db, unarchived.id)
+
+
+# ============================================================
 # POST /posts/{post_id}/check-time-status
 # Verifica y actualiza el time_status del post según deadline_at.
 # Útil para forzar la verificación sin esperar al próximo acceso.
@@ -217,7 +232,7 @@ def remove_deadline(
 # ============================================================
 @router.delete("/{post_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_post(
-    post: Post = Depends(require_owner_or_admin),
+    post: Post = Depends(require_owner_or_admin_archived),
     db: Session = Depends(get_db),
 ):
     post_service.delete_post(db, post)

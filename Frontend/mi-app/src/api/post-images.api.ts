@@ -20,6 +20,7 @@ export interface ImageCreate {
 
 export interface PostImage {
   id: number
+  cloudinary_id: string
   url: string
   position: number
   object_position?: string | null

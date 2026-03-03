@@ -59,6 +59,9 @@ class UserOut(BaseModel):
     availability: Optional[int] = None
     is_onboarding_completed: bool = False
     created_at: datetime
+    followers_count: int = 0
+    following_count: int = 0
+    posts_count: int = 0
 
     class Config:
         from_attributes = True

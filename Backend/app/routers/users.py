@@ -35,9 +35,33 @@ def list_users(db: Session = Depends(get_db)):
 # ============================================================
 @router.get("/me", response_model=UserOut)
 def get_current_user_profile(
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return current_user
+    uid = current_user.id
+    followers_count = db.scalar(
+        select(func.count()).select_from(Follow).where(Follow.following_id == uid)
+    ) or 0
+    following_count = db.scalar(
+        select(func.count()).select_from(Follow).where(Follow.follower_id == uid)
+    ) or 0
+    posts_count = db.scalar(
+        select(func.count()).select_from(Post).where(Post.user_id == uid)
+    ) or 0
+    return UserOut(
+        id=current_user.id,
+        email=current_user.email,
+        full_name=current_user.full_name,
+        career=current_user.career,
+        cycle=current_user.cycle,
+        interests=current_user.interests,
+        availability=current_user.availability,
+        is_onboarding_completed=current_user.is_onboarding_completed,
+        created_at=current_user.created_at,
+        followers_count=followers_count,
+        following_count=following_count,
+        posts_count=posts_count,
+    )
 
 
 # ============================================================
@@ -263,3 +287,33 @@ def get_following(
             )
 
     return result
+
+
+# ============================================================
+# DELETE /users/me/followers/{follower_id}
+# Elimina un seguidor de la lista de seguidores del usuario
+# autenticado (el seguidor deja de seguir al usuario actual).
+# Auth: Requerida
+# ============================================================
+@router.delete("/me/followers/{follower_id}", status_code=status.HTTP_200_OK)
+def remove_follower(
+    follower_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    follow = db.scalars(
+        select(Follow).where(
+            Follow.follower_id == follower_id,
+            Follow.following_id == current_user.id,
+        )
+    ).first()
+
+    if not follow:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Este usuario no te sigue"
+        )
+
+    db.delete(follow)
+    db.commit()
+    return {"status": "follower_removed"}

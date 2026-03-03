@@ -28,7 +28,7 @@ def create_image(db: Session, post_id: int, data: ImageCreate) -> PostImage:
         post_id=post_id,
         cloudinary_id=data.cloudinary_id,
         url=data.url,
-        position=data.position if data.position else max_position,
+        position=data.position if data.position is not None else max_position,
         object_position=data.object_position,
         scale=data.scale,
     )

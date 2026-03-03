@@ -118,3 +118,13 @@ export async function getFollowing(userId: number, params?: { page?: number; siz
   const { data } = await api.get(`/users/${userId}/following`, { params })
   return data
 }
+
+/**
+ * DELETE /users/me/followers/{followerId}
+ * Elimina un seguidor de la lista del usuario autenticado.
+ * Auth: Requerida.
+ */
+export async function removeFollower(followerId: number) {
+  const { data } = await api.delete(`/users/me/followers/${followerId}`)
+  return data
+}

@@ -126,6 +126,7 @@ class PostUpdate(BaseModel):
 class PostImageOut(BaseModel):
     """Schema de imagen embebida en post."""
     id: int
+    cloudinary_id: str
     url: str
     object_position: Optional[str] = None
     scale: Optional[float] = None

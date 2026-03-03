@@ -1,19 +1,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import ReactDOM from "react-dom"
 import { useParams } from "react-router-dom"
 import {
   getMyProfile, getUserProfile as apiGetProfile,
-  followUser, unfollowUser, updateInterests,
-  getUserPosts, getFollowers, getFollowing,
+  followUser, unfollowUser, updateInterests, updateMyProfile,
+  getUserPosts, getFollowers, getFollowing, removeFollower,
 } from "../api/users.api"
-import { updatePost, archivePost, deletePost } from "../api/posts.api"
+import { archivePost, unarchivePost, deletePost } from "../api/posts.api"
 import { uploadToCloudinary } from "../api/cloudinary"
 import {
   Edit2, Users, Calendar, BookOpen, Clock, Camera, Check, X,
-  FileText, UserPlus, UserMinus, Trash2, Archive, Pencil,
+  FileText, UserPlus, UserMinus, Trash2, Archive, ArchiveRestore, Pencil,
   AlertTriangle, ChevronDown, ChevronUp, Bookmark,
 } from "lucide-react"
 import { getSavedPosts, unsavePost } from "../api/saved-posts.api"
 import { POST_TYPE_LABELS, POST_TYPE_ICONS, SUBTYPE_LABELS } from "../types/post.types"
+import PostDetailModal from "../components/PostDetailModal"
+import EditPostWizard from "../components/EditPostWizard"
 
 // ─── Tipos unificados ──────────────────────────────────────
 
@@ -37,6 +40,7 @@ interface PostItem {
   post_type: string
   subtype?: string
   status: string
+  time_status?: string
   tags?: string[]
   deadline_at?: string
   created_at: string
@@ -49,6 +53,8 @@ interface FollowerItem {
   followed_at: string
 }
 
+
+
 // ─── Constantes ────────────────────────────────────────────
 
 const AVAILABILITY_OPTIONS = [
@@ -59,13 +65,23 @@ const AVAILABILITY_OPTIONS = [
   { id: 4, label: 'Máxima disponibilidad', emoji: '🌟', description: '15+ hrs/semana' },
 ]
 
+const CAREER_OPTIONS = [
+  { id: 'software',       label: 'Ingeniería de Software',  icon: '💻' },
+  { id: 'industrial',     label: 'Ingeniería Industrial',   icon: '🏭' },
+  { id: 'mecanica',       label: 'Ingeniería Mecánica',     icon: '⚙️' },
+  { id: 'electronica',    label: 'Ingeniería Electrónica',  icon: '🔌' },
+  { id: 'civil',          label: 'Ingeniería Civil',        icon: '🏗️' },
+  { id: 'datos',          label: 'Ciencia de Datos',        icon: '📊' },
+  { id: 'administracion', label: 'Administración',          icon: '📈' },
+]
+
 const STATUS_BADGE: Record<string, { label: string; color: string }> = {
   published: { label: 'Publicado',  color: 'bg-green-100 text-green-700' },
   draft:     { label: 'Borrador',   color: 'bg-yellow-100 text-yellow-700' },
   archived:  { label: 'Archivado',  color: 'bg-gray-100 text-gray-500' },
 }
 
-type Tab = 'posts' | 'followers' | 'following' | 'info' | 'saved'
+type Tab = 'posts' | 'saved' | 'archived'
 
 // ─── Componente modal de confirmación ─────────────────────
 
@@ -74,8 +90,8 @@ function ConfirmModal({
 }: {
   title: string; message: string; onConfirm: () => void; onCancel: () => void; danger?: boolean
 }) {
-  return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+  return ReactDOM.createPortal(
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6">
         <div className="flex items-center gap-3 mb-4">
           <div className={`w-10 h-10 rounded-full flex items-center justify-center ${danger ? 'bg-red-100' : 'bg-yellow-100'}`}>
@@ -96,34 +112,24 @@ function ConfirmModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 
 // ─── Componente de card de post con acciones ──────────────
 
 function PostCard({
-  post, onUpdated, onDeleted,
+  post, onUpdated, onDeleted, onEdit,
 }: {
-  post: PostItem; onUpdated: (p: PostItem) => void; onDeleted: (id: number) => void
+  post: PostItem
+  onUpdated: (p: PostItem) => void
+  onDeleted: (id: number) => void
+  onEdit: (id: number) => void
 }) {
-  const [editing, setEditing]     = useState(false)
-  const [editTitle, setEditTitle] = useState(post.title ?? "")
-  const [editDesc, setEditDesc]   = useState(post.description)
-  const [saving, setSaving]       = useState(false)
-  const [confirm, setConfirm]     = useState<null | 'archive' | 'delete'>(null)
+  const [confirm, setConfirm] = useState<null | 'archive' | 'delete'>(null)
 
   const isArchived = post.status === 'archived'
-
-  const handleSave = async () => {
-    setSaving(true)
-    try {
-      const updated = await updatePost(post.id, { title: editTitle || undefined, description: editDesc })
-      onUpdated({ ...post, ...updated })
-      setEditing(false)
-    } catch (e) { console.error(e) }
-    finally { setSaving(false) }
-  }
 
   const handleArchive = async () => {
     try { const updated = await archivePost(post.id); onUpdated({ ...post, ...updated }) }
@@ -175,59 +181,26 @@ function PostCard({
               </span>
             </div>
 
-            {/* Modo edición */}
-            {editing ? (
-              <div className="space-y-2">
-                <input
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-semibold focus:ring-2 focus:ring-purple-400 focus:border-transparent outline-none"
-                  value={editTitle}
-                  onChange={e => setEditTitle(e.target.value)}
-                  placeholder="Título"
-                />
-                <textarea
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none focus:ring-2 focus:ring-purple-400 focus:border-transparent outline-none"
-                  rows={3}
-                  value={editDesc}
-                  onChange={e => setEditDesc(e.target.value)}
-                  placeholder="Descripción"
-                />
-              </div>
-            ) : (
-              <>
-                {post.title && <p className="font-semibold text-gray-900 text-sm">{post.title}</p>}
-                <p className="text-gray-600 text-sm line-clamp-2">{post.description}</p>
-              </>
-            )}
+            {post.title && <p className="font-semibold text-gray-900 text-sm">{post.title}</p>}
+            <p className="text-gray-600 text-sm line-clamp-2">{post.description}</p>
           </div>
 
           {/* Acciones */}
           {!isArchived && (
             <div className="flex items-center gap-1 shrink-0">
-              {editing ? (
-                <>
-                  <button onClick={handleSave} disabled={saving} className="p-1.5 rounded-lg bg-green-500 text-white hover:bg-green-600 transition-colors" title="Guardar">
-                    {saving ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Check className="w-4 h-4" />}
-                  </button>
-                  <button onClick={() => setEditing(false)} className="p-1.5 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors" title="Cancelar">
-                    <X className="w-4 h-4" />
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button onClick={() => setEditing(true)} className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors" title="Editar">
-                    <Pencil className="w-4 h-4" />
-                  </button>
-                  <button onClick={() => setConfirm('archive')} className="p-1.5 rounded-lg text-gray-400 hover:bg-yellow-50 hover:text-yellow-600 transition-colors" title="Archivar">
-                    <Archive className="w-4 h-4" />
-                  </button>
-                  <button onClick={() => setConfirm('delete')} className="p-1.5 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors" title="Eliminar">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </>
-              )}
+              <button onClick={() => onEdit(post.id)} className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors" title="Editar">
+                <Pencil className="w-4 h-4" />
+              </button>
+              <button onClick={() => setConfirm('archive')} className="p-1.5 rounded-lg text-gray-400 hover:bg-yellow-50 hover:text-yellow-600 transition-colors" title="Archivar">
+                <Archive className="w-4 h-4" />
+              </button>
+              <button onClick={() => setConfirm('delete')} className="p-1.5 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors" title="Eliminar">
+                <Trash2 className="w-4 h-4" />
+              </button>
             </div>
           )}
         </div>
+
 
         {/* Tags */}
         {post.tags && post.tags.length > 0 && (
@@ -250,16 +223,21 @@ function PostCard({
 // ─── Componente principal ──────────────────────────────────
 
 export default function Profile() {
-  const params = useParams()
+  const params   = useParams()
   const isMe   = useMemo(() => !params.id, [params.id])
   const userId  = params.id ? Number(params.id) : null
 
   const [data, setData]             = useState<ProfileData | null>(null)
   const [activeTab, setActiveTab]   = useState<Tab>('posts')
   const [posts, setPosts]           = useState<PostItem[]>([])
-  const [followers, setFollowers]   = useState<FollowerItem[]>([])
-  const [following, setFollowing]   = useState<FollowerItem[]>([])
   const [loadingTab, setLoadingTab] = useState(false)
+  const tabContentRef = useRef<HTMLDivElement>(null)
+  const [tabMinHeight, setTabMinHeight] = useState<number | null>(null)
+  const [tabLoaded, setTabLoaded] = useState<Record<Tab, boolean>>({
+    posts: false,
+    saved: false,
+    archived: false,
+  })
 
   // Intereses edición
   const [editingInterests, setEditingInterests] = useState(false)
@@ -269,6 +247,7 @@ export default function Profile() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [avatarUrl, setAvatarUrl]   = useState<string | null>(null)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
+  const [cropSrc, setCropSrc]       = useState<string | null>(null)  // data-URL for crop modal
 
   // Follow state
   const [isFollowing, setIsFollowing]   = useState(false)
@@ -276,6 +255,21 @@ export default function Profile() {
 
   // Saved posts
   const [savedPosts, setSavedPosts] = useState<PostItem[]>([])
+  const [selectedPostId, setSelectedPostId] = useState<number | null>(null)
+
+  // Edit post wizard
+  const [editingPost, setEditingPost] = useState<PostItem | null>(null)
+
+  // Archived posts
+  const [archivedPosts, setArchivedPosts] = useState<PostItem[]>([])
+
+  // Social modal
+  const [showSocialModal, setShowSocialModal]   = useState(false)
+  const [socialInitialTab, setSocialInitialTab] = useState<'followers' | 'following'>('followers')
+  const [modalFollowers, setModalFollowers]     = useState<FollowerItem[]>([])
+  const [modalFollowing, setModalFollowing]     = useState<FollowerItem[]>([])
+  const [loadingSocial, setLoadingSocial]       = useState(false)
+  const profileId = data?.id
 
   // ── Carga de datos del perfil ────────────────────────────
 
@@ -288,7 +282,9 @@ export default function Profile() {
           id: d.id, email: d.email, full_name: d.full_name,
           interests: d.interests, career: d.career, cycle: d.cycle,
           availability: d.availability,
-          followers_count: 0, following_count: 0, posts_count: 0,
+          followers_count: d.followers_count ?? 0,
+          following_count: d.following_count ?? 0,
+          posts_count: d.posts_count ?? 0,
         })
         setInterestInput((d.interests || []).join(", "))
         const saved = localStorage.getItem(`avatar_${d.id}`)
@@ -312,42 +308,136 @@ export default function Profile() {
   // ── Carga del tab activo ─────────────────────────────────
 
   const loadTab = useCallback(async (tab: Tab) => {
-    if (!data) return
+    if (!data || tabLoaded[tab]) return
     const targetId = data.id
     setLoadingTab(true)
     try {
+      const loadedPatch: Partial<Record<Tab, boolean>> = {}
       if (tab === 'posts') {
         const res = await getUserPosts(targetId)
-        setPosts(res)
-      } else if (tab === 'followers') {
-        const res = await getFollowers(targetId)
-        setFollowers(res)
-      } else if (tab === 'following') {
-        const res = await getFollowing(targetId)
-        setFollowing(res)
+        const all = res as PostItem[]
+        // En "Publicaciones" solo mostramos no archivadas.
+        setPosts(all.filter((p: PostItem) => p.status !== 'archived'))
+        loadedPatch.posts = true
+        if (isMe) {
+          setArchivedPosts(all.filter((p: PostItem) => p.status === 'archived'))
+          loadedPatch.archived = true
+        }
       } else if (tab === 'saved') {
         const res = await getSavedPosts()
         setSavedPosts(res)
+        loadedPatch.saved = true
+      } else if (tab === 'archived') {
+        const res = await getUserPosts(targetId)
+        setArchivedPosts((res as PostItem[]).filter((p: PostItem) => p.status === 'archived'))
+        loadedPatch.archived = true
+      }
+      if (Object.keys(loadedPatch).length > 0) {
+        setTabLoaded(prev => ({ ...prev, ...loadedPatch }))
       }
     } catch (e) { console.error(e) }
     finally { setLoadingTab(false) }
-  }, [data])
+  }, [data, isMe, tabLoaded])
+
+  const openSocialModal = async (tab: 'followers' | 'following') => {
+    if (!data) return
+    setSocialInitialTab(tab)
+    setShowSocialModal(true)
+    setLoadingSocial(true)
+    try {
+      const [fl, fw] = await Promise.all([
+        getFollowers(data.id),
+        getFollowing(data.id),
+      ])
+      setModalFollowers(fl)
+      setModalFollowing(fw)
+    } catch (e) { console.error(e) }
+    finally { setLoadingSocial(false) }
+  }
 
   useEffect(() => {
     loadTab(activeTab)
   }, [activeTab, loadTab])
 
+  useEffect(() => {
+    if (!loadingTab) {
+      setTabMinHeight(null)
+    }
+  }, [loadingTab])
+
+  // Precarga conteos de tabs secundarios para mostrar badges correctos desde el inicio.
+  useEffect(() => {
+    if (!isMe || !profileId) return
+    let cancelled = false
+
+    ;(async () => {
+      try {
+        const savedRes = await getSavedPosts().catch(() => [])
+        if (cancelled) return
+        setSavedPosts(savedRes as PostItem[])
+        setTabLoaded(prev => ({ ...prev, saved: true }))
+      } catch (e) {
+        console.error(e)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [isMe, profileId])
+
+  useEffect(() => {
+    setActiveTab('posts')
+    setPosts([])
+    setSavedPosts([])
+    setArchivedPosts([])
+    setTabLoaded({
+      posts: false,
+      saved: false,
+      archived: false,
+    })
+    setTabMinHeight(null)
+  }, [profileId])
+
+  const handleTabChange = (tab: Tab) => {
+    if (tab === activeTab) return
+    if (tab === 'saved') setTabLoaded(prev => ({ ...prev, saved: false }))
+    if (!tabLoaded[tab]) {
+      const currentHeight = tabContentRef.current?.offsetHeight ?? 0
+      if (currentHeight > 0) {
+        setTabMinHeight(currentHeight)
+      }
+    } else {
+      setTabMinHeight(null)
+    }
+    setActiveTab(tab)
+  }
+
   // ── Foto de perfil ───────────────────────────────────────
 
-  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (!file || !data) return
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => setCropSrc(reader.result as string)
+    reader.readAsDataURL(file)
+    // Reset so the same file can be re-selected
+    e.target.value = ''
+  }
+
+  const handleCroppedUpload = async (blob: Blob) => {
+    if (!data) return
+    setCropSrc(null)
     setUploadingPhoto(true)
     try {
+      const file = new File([blob], 'avatar.jpg', { type: 'image/jpeg' })
       const result = await uploadToCloudinary(file)
       setAvatarUrl(result.secure_url)
       localStorage.setItem(`avatar_${data.id}`, result.secure_url)
-    } catch (err) { console.error("Error subiendo foto:", err) }
+      window.dispatchEvent(new CustomEvent('avatarUpdated', {
+        detail: { userId: data.id, avatarUrl: result.secure_url },
+      }))
+    } catch (err) { console.error('Error subiendo foto:', err) }
     finally { setUploadingPhoto(false) }
   }
 
@@ -394,15 +484,15 @@ export default function Profile() {
   const shouldHideFollow = isMe || (data.id === currentUserId)
 
   const TABS: { id: Tab; label: string; icon: React.ReactNode; count?: number }[] = [
-    { id: 'posts',     label: 'Publicaciones', icon: <FileText className="w-4 h-4" />,  count: data.posts_count },
-    { id: 'followers', label: 'Seguidores',    icon: <Users className="w-4 h-4" />,     count: data.followers_count },
-    { id: 'following', label: 'Seguidos',      icon: <UserPlus className="w-4 h-4" />,  count: data.following_count },
-    { id: 'info',      label: 'Info',          icon: <BookOpen className="w-4 h-4" /> },
-    ...(isMe ? [{ id: 'saved' as Tab, label: 'Guardadas', icon: <Bookmark className="w-4 h-4" /> }] : []),
+    { id: 'posts',    label: 'Publicaciones', icon: <FileText className="w-4 h-4" />, count: data.posts_count },
+    ...(isMe ? [
+      { id: 'saved'    as Tab, label: 'Guardadas',  icon: <Bookmark className="w-4 h-4" />, count: savedPosts.length },
+      { id: 'archived' as Tab, label: 'Archivadas', icon: <Archive  className="w-4 h-4" />, count: archivedPosts.length },
+    ] : []),
   ]
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100" style={{ overflowAnchor: 'none' }}>
       {/* Input oculto para foto */}
       <input
         ref={fileInputRef}
@@ -411,6 +501,33 @@ export default function Profile() {
         className="hidden"
         onChange={handlePhotoChange}
       />
+
+      {/* Modal de recorte circular */}
+      <PostDetailModal
+        postId={selectedPostId}
+        onClose={() => setSelectedPostId(null)}
+        onUnsaved={id => {
+          setSavedPosts(prev => prev.filter(p => p.id !== id))
+          setSelectedPostId(null)
+        }}
+      />
+
+      <EditPostWizard
+        post={editingPost}
+        onClose={() => setEditingPost(null)}
+        onSaved={updated => {
+          setPosts(prev => prev.map(p => p.id === updated.id ? updated : p))
+          setEditingPost(null)
+        }}
+      />
+
+      {cropSrc && (
+        <AvatarCropModal
+          src={cropSrc}
+          onConfirm={handleCroppedUpload}
+          onCancel={() => setCropSrc(null)}
+        />
+      )}
 
       {/* ── Cover / Banner ─────────────────────────────── */}
       <div className="relative z-0 h-36 bg-gradient-to-r from-[#4F46E5] via-[#7C3AED] to-[#EC4899]">
@@ -427,7 +544,7 @@ export default function Profile() {
           <div className="flex items-end gap-4 mb-4">
             {/* Avatar */}
             <div className="relative shrink-0">
-              <div className="w-24 h-24 rounded-2xl overflow-hidden border-4 border-white shadow-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+              <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
                 {avatarUrl ? (
                   <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
                 ) : (
@@ -478,17 +595,55 @@ export default function Profile() {
 
           {/* Stats rápidas */}
           <div className="flex gap-4 border-t border-gray-100 pt-4">
-            {[
-              { label: 'Publicaciones', value: data.posts_count },
-              { label: 'Seguidores',    value: data.followers_count },
-              { label: 'Siguiendo',     value: data.following_count },
-            ].map(s => (
-              <div key={s.label} className="flex-1 text-center">
-                <p className="text-lg font-bold text-gray-900">{s.value}</p>
-                <p className="text-xs text-gray-500">{s.label}</p>
-              </div>
-            ))}
+            <div className="flex-1 text-center">
+              <p className="text-lg font-bold text-gray-900">{data.posts_count}</p>
+              <p className="text-xs text-gray-500">Publicaciones</p>
+            </div>
+            <button
+              className="flex-1 text-center hover:bg-gray-50 rounded-xl py-1 transition-colors"
+              onClick={() => openSocialModal('followers')}
+            >
+              <p className="text-lg font-bold text-gray-900">{data.followers_count}</p>
+              <p className="text-xs text-gray-500">Seguidores</p>
+            </button>
+            <button
+              className="flex-1 text-center hover:bg-gray-50 rounded-xl py-1 transition-colors"
+              onClick={() => openSocialModal('following')}
+            >
+              <p className="text-lg font-bold text-gray-900">{data.following_count}</p>
+              <p className="text-xs text-gray-500">Siguiendo</p>
+            </button>
           </div>
+        </div>
+
+        {/* ── Info siempre visible ───────────────────────── */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 px-6 py-5 mb-4">
+          <InfoTab
+            data={data}
+            isMe={isMe}
+            avail={avail}
+            editingInterests={editingInterests}
+            interestInput={interestInput}
+            onEditInterests={() => setEditingInterests(true)}
+            onCancelInterests={() => setEditingInterests(false)}
+            onSaveInterests={saveInterests}
+            onInterestInputChange={setInterestInput}
+            onProfileUpdate={async (patch: Record<string, unknown>) => {
+              const updated = await updateMyProfile(patch)
+              setData(prev => {
+                if (!prev) return prev
+                return {
+                  ...prev,
+                  ...patch,
+                  ...updated,
+                  // PATCH /users/me puede devolver conteos en 0; preservamos el valor real actual.
+                  followers_count: prev.followers_count,
+                  following_count: prev.following_count,
+                  posts_count: prev.posts_count,
+                }
+              })
+            }}
+          />
         </div>
 
         {/* ── Tabs ───────────────────────────────────────── */}
@@ -497,7 +652,7 @@ export default function Profile() {
             {TABS.map(tab => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => handleTabChange(tab.id)}
                 className={`flex items-center gap-1.5 px-4 py-3.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
                   activeTab === tab.id
                     ? 'border-[#4F46E5] text-[#4F46E5]'
@@ -515,7 +670,11 @@ export default function Profile() {
             ))}
           </div>
 
-          <div className="p-4">
+          <div
+            ref={tabContentRef}
+            className="p-4"
+            style={tabMinHeight ? { minHeight: `${tabMinHeight}px` } : undefined}
+          >
             {loadingTab && (
               <div className="flex items-center justify-center py-8 text-gray-400 gap-2">
                 <div className="w-5 h-5 border-2 border-gray-200 border-t-purple-500 rounded-full animate-spin" />
@@ -535,21 +694,24 @@ export default function Profile() {
                   <PostCard
                     key={post.id}
                     post={post}
-                    onUpdated={updated => setPosts(prev => prev.map(p => p.id === updated.id ? updated : p))}
+                    onUpdated={updated => {
+                      if (updated.status === 'archived') {
+                        setPosts(prev => prev.filter(p => p.id !== updated.id))
+                        if (isMe) {
+                          setArchivedPosts(prev => [updated, ...prev.filter(p => p.id !== updated.id)])
+                        }
+                        return
+                      }
+                      setPosts(prev => prev.map(p => p.id === updated.id ? updated : p))
+                      if (isMe) {
+                        setArchivedPosts(prev => prev.filter(p => p.id !== updated.id))
+                      }
+                    }}
                     onDeleted={id => setPosts(prev => prev.filter(p => p.id !== id))}
+                    onEdit={id => setEditingPost(posts.find(p => p.id === id) ?? null)}
                   />
                 ))}
               </div>
-            )}
-
-            {/* ── Tab: Seguidores ───────────────────────── */}
-            {!loadingTab && activeTab === 'followers' && (
-              <FollowerList items={followers} emptyLabel="Sin seguidores aún" />
-            )}
-
-            {/* ── Tab: Seguidos ─────────────────────────── */}
-            {!loadingTab && activeTab === 'following' && (
-              <FollowerList items={following} emptyLabel="No sigue a nadie aún" />
             )}
 
             {/* ── Tab: Guardadas ────────────────────────── */}
@@ -562,33 +724,82 @@ export default function Profile() {
                     setSavedPosts(prev => prev.filter(p => p.id !== id))
                   } catch (e) { console.error(e) }
                 }}
+                onNavigate={(postId: number) => setSelectedPostId(postId)}
               />
             )}
 
-            {/* ── Tab: Info ─────────────────────────────── */}
-            {!loadingTab && activeTab === 'info' && (
-              <InfoTab
-                data={data}
-                isMe={isMe}
-                avail={avail}
-                editingInterests={editingInterests}
-                interestInput={interestInput}
-                onEditInterests={() => setEditingInterests(true)}
-                onCancelInterests={() => setEditingInterests(false)}
-                onSaveInterests={saveInterests}
-                onInterestInputChange={setInterestInput}
-              />
+            {/* ── Tab: Archivadas ─────────────────────── */}
+            {!loadingTab && activeTab === 'archived' && (
+              <div className="space-y-3">
+                {archivedPosts.length === 0 ? (
+                  <div className="py-10 text-center">
+                    <Archive className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+                    <p className="text-gray-500 text-sm">No tienes publicaciones archivadas</p>
+                  </div>
+                ) : archivedPosts.map(post => (
+                  <ArchivedPostCard
+                    key={post.id}
+                    post={post}
+                    onUnarchived={(updated: PostItem) => {
+                      setArchivedPosts(prev => prev.filter(p => p.id !== updated.id))
+                      setPosts(prev => [{ ...updated, status: 'published' }, ...prev.filter(p => p.id !== updated.id)])
+                    }}
+                    onDeleted={(id: number) => setArchivedPosts(prev => prev.filter(p => p.id !== id))}
+                  />
+                ))}
+              </div>
             )}
+
           </div>
         </div>
       </div>
+
+      {/* ── Modal Social ────────────────────────────── */}
+      {showSocialModal && (
+        <SocialModal
+          initialTab={socialInitialTab}
+          followers={modalFollowers}
+          following={modalFollowing}
+          loading={loadingSocial}
+          isMe={isMe}
+          onClose={() => setShowSocialModal(false)}
+          onRemoveFollower={async (uid: number) => {
+            try {
+              await removeFollower(uid)
+              setModalFollowers(prev => prev.filter(f => f.user_id !== uid))
+              setData(prev => prev ? { ...prev, followers_count: Math.max(0, prev.followers_count - 1) } : prev)
+            } catch (e) { console.error(e) }
+          }}
+          onFollowUser={async (uid: number) => {
+            try { await followUser(uid) } catch (e) { console.error(e) }
+          }}
+          onUnfollow={async (uid: number) => {
+            try {
+              await unfollowUser(uid)
+              setModalFollowing(prev => prev.filter(f => f.user_id !== uid))
+              setData(prev => prev ? { ...prev, following_count: Math.max(0, prev.following_count - 1) } : prev)
+            } catch (e) { console.error(e) }
+          }}
+        />
+      )}
     </div>
   )
 }
 
 // ─── Sub-componente: lista de seguidores/seguidos ─────────
 
-function FollowerList({ items, emptyLabel }: { items: FollowerItem[]; emptyLabel: string }) {
+function FollowerList({
+  items, emptyLabel, mode, isMe,
+  onRemoveFollower, onFollowUser, onUnfollow,
+}: {
+  items: FollowerItem[]
+  emptyLabel: string
+  mode: 'followers' | 'following'
+  isMe: boolean
+  onRemoveFollower?: (userId: number) => void
+  onFollowUser?: (userId: number) => void
+  onUnfollow?: (userId: number) => void
+}) {
   if (items.length === 0) {
     return (
       <div className="py-10 text-center">
@@ -599,32 +810,207 @@ function FollowerList({ items, emptyLabel }: { items: FollowerItem[]; emptyLabel
   }
   return (
     <div className="space-y-2">
-      {items.map(item => (
-        <div key={item.user_id} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-sm shrink-0">
-            {(item.full_name || item.email).charAt(0).toUpperCase()}
+      {items.map(item => {
+        const avatarSaved = localStorage.getItem(`avatar_${item.user_id}`)
+        return (
+          <div key={item.user_id} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors">
+            {avatarSaved ? (
+              <img src={avatarSaved} alt="" className="w-10 h-10 rounded-full object-cover border border-gray-200 shrink-0" />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-sm shrink-0">
+                {(item.full_name || item.email).charAt(0).toUpperCase()}
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-900 truncate">{item.full_name || 'Usuario'}</p>
+              <p className="text-xs text-gray-500 truncate">{item.email}</p>
+            </div>
+
+            {/* Actions — only for own profile */}
+            {isMe && (
+              <div className="flex items-center gap-1.5 shrink-0">
+                {mode === 'followers' && (
+                  <>
+                    {onFollowUser && (
+                      <button
+                        onClick={() => onFollowUser(item.user_id)}
+                        className="px-2.5 py-1 text-xs font-medium rounded-lg bg-[#4F46E5] text-white hover:bg-[#4338CA] transition-colors"
+                      >
+                        Seguir
+                      </button>
+                    )}
+                    {onRemoveFollower && (
+                      <button
+                        onClick={() => onRemoveFollower(item.user_id)}
+                        className="px-2.5 py-1 text-xs font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
+                      >
+                        Eliminar
+                      </button>
+                    )}
+                  </>
+                )}
+                {mode === 'following' && onUnfollow && (
+                  <button
+                    onClick={() => onUnfollow(item.user_id)}
+                    className="px-2.5 py-1 text-xs font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
+                  >
+                    Dejar de seguir
+                  </button>
+                )}
+              </div>
+            )}
+
+            {!isMe && (
+              <p className="text-xs text-gray-400 shrink-0">
+                {new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: 'short' }).format(new Date(item.followed_at))}
+              </p>
+            )}
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-900 truncate">{item.full_name || 'Usuario'}</p>
-            <p className="text-xs text-gray-500 truncate">{item.email}</p>
+        )
+      })}
+    </div>
+  )
+}
+
+// ─── Sub-componente: modal seguidores/seguidos ───────────
+
+function SocialModal({
+  initialTab, followers, following, loading, isMe,
+  onClose, onRemoveFollower, onFollowUser, onUnfollow,
+}: {
+  initialTab: 'followers' | 'following'
+  followers: FollowerItem[]
+  following: FollowerItem[]
+  loading: boolean
+  isMe: boolean
+  onClose: () => void
+  onRemoveFollower: (uid: number) => void
+  onFollowUser: (uid: number) => void
+  onUnfollow: (uid: number) => void
+}) {
+  const [tab, setTab] = useState<'followers' | 'following'>(initialTab)
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[75vh] flex flex-col overflow-hidden"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">
+          <div className="flex gap-1 bg-gray-100 rounded-xl p-1">
+            <button
+              onClick={() => setTab('followers')}
+              className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
+                tab === 'followers' ? 'bg-white text-[#4F46E5] shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Seguidores
+              <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${tab === 'followers' ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-200 text-gray-500'}`}>
+                {followers.length}
+              </span>
+            </button>
+            <button
+              onClick={() => setTab('following')}
+              className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
+                tab === 'following' ? 'bg-white text-[#4F46E5] shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Seguidos
+              <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${tab === 'following' ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-200 text-gray-500'}`}>
+                {following.length}
+              </span>
+            </button>
           </div>
-          <p className="text-xs text-gray-400 shrink-0">
-            {new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: 'short' }).format(new Date(item.followed_at))}
-          </p>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
-      ))}
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto px-5 pb-5">
+          {loading ? (
+            <div className="flex items-center justify-center py-12 gap-2 text-gray-400">
+              <div className="w-5 h-5 border-2 border-gray-200 border-t-purple-500 rounded-full animate-spin" />
+              <span className="text-sm">Cargando...</span>
+            </div>
+          ) : tab === 'followers' ? (
+            <FollowerList
+              items={followers}
+              emptyLabel="Sin seguidores aún"
+              mode="followers"
+              isMe={isMe}
+              onRemoveFollower={onRemoveFollower}
+              onFollowUser={onFollowUser}
+            />
+          ) : (
+            <FollowerList
+              items={following}
+              emptyLabel="No sigue a nadie aún"
+              mode="following"
+              isMe={isMe}
+              onUnfollow={onUnfollow}
+            />
+          )}
+        </div>
+      </div>
     </div>
   )
 }
 
 // ─── Sub-componente: tab de guardadas ───────────────────
 
+const SAVED_FILTERS: { key: string; label: string }[] = [
+  { key: 'all',                      label: 'Todos' },
+  { key: 'academic_project',         label: 'Proyectos' },
+  { key: 'event',                    label: 'Eventos' },
+  { key: 'announcement',             label: 'Anuncios' },
+  { key: 'international_opportunity', label: 'Oportunidades' },
+  { key: 'simple_post',              label: 'Publicaciones' },
+]
+
+function deadlineUrgency(d?: string): number {
+  if (!d) return Infinity
+  return new Date(d).getTime()
+}
+
+function deadlineLabel(d?: string): string | null {
+  if (!d) return null
+  const ms = new Date(d).getTime() - Date.now()
+  if (ms <= 0) return 'Vencido'
+  const days = Math.ceil(ms / 86400000)
+  if (days <= 1) return 'Cierra hoy'
+  if (days <= 3) return `Cierra en ${days} días`
+  if (days <= 7) return `Cierra en ${days} días`
+  return null
+}
+
 function SavedPostsTab({
-  posts, onUnsave,
+  posts, onUnsave, onNavigate,
 }: {
   posts: PostItem[]
   onUnsave: (id: number) => void
+  onNavigate: (postId: number) => void
 }) {
+  const [filter, setFilter] = useState('all')
+
+  const filtered = filter === 'all' ? posts : posts.filter(p => p.post_type === filter)
+
+  // Split: active (in_time / no_deadline) vs expired (out_of_time)
+  const active  = filtered.filter(p => p.time_status !== 'out_of_time')
+  const expired = filtered.filter(p => p.time_status === 'out_of_time')
+
+  // Sort active: soonest deadline first, no-deadline last
+  const sortedActive = [...active].sort((a, b) => deadlineUrgency(a.deadline_at) - deadlineUrgency(b.deadline_at))
+  // Sort expired: most recently expired first (closest to today)
+  const sortedExpired = [...expired].sort((a, b) => deadlineUrgency(b.deadline_at) - deadlineUrgency(a.deadline_at))
+
   if (posts.length === 0) {
     return (
       <div className="py-10 text-center">
@@ -634,39 +1020,171 @@ function SavedPostsTab({
       </div>
     )
   }
-  return (
-    <div className="space-y-3">
-      {posts.map(post => (
-        <div key={post.id} className="bg-white border rounded-xl p-4">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap mb-1">
-                <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                  {POST_TYPE_ICONS[post.post_type as keyof typeof POST_TYPE_ICONS]} {POST_TYPE_LABELS[post.post_type as keyof typeof POST_TYPE_LABELS]}
+
+  const renderCard = (post: PostItem) => {
+    const urgency = deadlineLabel(post.deadline_at)
+    const isExpired = post.time_status === 'out_of_time'
+    return (
+      <div
+        key={post.id}
+        className={`bg-white border rounded-xl p-4 cursor-pointer hover:shadow-md transition-shadow ${isExpired ? 'opacity-60' : ''}`}
+        onClick={() => onNavigate(post.id)}
+      >
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap mb-1">
+              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                {POST_TYPE_ICONS[post.post_type as keyof typeof POST_TYPE_ICONS]} {POST_TYPE_LABELS[post.post_type as keyof typeof POST_TYPE_LABELS]}
+              </span>
+              {post.subtype && (
+                <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
+                  {SUBTYPE_LABELS[post.subtype as keyof typeof SUBTYPE_LABELS]}
                 </span>
-                {post.subtype && (
-                  <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
-                    {SUBTYPE_LABELS[post.subtype as keyof typeof SUBTYPE_LABELS]}
-                  </span>
-                )}
-              </div>
-              {post.title && <p className="font-semibold text-gray-900 text-sm">{post.title}</p>}
-              <p className="text-gray-600 text-sm line-clamp-2">{post.description}</p>
-              <p className="text-xs text-gray-400 mt-1">
-                {new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(post.created_at))}
-              </p>
+              )}
+              {urgency && (
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                  isExpired ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-700'
+                }`}>
+                  {urgency}
+                </span>
+              )}
             </div>
-            <button
-              onClick={() => onUnsave(post.id)}
-              className="shrink-0 p-2 rounded-lg text-[#4F46E5] hover:bg-indigo-50 transition-colors"
-              title="Quitar de guardados"
-            >
-              <Bookmark className="w-4 h-4 fill-current" />
+            {post.title && <p className="font-semibold text-gray-900 text-sm">{post.title}</p>}
+            <p className="text-gray-600 text-sm line-clamp-2">{post.description}</p>
+            {post.deadline_at && (
+              <p className="text-xs text-gray-400 mt-1">
+                Fecha límite: {new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(post.deadline_at))}
+              </p>
+            )}
+          </div>
+          <button
+            onClick={e => { e.stopPropagation(); onUnsave(post.id) }}
+            className="shrink-0 p-2 rounded-lg text-[#4F46E5] hover:bg-indigo-50 transition-colors"
+            title="Quitar de guardados"
+          >
+            <Bookmark className="w-4 h-4 fill-current" />
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Filtros */}
+      <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
+        {SAVED_FILTERS.map(f => (
+          <button
+            key={f.key}
+            onClick={() => setFilter(f.key)}
+            className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+              filter === f.key
+                ? 'bg-[#4F46E5] text-white border-[#4F46E5]'
+                : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      {filtered.length === 0 ? (
+        <p className="text-center text-gray-400 text-sm py-6">Sin resultados para este filtro</p>
+      ) : (
+        <>
+          {/* Sección activa */}
+          {sortedActive.length > 0 && (
+            <div className="space-y-2">
+              {sortedActive.map(renderCard)}
+            </div>
+          )}
+
+          {/* Sección vencidas */}
+          {sortedExpired.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 pt-2 pb-1">
+                <div className="flex-1 h-px bg-gray-200" />
+                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Guardadas vencidas</span>
+                <div className="flex-1 h-px bg-gray-200" />
+              </div>
+              {sortedExpired.map(renderCard)}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
+// ─── Sub-componente: card de post archivado ──────────────
+
+function ArchivedPostCard({
+  post, onUnarchived, onDeleted,
+}: {
+  post: PostItem; onUnarchived: (p: PostItem) => void; onDeleted: (id: number) => void
+}) {
+  const [confirm, setConfirm] = useState<null | 'unarchive' | 'delete'>(null)
+
+  const handleUnarchive = async () => {
+    try {
+      const updated = await unarchivePost(post.id)
+      onUnarchived({ ...post, ...updated, status: 'published' })
+    } catch (e) { console.error(e) }
+    finally { setConfirm(null) }
+  }
+
+  const handleDelete = async () => {
+    try { await deletePost(post.id); onDeleted(post.id) }
+    catch (e) { console.error(e) }
+    finally { setConfirm(null) }
+  }
+
+  return (
+    <>
+      {confirm === 'unarchive' && (
+        <ConfirmModal
+          title="Desarchivar publicación"
+          message="El post volverá a estar publicado y visible en el feed. ¿Continuar?"
+          onConfirm={handleUnarchive}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
+      {confirm === 'delete' && (
+        <ConfirmModal
+          title="Eliminar publicación"
+          message="Esta acción es permanente. El post se eliminará completamente. ¿Estás seguro?"
+          onConfirm={handleDelete}
+          onCancel={() => setConfirm(null)}
+          danger
+        />
+      )}
+
+      <div className="bg-white border rounded-xl p-4 space-y-3 opacity-70">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap mb-1">
+              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                {POST_TYPE_ICONS[post.post_type as keyof typeof POST_TYPE_ICONS]} {POST_TYPE_LABELS[post.post_type as keyof typeof POST_TYPE_LABELS]}
+              </span>
+              <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">Archivado</span>
+            </div>
+            {post.title && <p className="font-semibold text-gray-900 text-sm">{post.title}</p>}
+            <p className="text-gray-600 text-sm line-clamp-2">{post.description}</p>
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            <button onClick={() => setConfirm('unarchive')} className="p-1.5 rounded-lg text-gray-400 hover:bg-green-50 hover:text-green-600 transition-colors" title="Desarchivar">
+              <ArchiveRestore className="w-4 h-4" />
+            </button>
+            <button onClick={() => setConfirm('delete')} className="p-1.5 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors" title="Eliminar">
+              <Trash2 className="w-4 h-4" />
             </button>
           </div>
         </div>
-      ))}
-    </div>
+        <p className="text-xs text-gray-400">
+          {new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(post.created_at))}
+        </p>
+      </div>
+    </>
   )
 }
 
@@ -676,6 +1194,7 @@ function InfoTab({
   data, isMe, avail,
   editingInterests, interestInput,
   onEditInterests, onCancelInterests, onSaveInterests, onInterestInputChange,
+  onProfileUpdate,
 }: {
   data: ProfileData
   isMe: boolean
@@ -686,45 +1205,178 @@ function InfoTab({
   onCancelInterests: () => void
   onSaveInterests: () => void
   onInterestInputChange: (v: string) => void
+  onProfileUpdate: (patch: Record<string, unknown>) => Promise<void>
 }) {
   const [showAllInterests, setShowAllInterests] = useState(false)
   const interests = data.interests ?? []
   const visible   = showAllInterests ? interests : interests.slice(0, 6)
 
+  // Inline editing state for career, cycle, availability
+  const [editingField, setEditingField] = useState<null | 'career' | 'cycle' | 'availability'>(null)
+  const [editCareer, setEditCareer]         = useState(data.career ?? '')
+  const [editCycle, setEditCycle]           = useState(data.cycle ?? 1)
+  const [editAvailability, setEditAvailability] = useState(data.availability ?? 0)
+  const [savingField, setSavingField]       = useState(false)
+
+  const startEdit = (field: 'career' | 'cycle' | 'availability') => {
+    if (field === 'career') setEditCareer(data.career ?? '')
+    if (field === 'cycle') setEditCycle(data.cycle ?? 1)
+    if (field === 'availability') setEditAvailability(data.availability ?? 0)
+    setEditingField(field)
+  }
+
+  const saveField = async () => {
+    setSavingField(true)
+    try {
+      if (editingField === 'career') await onProfileUpdate({ career: editCareer || undefined })
+      if (editingField === 'cycle') await onProfileUpdate({ cycle: editCycle })
+      if (editingField === 'availability') await onProfileUpdate({ availability: editAvailability })
+      setEditingField(null)
+    } catch (e) { console.error(e) }
+    finally { setSavingField(false) }
+  }
+
   return (
     <div className="space-y-4">
       {/* Carrera y Ciclo */}
       <div className="grid grid-cols-2 gap-3">
+        {/* Carrera */}
         <div className="bg-purple-50 rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-1">
-            <BookOpen className="w-4 h-4 text-purple-600" />
-            <span className="text-xs font-semibold text-purple-700 uppercase tracking-wide">Carrera</span>
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-2">
+              <BookOpen className="w-4 h-4 text-purple-600" />
+              <span className="text-xs font-semibold text-purple-700 uppercase tracking-wide">Carrera</span>
+            </div>
+            {isMe && editingField !== 'career' && (
+              <button onClick={() => startEdit('career')} className="text-purple-500 hover:text-purple-700 transition-colors">
+                <Pencil className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
-          <p className="text-gray-800 font-medium text-sm">{data.career || "No especificada"}</p>
+          {editingField === 'career' ? (
+            <div className="space-y-2 mt-1">
+              <select
+                className="w-full border border-purple-300 rounded-lg px-2.5 py-1.5 text-sm bg-white focus:ring-2 focus:ring-purple-400 focus:border-transparent outline-none"
+                value={editCareer}
+                onChange={e => setEditCareer(e.target.value)}
+              >
+                <option value="">Seleccionar carrera</option>
+                {CAREER_OPTIONS.map(c => (
+                  <option key={c.id} value={c.label}>{c.icon} {c.label}</option>
+                ))}
+              </select>
+              <div className="flex gap-1.5">
+                <button onClick={saveField} disabled={savingField} className="p-1 rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition-colors">
+                  {savingField ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Check className="w-4 h-4" />}
+                </button>
+                <button onClick={() => setEditingField(null)} className="p-1 rounded-lg bg-gray-200 text-gray-600 hover:bg-gray-300 transition-colors">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          ) : (
+            <p className="text-gray-800 font-medium text-sm">
+              {data.career
+                ? `${CAREER_OPTIONS.find(c => c.label === data.career)?.icon ?? ''} ${data.career}`
+                : 'No especificada'}
+            </p>
+          )}
         </div>
+
+        {/* Ciclo */}
         <div className="bg-blue-50 rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-1">
-            <Calendar className="w-4 h-4 text-blue-600" />
-            <span className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Ciclo</span>
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-blue-600" />
+              <span className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Ciclo</span>
+            </div>
+            {isMe && editingField !== 'cycle' && (
+              <button onClick={() => startEdit('cycle')} className="text-blue-500 hover:text-blue-700 transition-colors">
+                <Pencil className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
-          <p className="text-gray-800 font-bold text-xl">{data.cycle ?? "—"}</p>
+          {editingField === 'cycle' ? (
+            <div className="space-y-2 mt-1">
+              <select
+                className="w-full border border-blue-300 rounded-lg px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-blue-400 focus:border-transparent outline-none bg-white"
+                value={editCycle}
+                onChange={e => setEditCycle(Number(e.target.value))}
+              >
+                {Array.from({ length: 12 }, (_, i) => i + 1).map(c => (
+                  <option key={c} value={c}>Ciclo {c}</option>
+                ))}
+              </select>
+              <div className="flex gap-1.5">
+                <button onClick={saveField} disabled={savingField} className="p-1 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors">
+                  {savingField ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Check className="w-4 h-4" />}
+                </button>
+                <button onClick={() => setEditingField(null)} className="p-1 rounded-lg bg-gray-200 text-gray-600 hover:bg-gray-300 transition-colors">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          ) : (
+            <p className="text-gray-800 font-bold text-xl">{data.cycle ?? "—"}</p>
+          )}
         </div>
       </div>
 
       {/* Disponibilidad */}
-      {data.availability !== undefined && (
-        <div className="bg-green-50 rounded-xl p-4 flex items-center gap-4">
-          <span className="text-3xl">{avail.emoji}</span>
-          <div>
-            <div className="flex items-center gap-2 mb-0.5">
-              <Clock className="w-4 h-4 text-green-600" />
-              <span className="text-xs font-semibold text-green-700 uppercase tracking-wide">Disponibilidad</span>
-            </div>
-            <p className="font-bold text-gray-900">{avail.label}</p>
-            <p className="text-xs text-gray-500">{avail.description}</p>
+      <div className="bg-green-50 rounded-xl p-4">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4 text-green-600" />
+            <span className="text-xs font-semibold text-green-700 uppercase tracking-wide">Disponibilidad</span>
           </div>
+          {isMe && editingField !== 'availability' && (
+            <button onClick={() => startEdit('availability')} className="text-green-500 hover:text-green-700 transition-colors">
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
-      )}
+        {editingField === 'availability' ? (
+          <div className="space-y-2">
+            <div className="grid gap-1.5">
+              {AVAILABILITY_OPTIONS.map(opt => (
+                <button
+                  key={opt.id}
+                  onClick={() => setEditAvailability(opt.id)}
+                  className={`flex items-center gap-3 p-2.5 rounded-lg border text-left transition-colors ${
+                    editAvailability === opt.id
+                      ? 'border-green-500 bg-green-100'
+                      : 'border-gray-200 bg-white hover:bg-gray-50'
+                  }`}
+                >
+                  <span className="text-lg">{opt.emoji}</span>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">{opt.label}</p>
+                    <p className="text-xs text-gray-500">{opt.description}</p>
+                  </div>
+                  {editAvailability === opt.id && <Check className="w-4 h-4 text-green-600 shrink-0" />}
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-1.5 pt-1">
+              <button onClick={saveField} disabled={savingField} className="flex items-center gap-1.5 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors">
+                {savingField ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Check className="w-4 h-4" />}
+                Guardar
+              </button>
+              <button onClick={() => setEditingField(null)} className="flex items-center gap-1.5 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300 transition-colors">
+                <X className="w-4 h-4" /> Cancelar
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center gap-4">
+            <span className="text-3xl">{avail.emoji}</span>
+            <div>
+              <p className="font-bold text-gray-900">{avail.label}</p>
+              <p className="text-xs text-gray-500">{avail.description}</p>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Intereses */}
       <div className="bg-gray-50 rounded-xl p-4">
@@ -781,6 +1433,179 @@ function InfoTab({
             )}
           </>
         )}
+      </div>
+    </div>
+  )
+}
+
+// ─── Sub-componente: modal de recorte circular de avatar ──
+
+function AvatarCropModal({
+  src, onConfirm, onCancel,
+}: {
+  src: string
+  onConfirm: (blob: Blob) => void
+  onCancel: () => void
+}) {
+  const canvasSize = 300
+  const containerRef = useRef<HTMLDivElement>(null)
+  const imgRef       = useRef<HTMLImageElement>(null)
+  const isDragging   = useRef(false)
+  const lastPos      = useRef({ x: 0, y: 0 })
+  const scaleRef     = useRef(1)
+
+  const [offset, setOffset]         = useState({ x: 0, y: 0 })
+  const [scale, setScale]           = useState(1)
+  const [minScale, setMinScale]     = useState(1)
+  const [imgNatural, setImgNatural] = useState({ w: 1, h: 1 })
+  const [ready, setReady]           = useState(false)
+
+  const getContainerPx = () => containerRef.current?.offsetWidth || canvasSize
+  const maxScale = minScale * 4
+  const sliderStep = Math.max(0.005, (maxScale - minScale) / 240)
+  const zoomFactor = minScale > 0 ? (scale / minScale) : 1
+
+  const clampOffset = (x: number, y: number, s: number, nat: { w: number; h: number }) => {
+    const cPx = getContainerPx()
+    const imgW = nat.w * s
+    const imgH = nat.h * s
+
+    const clampedX = imgW <= cPx
+      ? (cPx - imgW) / 2
+      : Math.min(0, Math.max(cPx - imgW, x))
+    const clampedY = imgH <= cPx
+      ? (cPx - imgH) / 2
+      : Math.min(0, Math.max(cPx - imgH, y))
+
+    return {
+      x: clampedX,
+      y: clampedY,
+    }
+  }
+
+  const initFromImage = () => {
+    const img = imgRef.current
+    if (!img || img.naturalWidth === 0) return
+    const nat = { w: img.naturalWidth, h: img.naturalHeight }
+    setImgNatural(nat)
+    const cPx = getContainerPx()
+    const fitScale = cPx / Math.min(nat.w, nat.h)
+    const rawX = (cPx - nat.w * fitScale) / 2
+    const rawY = (cPx - nat.h * fitScale) / 2
+    const clamped = clampOffset(rawX, rawY, fitScale, nat)
+    setMinScale(fitScale)
+    scaleRef.current = fitScale
+    setScale(fitScale)
+    setOffset(clamped)
+    setReady(true)
+  }
+
+  const onImgLoad = () => { requestAnimationFrame(initFromImage) }
+
+  const startPan = (x: number, y: number) => { isDragging.current = true; lastPos.current = { x, y } }
+  const movePan  = (x: number, y: number) => {
+    if (!isDragging.current) return
+    const dx = x - lastPos.current.x
+    const dy = y - lastPos.current.y
+    lastPos.current = { x, y }
+    setOffset(prev => clampOffset(prev.x + dx, prev.y + dy, scaleRef.current, imgNatural))
+  }
+  const endPan = () => { isDragging.current = false }
+
+  const onMouseDown  = (e: React.MouseEvent) => { e.preventDefault(); startPan(e.clientX, e.clientY) }
+  const onMouseMove  = (e: React.MouseEvent) => movePan(e.clientX, e.clientY)
+  const onTouchStart = (e: React.TouchEvent) => startPan(e.touches[0].clientX, e.touches[0].clientY)
+  const onTouchMove  = (e: React.TouchEvent) => { e.preventDefault(); movePan(e.touches[0].clientX, e.touches[0].clientY) }
+
+  const handleConfirm = () => {
+    const canvas  = document.createElement('canvas')
+    canvas.width  = canvasSize
+    canvas.height = canvasSize
+    const ctx = canvas.getContext('2d')
+    if (!ctx || !imgRef.current) return
+
+    const containerPx = getContainerPx()
+    const ratio = canvasSize / containerPx
+
+    ctx.drawImage(
+      imgRef.current,
+      0, 0, imgNatural.w, imgNatural.h,
+      offset.x * ratio, offset.y * ratio,
+      imgNatural.w * scale * ratio, imgNatural.h * scale * ratio,
+    )
+
+    canvas.toBlob(blob => { if (blob) onConfirm(blob) }, 'image/jpeg', 0.92)
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-5 space-y-4">
+        <h3 className="text-lg font-bold text-gray-900 text-center">Ajustar foto de perfil</h3>
+        <p className="text-xs text-gray-400 text-center">Arrastra para mover · Slider para zoom</p>
+
+        <div
+          ref={containerRef}
+          className="relative w-64 h-64 mx-auto rounded-full overflow-hidden bg-gray-200 cursor-move select-none shadow-inner border-2 border-gray-300"
+          onMouseDown={onMouseDown}
+          onMouseMove={onMouseMove}
+          onMouseUp={endPan}
+          onMouseLeave={endPan}
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={endPan}
+        >
+          <img
+            ref={imgRef}
+            src={src}
+            alt="Crop preview"
+            className="absolute pointer-events-none"
+            draggable={false}
+            onLoad={onImgLoad}
+            style={{
+              left: offset.x,
+              top: offset.y,
+              width: imgNatural.w * minScale,
+              height: imgNatural.h * minScale,
+              transform: `scale(${zoomFactor})`,
+              transformOrigin: 'top left',
+              willChange: 'transform, left, top',
+              opacity: ready ? 1 : 0,
+              transition: 'opacity 0.15s ease-out',
+            }}
+          />
+        </div>
+
+        <div className="flex items-center gap-3 px-4">
+          <span className="text-xs text-gray-400">-</span>
+          <input
+            type="range"
+            min={minScale}
+            max={maxScale}
+            step={sliderStep}
+            value={scale}
+            onChange={e => {
+              if (!ready) return
+              const newScale = Math.min(maxScale, Math.max(minScale, parseFloat(e.target.value)))
+              scaleRef.current = newScale
+              setScale(newScale)
+              const cPx = getContainerPx()
+              const centeredX = (cPx - imgNatural.w * newScale) / 2
+              const centeredY = (cPx - imgNatural.h * newScale) / 2
+              setOffset(clampOffset(centeredX, centeredY, newScale, imgNatural))
+            }}
+            className="flex-1 accent-[#4F46E5] h-1.5"
+          />
+          <span className="text-xs text-gray-400">+</span>
+        </div>
+
+        <div className="flex gap-3">
+          <button onClick={onCancel} className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 transition-colors">
+            Cancelar
+          </button>
+          <button onClick={handleConfirm} className="flex-1 px-4 py-2.5 rounded-xl bg-[#4F46E5] text-white font-medium hover:bg-[#4338CA] transition-colors">
+            Confirmar
+          </button>
+        </div>
       </div>
     </div>
   )

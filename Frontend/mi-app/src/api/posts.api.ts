@@ -156,11 +156,21 @@ export async function publishPost(postId: number) {
 
 /**
  * POST /posts/{postId}/archive
- * Cambia status a archived. Irreversible. No aparece en el feed.
+ * Cambia status a archived. No aparece en el feed.
  * Auth: Requerida (dueño o admin).
  */
 export async function archivePost(postId: number) {
   const { data } = await api.post(`/posts/${postId}/archive`)
+  return data
+}
+
+/**
+ * POST /posts/{postId}/unarchive
+ * Desarchiva un post — vuelve a estado published.
+ * Auth: Requerida (dueño o admin).
+ */
+export async function unarchivePost(postId: number) {
+  const { data } = await api.post(`/posts/${postId}/unarchive`)
   return data
 }
 

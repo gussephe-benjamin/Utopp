@@ -6,9 +6,7 @@ import Login from "./pages/auth/Login"
 import DashboardLayout from "./pages/Dashboard"
 import Onboarding from "./features/onboarding/Onboarding"
 import Register from "./pages/auth/Register"
-import Feed from "./pages/Feed"
 import Schedule from "./pages/Schedule"
-import Profile from "./pages/Profile"
 
 function App() {
   return (
@@ -30,9 +28,8 @@ function App() {
               </ProtectedRoute>
             }
           >
-            <Route path="inicio" element={<Feed />} />
             <Route path="horario" element={<Schedule />} />
-            <Route path="perfil/:id?" element={<Profile />} />
+            <Route path="*" element={null} />
           </Route>
 
           {/* Ruta direccionamiento al onboarding */}

@@ -140,6 +140,20 @@ def archive_post(db: Session, post: Post) -> Post:
     
     return post
 
+
+def unarchive_post(db: Session, post: Post) -> Post:
+    """Desarchiva un post — vuelve a estado published y recalcula time_status."""
+    if post.status != PostStatus.archived:
+        raise BadRequestException("El post no está archivado")
+    
+    post.status = PostStatus.published
+    post.time_status = compute_time_status(post.deadline_at)
+    db.commit()
+    db.refresh(post)
+    
+    return post
+
+
 def create_academic_project(db: Session, user_id: int, data: AcademicProjectCreate) -> Post:
     """Crea un proyecto académico."""
     specific_fields = {}

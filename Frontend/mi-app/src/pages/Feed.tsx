@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Info, MoreVertical, Bookmark, BookmarkCheck, ChevronLeft, ChevronRight } from 'lucide-react'
 import { getFeed } from '../api/feed.api'
@@ -65,6 +65,15 @@ function timeAgo(iso?: string): string {
 }
 
 interface PostLink  { id: number; label: string; url: string; display_type: string; position: number }
+const imageWarmCache = new Set<string>()
+
+function warmImage(url?: string) {
+  if (!url || imageWarmCache.has(url)) return
+  const img = new Image()
+  img.decoding = 'async'
+  img.src = url
+  imageWarmCache.add(url)
+}
 
 // ── Componente de explicación de relevancia ───────────────
 
@@ -129,9 +138,28 @@ const ScoreExplanation = ({ score }: { score?: number }) => {
 const PostCard = ({ post }: { post: FeedPostOut }) => {
   const navigate = useNavigate()
 
+  // ── Claves de sessionStorage para este post ───────────
+  const SS_IDX  = `utopp:carousel:idx:${post.id}`
+  const SS_IMGS = `utopp:carousel:imgs:${post.id}`
+
   // ── Estado local del post card ────────────────────────
-  const [images, setImages]           = useState<PostImage[]>([])
-  const [imgIndex, setImgIndex]       = useState(0)
+  const [images, setImages] = useState<PostImage[]>(() => {
+    try {
+      const saved = sessionStorage.getItem(SS_IMGS)
+      return saved ? (JSON.parse(saved) as PostImage[]) : []
+    } catch { return [] }
+  })
+  const [imgIndex, setImgIndex] = useState(() => {
+    try { return parseInt(sessionStorage.getItem(SS_IDX) ?? '0', 10) || 0 }
+    catch { return 0 }
+  })
+
+  const setImgIndexSaved = (i: number) => {
+    setImgIndex(i)
+    try { sessionStorage.setItem(SS_IDX, String(i)) } catch { /* noop */ }
+  }
+  const [visibleImgUrl, setVisibleImgUrl] = useState<string | null>(null)
+  const [imgChanging, setImgChanging] = useState(false)
   const [links, setLinks]             = useState<PostLink[]>([])
   const [isSaved, setIsSaved]           = useState(post.is_saved)
   const [menuOpen, setMenuOpen]         = useState(false)
@@ -153,11 +181,15 @@ const PostCard = ({ post }: { post: FeedPostOut }) => {
   // Carga lazy de imágenes y links al montar
   useEffect(() => {
     if (post.images_count > 0) {
-      listImages(post.id).then(setImages).catch(() => {})
+      listImages(post.id).then(imgs => {
+        setImages(imgs)
+        try { sessionStorage.setItem(SS_IMGS, JSON.stringify(imgs)) } catch { /* noop */ }
+      }).catch(() => { /* noop */ })
     }
     if (post.links_count > 0) {
       listLinks(post.id).then(setLinks).catch(() => {})
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [post.id, post.images_count, post.links_count])
 
   // Cierra los menús al hacer clic fuera
@@ -185,13 +217,70 @@ const PostCard = ({ post }: { post: FeedPostOut }) => {
     finally { setSavingPost(false); setMenuOpen(false) }
   }
 
-  const prevImg = () => setImgIndex(i => (i - 1 + images.length) % images.length)
-  const nextImg = () => setImgIndex(i => (i + 1) % images.length)
-
-  // Determinar qué imagen mostrar: si las lazy-images cargaron úsalas, si no usa image_url
-  const displayImages: { url: string }[] =
-    images.length > 0 ? images : post.image_url ? [{ url: post.image_url }] : []
+  // Si el post tiene imágenes con datos de recorte, usarlas directamente.
+  // Si no hay imágenes cargadas aún pero images_count > 0, mostrar skeleton (no fallback sin crop).
+  // Solo usar post.image_url si images_count === 0 (post sin galería adicional).
+  const displayImages: { url: string }[] = useMemo(
+    () => images.length > 0
+      ? images
+      : post.images_count === 0 && post.image_url
+        ? [{ url: post.image_url }]
+        : [],
+    [images, post.image_url, post.images_count],
+  )
+  const totalImages = displayImages.length
   const currentImgUrl = displayImages[imgIndex]?.url
+  const visibleUrl = visibleImgUrl ?? currentImgUrl
+  const prevImg = () => setImgIndexSaved((imgIndex - 1 + totalImages) % (totalImages || 1))
+  const nextImg = () => setImgIndexSaved((imgIndex + 1) % (totalImages || 1))
+
+  // Asegura que el índice siempre esté dentro del rango cuando cambia la lista de imágenes
+  useEffect(() => {
+    if (totalImages === 0) {
+      setImgChanging(false)
+      return
+    }
+    setImgIndex(prev => {
+      const clamped = prev >= totalImages ? 0 : prev
+      if (clamped !== prev) try { sessionStorage.setItem(SS_IDX, String(clamped)) } catch { /* noop */ }
+      return clamped
+    })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [totalImages])
+
+  // Cambia la imagen visible solo cuando la imagen objetivo está lista para pintarse
+  useEffect(() => {
+    if (!currentImgUrl) return
+    if (visibleImgUrl === currentImgUrl) return
+    let cancelled = false
+    const next = new Image()
+    next.decoding = 'async'
+    setImgChanging(true)
+    next.src = currentImgUrl
+    const commit = () => {
+      if (cancelled) return
+      imageWarmCache.add(currentImgUrl)
+      setVisibleImgUrl(currentImgUrl)
+      setImgChanging(false)
+    }
+    if (next.complete) commit()
+    else {
+      next.onload = commit
+      next.onerror = commit
+    }
+    return () => { cancelled = true }
+  }, [currentImgUrl, visibleImgUrl])
+
+  // Precarga imágenes adyacentes para evitar “flash” al navegar
+  useEffect(() => {
+    if (totalImages <= 1) return
+    const nextUrl = displayImages[(imgIndex + 1) % totalImages]?.url
+    const prevUrl = displayImages[(imgIndex - 1 + totalImages) % totalImages]?.url
+    warmImage(nextUrl)
+    warmImage(prevUrl)
+  }, [displayImages, imgIndex, totalImages])
+
+  const currentDisplayImg = displayImages.find(img => img.url === visibleUrl) ?? displayImages[imgIndex]
 
   return (
     <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
@@ -271,16 +360,22 @@ const PostCard = ({ post }: { post: FeedPostOut }) => {
         )}
       </div>
 
+      {/* ── Skeleton mientras cargan imágenes con datos de recorte ── */}
+      {post.images_count > 0 && images.length === 0 && (
+        <div className="w-full max-w-[500px] mx-auto aspect-[4/5] bg-gray-200 animate-pulse" />
+      )}
+
       {/* ── Carrusel de imágenes ────────────────────────── */}
-      {currentImgUrl && (
-        <div className="relative w-full max-w-[500px] mx-auto aspect-[4/5] bg-gray-100 overflow-hidden">
+      {visibleUrl && (
+        <div data-carousel className="relative w-full max-w-[500px] mx-auto aspect-[4/5] bg-gray-100 overflow-hidden">
           <img
-            src={currentImgUrl}
+            key={visibleUrl}
+            src={visibleUrl}
             alt={`Imagen ${imgIndex + 1}`}
             className="w-full h-full object-cover"
-            onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+            onError={e => { const p = (e.target as HTMLImageElement).closest('[data-carousel]'); if (p) (p as HTMLElement).style.display = 'none' }}
             style={(() => {
-              const imgData = displayImages[imgIndex] as PostImage | { url: string }
+              const imgData = currentDisplayImg as PostImage | { url: string }
               const objPos = 'object_position' in imgData ? (imgData.object_position ?? 'center center') : 'center center'
               const sc     = 'scale' in imgData ? (imgData.scale ?? 1) : 1
               return {
@@ -291,7 +386,7 @@ const PostCard = ({ post }: { post: FeedPostOut }) => {
             })()}
           />
           {/* Flechas de navegación (solo si hay más de 1 imagen cargada) */}
-          {displayImages.length > 1 && (
+          {totalImages > 1 && (
             <>
               <button
                 onClick={prevImg}
@@ -305,12 +400,15 @@ const PostCard = ({ post }: { post: FeedPostOut }) => {
               >
                 <ChevronRight className="w-5 h-5" />
               </button>
+              {imgChanging && (
+                <div className="absolute inset-0 bg-black/10 pointer-events-none" />
+              )}
               {/* Dots indicadores */}
               <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
                 {displayImages.map((_, i) => (
                   <button
                     key={i}
-                    onClick={() => setImgIndex(i)}
+                    onClick={() => setImgIndexSaved(i)}
                     className={`rounded-full transition-all ${i === imgIndex ? 'w-5 h-2 bg-white' : 'w-2 h-2 bg-white/60'}`}
                   />
                 ))}
@@ -412,7 +510,23 @@ const PostCard = ({ post }: { post: FeedPostOut }) => {
   )
 }
 
-// ── Componente principal del Feed ─────────────────────────
+// ── Decoradores SVG del banner ─────────────────────────────
+
+const SparkleIcon = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 2 L13.2 10.8 L22 12 L13.2 13.2 L12 22 L10.8 13.2 L2 12 L10.8 10.8 Z" />
+  </svg>
+)
+
+const DiamondIcon = ({ className }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 3 L20 10 L12 22 L4 10 Z" fill="currentColor" />
+    <path d="M12 3 L20 10 L12 22 L4 10 Z" fill="white" opacity="0.18" />
+    <path d="M4 10 L12 3 L20 10" fill="white" opacity="0.12" />
+  </svg>
+)
+
+// ── Componente principal del Feed ─────────────────────────────────────────────
 
 /**
  * Página Feed: lista paginada de posts publicados.
@@ -469,17 +583,73 @@ export default function Feed() {
   }, [fetchPage, hasMore, loading, page])
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50" style={{ overflowAnchor: 'none' }}>
       <div className="w-full max-w-[550px] mx-auto p-4 space-y-4">
 
-        {/* Header del feed — branding Utopp */}
-        <div className="bg-gradient-to-r from-[#4F46E5] to-[#8B5CF6] rounded-2xl shadow-md px-6 py-4 flex items-center gap-4">
-          <div className="w-10 h-10 rounded-xl overflow-hidden shadow-lg border-2 border-white/30 shrink-0">
-            <img src="/utopp-logo.png" alt="Utopp" className="w-full h-full object-cover" />
-          </div>
-          <div>
-            <h1 className="text-xl font-extrabold text-white tracking-tight leading-none">Utopp</h1>
-            <p className="text-indigo-200 text-xs mt-0.5">Publicaciones de la comunidad UTEC</p>
+        {/* ── Banner ornamental Utopp ─────────────────────── */}
+        <div
+          className="relative w-full rounded-2xl overflow-hidden shadow-2xl"
+          style={{
+            background: 'radial-gradient(ellipse at 50% 35%, #7C3AED 0%, #4C1D95 38%, #1e1b4b 72%, #0f172a 100%)',
+            height: '188px',
+          }}
+        >
+          {/* Glow blobs de fondo */}
+          <div
+            className="absolute w-64 h-64 rounded-full blur-3xl opacity-40 -top-16 -left-12 pointer-events-none"
+            style={{ background: '#7C3AED' }}
+          />
+          <div
+            className="absolute w-64 h-64 rounded-full blur-3xl opacity-35 -bottom-16 -right-12 pointer-events-none"
+            style={{ background: '#1D4ED8' }}
+          />
+          <div
+            className="absolute w-40 h-40 rounded-full blur-2xl opacity-20 top-4 right-1/3 pointer-events-none"
+            style={{ background: '#EC4899' }}
+          />
+
+          {/* Estrellas de 4 puntas */}
+          <SparkleIcon className="absolute top-4  left-7   w-5 h-5 text-blue-200   opacity-85" />
+          <SparkleIcon className="absolute top-3  right-10 w-7 h-7 text-purple-200 opacity-90" />
+          <SparkleIcon className="absolute bottom-5 left-16 w-4 h-4 text-blue-300  opacity-75" />
+          <SparkleIcon className="absolute bottom-4 right-7  w-5 h-5 text-pink-200  opacity-85" />
+          <SparkleIcon className="absolute top-[45%] left-5  w-3 h-3 text-white     opacity-60" />
+          <SparkleIcon className="absolute top-[45%] right-5 w-3 h-3 text-white     opacity-60" />
+          <SparkleIcon className="absolute top-6 left-1/3   w-2.5 h-2.5 text-blue-100 opacity-50" />
+          <SparkleIcon className="absolute bottom-7 right-1/3 w-2 h-2 text-purple-100 opacity-55" />
+
+          {/* Diamantes cristal */}
+          <DiamondIcon className="absolute top-4   right-20 w-9  h-9  text-purple-300 opacity-55" />
+          <DiamondIcon className="absolute bottom-4 left-9   w-11 h-11 text-blue-400  opacity-45" />
+          <DiamondIcon className="absolute top-10  left-1/4  w-5  h-5  text-pink-300  opacity-35" />
+
+          {/* Micro-dots brillantes */}
+          <div className="absolute top-8  left-[38%] w-2   h-2   rounded-full bg-blue-300  opacity-70 blur-[1px] pointer-events-none" />
+          <div className="absolute bottom-9 right-[38%] w-1.5 h-1.5 rounded-full bg-purple-200 opacity-75 pointer-events-none" />
+          <div className="absolute top-14 right-[30%] w-1   h-1   rounded-full bg-white     opacity-80 pointer-events-none" />
+          <div className="absolute top-5  left-[55%] w-1   h-1   rounded-full bg-blue-200  opacity-65 pointer-events-none" />
+          <div className="absolute bottom-6 left-[45%] w-1.5 h-1.5 rounded-full bg-pink-200 opacity-60 pointer-events-none" />
+
+          {/* Texto principal centrado */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <h1
+              className="font-black select-none leading-none"
+              style={{
+                fontFamily: "'Cinzel', 'Georgia', serif",
+                fontSize: 'clamp(2.8rem, 8vw, 4.5rem)',
+                letterSpacing: '0.1em',
+                background: 'linear-gradient(135deg, #93C5FD 0%, #C4B5FD 35%, #F9A8D4 65%, #E9D5FF 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+                filter:
+                  'drop-shadow(0 0 12px rgba(167,139,250,0.95)) ' +
+                  'drop-shadow(0 0 28px rgba(96,165,250,0.75)) ' +
+                  'drop-shadow(0 2px 6px rgba(0,0,0,0.6))',
+              }}
+            >
+              Utopp
+            </h1>
           </div>
         </div>
 
