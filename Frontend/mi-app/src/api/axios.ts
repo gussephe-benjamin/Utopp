@@ -27,7 +27,7 @@ api.interceptors.response.use(
       
       try {
         // Intentar refresh automático del token
-        const refreshResponse = await axios.post("http://localhost:8000/auth/refresh", {}, {
+        const refreshResponse = await axios.post(`${baseURL}/auth/refresh`, {}, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`
           }
