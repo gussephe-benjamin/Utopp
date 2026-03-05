@@ -51,9 +51,9 @@ app.add_middleware(
 )
 
 
-@router.get("/")
-def root():
-    return {"message": "API funcionando correctamente"}
+@app.get("/")
+def health():
+    return {"status": "ok"}
 
 # ═══════════════════════════════════════════════════════════
 # SISTEMA
