@@ -6,17 +6,16 @@ import CycleStep from "./steps/StepCycle";
 import { useNavigate } from "react-router-dom";
 import type { JSX } from "react"
 import { updateOnboarding } from "../../api/onboarding.api";
+import type { OnboardingData as OnboardingPayload } from "../../api/onboarding.api";
 import StepBar from "./components/StepBar";
 import { AxiosError } from "axios";
 
 import { useEffect } from "react"
 import { checkOnboardingCompleted } from"./functions/isCompleteVerificate";
 
-export type OnboardingData = {
-  career: string;
+export type OnboardingData = Omit<OnboardingPayload, "cycle" | "availability"> & {
   cycle: number | null;
-  interests: string[];
-  availability: number;
+  availability: number | null;
 };
 
 export default function Onboarding(): JSX.Element {
@@ -31,7 +30,7 @@ export default function Onboarding(): JSX.Element {
     career: "",
     cycle: null,
     interests: [],
-    availability: 0,
+    availability: null,
   });
 
   const next = () => setStep((s) => s + 1);
@@ -41,16 +40,23 @@ export default function Onboarding(): JSX.Element {
     if (step === 1) return data.career !== "";
     if (step === 2) return data.cycle !== null;
     if (step === 3) return data.interests.length >= 3;
-    if (step === 4) return data.availability > 0;
+    if (step === 4) return data.availability !== null;
     return false;
   };
 
   const finishOnboarding = async (): Promise<void> => {
     try {
+      if (data.cycle === null || data.availability === null) {
+        return;
+      }
 
-      console.log(data)
+      const payload: OnboardingPayload = {
+        ...data,
+        cycle: data.cycle,
+        availability: data.availability,
+      };
 
-      await updateOnboarding(data);    
+      await updateOnboarding(payload);    
 
       // Si llegamos aquí, la petición fue exitosa
       navigate("/app/inicio", { replace: true });

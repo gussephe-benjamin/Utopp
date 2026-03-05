@@ -13,7 +13,7 @@ export interface OnboardingData {
   career: string
   interests: string[]
   cycle: number
-  availability: Record<string, unknown>[]
+  availability: number
 }
 
 /**

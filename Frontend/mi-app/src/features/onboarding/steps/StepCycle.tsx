@@ -1,18 +1,9 @@
 import React from "react";
+import type { OnboardingData } from "../Onboarding";
 
 interface StepCycleProps {
-  data: {
-    career: string;
-    cycle: number | null;
-  };
-  setData: React.Dispatch<
-    React.SetStateAction<{
-      career: string;
-      cycle: number | null;
-      interests: string[];
-      availability: number;
-    }>
-  >;
+  data: Pick<OnboardingData, "career" | "cycle">;
+  setData: React.Dispatch<React.SetStateAction<OnboardingData>>;
 }
 
 const cycles = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];

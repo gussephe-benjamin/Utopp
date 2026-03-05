@@ -1,5 +1,5 @@
 export type OnboardingData = {
-  cycle: number;
+  cycle: number|null;
   career: string;
   interests: string[];
   availability: number;
