@@ -50,6 +50,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@router.get("/")
+def root():
+    return {"message": "API funcionando correctamente"}
+
 # ═══════════════════════════════════════════════════════════
 # SISTEMA
 # ═══════════════════════════════════════════════════════════
