@@ -37,11 +37,11 @@ export default function Login() {
   // Si viene del registro, el email llega pre-cargado desde el state de navegación
   const registeredEmail = (location.state as { registeredEmail?: string } | null)?.registeredEmail ?? "";
 
-  const [email, setEmail]           = useState(registeredEmail);
-  const [password, setPassword]     = useState("");
+  const [email, setEmail]               = useState(registeredEmail);
+  const [password, setPassword]         = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading]   = useState(false);
-  const [error, setError]           = useState<string | null>(null);
+  const [isLoading, setIsLoading]       = useState(false);
+  const [error, setError]               = useState<string | null>(null);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();

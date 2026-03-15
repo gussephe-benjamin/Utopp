@@ -10,8 +10,6 @@ export default function AppRoute() {
   const [isOnboardingCompleted, setIsOnboardingCompleted] = useState(false)
   const { token, logout } = useAuth()
 
-  console.log("Token en AppRoute:", token)
-
   useEffect(() => {
     const checkOnboarding = async () => {
       if (!token) {
