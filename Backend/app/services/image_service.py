@@ -80,10 +80,15 @@ def reorder_images(db: Session, post_id: int, data: ImageReorderRequest) -> List
     # Crear mapa de posiciones
     position_map = {item.image_id: item.position for item in data.images}
     
-    # Actualizar posiciones
+    # Actualizar posiciones en dos fases para evitar UniqueConstraint (post_id, position)
+    # Fase 1: mover a valores negativos temporales (sin conflictos entre sí)
+    for image in images:
+        image.position = -(position_map[image.id] + 1)
+    db.flush()
+
+    # Fase 2: asignar las posiciones finales
     for image in images:
         image.position = position_map[image.id]
-    
     db.commit()
     
     return list_post_images(db, post_id)
