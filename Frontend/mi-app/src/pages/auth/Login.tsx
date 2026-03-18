@@ -75,6 +75,7 @@ export default function Login() {
   bg-[linear-gradient(to_bottom_right,rgba(79,70,229,0.8),rgba(99,102,241,0.8),rgba(139,92,246,0.8)),url('https://posgrado.utec.edu.pe/sites/default/files/2023-08/Campus-utec---nuestro-enfoque---web.jpg')] 
   bg-cover bg-center 
   flex items-center justify-center p-6 relative overflow-hidden">
+
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-white/10 rounded-full blur-3xl" />
         <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-purple-400/20 rounded-full blur-3xl" />
@@ -88,10 +89,13 @@ export default function Login() {
 
       <div className="w-full max-w-md relative z-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
         {/* Logo */}
-        <div className="flex justify-center mb-8">
-          <div className="w-20 h-20 rounded-2xl overflow-hidden shadow-2xl border-2 border-white/20">
-            <img src="/utopp-logo.png" alt="Utopp" className="w-full h-full object-cover" />
-          </div>
+
+        <div className="w-32 h-32 rounded-3xl overflow-hidden shadow-2xl mb-6 ring-4 ring-white/30 bg-white/10 backdrop-blur-sm mx-auto">
+          <img
+            src="/public/tempo-image-20251218T034846856Z.png"
+            alt="Utopp"
+            className="w-full h-full object-cover"
+          />
         </div>
 
         {/* Card */}
