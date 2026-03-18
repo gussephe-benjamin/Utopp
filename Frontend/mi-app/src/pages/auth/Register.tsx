@@ -129,7 +129,7 @@ export default function Register() {
 
         <div className="w-32 h-32 rounded-3xl overflow-hidden shadow-2xl mb-6 ring-4 ring-white/30 bg-white/10 backdrop-blur-sm mx-auto">
           <img
-            src="/public/tempo-image-20251218T034846856Z.png"
+            src="https://raw.githubusercontent.com/gussephe-benjamin/Utopp/refs/heads/main/Frontend/mi-app/public/tempo-image-20251218T034846856Z.png"
             alt="Utopp"
             className="w-full h-full object-cover"
           />
