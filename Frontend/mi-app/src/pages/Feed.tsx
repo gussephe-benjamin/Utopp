@@ -16,9 +16,9 @@ import {
 // ── Helpers de UI ────────────────────────────────────────
 
 /** Avatar del usuario: muestra foto de Cloudinary si está en localStorage, si no iniciales */
-const UserAvatar = ({ userName, userId, gradient }: { userName?: string; userId?: number; gradient: string }) => {
+const UserAvatar = ({ userName, userId, gradient, profileImageUrl }: { userName?: string; userId?: number; gradient: string; profileImageUrl?: string }) => {
   const navigate = useNavigate()
-  const avatarUrl = userId ? localStorage.getItem(`avatar_${userId}`) : null
+  const avatarUrl = profileImageUrl ?? (userId ? localStorage.getItem(`avatar_${userId}`) : null)
   const initial = (userName ?? 'U').charAt(0).toUpperCase()
   const handleClick = () => { if (userId) navigate(`/app/perfil/${userId}`) }
   if (avatarUrl) {
@@ -88,6 +88,7 @@ function warmImage(url?: string) {
  * Botón de información que explica al usuario por qué se le muestra este post.
  * Muestra un popover con los factores de relevancia del algoritmo.
  */
+
 const ScoreExplanation = ({ score }: { score?: number }) => {
   const [show, setShow] = useState(false)
   if (!score) return null
@@ -295,7 +296,7 @@ const PostCard = ({ post }: { post: FeedPostOut }) => {
       {/* ── Header: avatar + nombre + email + tiempo + badges + menú ── */}
       <div className="flex items-start justify-between px-4 pt-4 pb-4 sm:pb-3">
         <div className="flex items-center gap-3">
-          <UserAvatar userName={post.user_name} userId={post.user_id} gradient={gradient} />
+          <UserAvatar userName={post.user_name} userId={post.user_id} gradient={gradient} profileImageUrl={post.user_profile_image_url} />
           <div>
             <div className="flex items-center gap-2">
               <button

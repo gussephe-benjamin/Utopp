@@ -10,6 +10,7 @@ from app.dependencies.pagination import PaginationParams
 from app.models.user import User
 from app.models.follow import Follow
 from app.models.post import Post
+from app.models.user_profile_image import UserProfileImage
 from app.schemas.user import UserResponse_total, UserOut, UserPublicOut, UserUpdate, FollowerOut
 from app.schemas.post import PostOut
 from app.services.users_service import get_all_users
@@ -48,6 +49,12 @@ def get_current_user_profile(
     posts_count = db.scalar(
         select(func.count()).select_from(Post).where(Post.user_id == uid)
     ) or 0
+    profile_img = db.scalars(
+        select(UserProfileImage).where(
+            UserProfileImage.user_id == uid,
+            UserProfileImage.is_active.is_(True),
+        )
+    ).first()
     return UserOut(
         id=current_user.id,
         email=current_user.email,
@@ -61,6 +68,7 @@ def get_current_user_profile(
         followers_count=followers_count,
         following_count=following_count,
         posts_count=posts_count,
+        profile_image_url=profile_img.url if profile_img else None,
     )
 
 
@@ -162,6 +170,12 @@ def get_user_profile(
         select(func.count()).select_from(Post).where(Post.user_id == user_id)
     ) or 0
 
+    profile_img = db.scalars(
+        select(UserProfileImage).where(
+            UserProfileImage.user_id == user_id,
+            UserProfileImage.is_active.is_(True),
+        )
+    ).first()
     return UserPublicOut(
         id=user.id,
         full_name=user.full_name,
@@ -171,6 +185,7 @@ def get_user_profile(
         followers_count=followers_count,
         following_count=following_count,
         posts_count=posts_count,
+        profile_image_url=profile_img.url if profile_img else None,
     )
 
 

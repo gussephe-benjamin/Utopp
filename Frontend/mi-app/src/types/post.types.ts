@@ -241,6 +241,8 @@ export interface FeedPostOut {
   created_at: string
   user_name?: string
   user_email?: string
+  /** URL de la foto de perfil activa del autor del post. */
+  user_profile_image_url?: string
   /** URL de la primera imagen del post (si existe). */
   image_url?: string
   images_count: number

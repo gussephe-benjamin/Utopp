@@ -1,9 +1,11 @@
 from typing import List
 
 from fastapi import APIRouter, Depends, status
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database.session import get_db
+from app.models.user_profile_image import UserProfileImage
 from app.dependencies.auth import get_current_user
 from app.dependencies.permissions import require_owner_or_admin, require_owner_or_admin_archived, require_post_owner
 from app.dependencies.pagination import PaginationParams
@@ -93,7 +95,17 @@ def get_post(
     post_id: int,
     db: Session = Depends(get_db),
 ):
-    return post_service.get_post(db, post_id)
+    post = post_service.get_post(db, post_id)
+    profile_img = db.scalars(
+        select(UserProfileImage).where(
+            UserProfileImage.user_id == post.user_id,
+            UserProfileImage.is_active.is_(True),
+        )
+    ).first()
+    post_out = PostOut.model_validate(post)
+    if post_out.user and profile_img:
+        post_out.user.profile_image_url = profile_img.url
+    return post_out
 
 
 # ============================================================

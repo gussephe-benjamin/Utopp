@@ -154,6 +154,7 @@ class PostUserOut(BaseModel):
     id: int
     full_name: Optional[str] = None
     email: str
+    profile_image_url: Optional[str] = None
     
     class Config:
         from_attributes = True

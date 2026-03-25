@@ -152,3 +152,13 @@ export async function removeFollower(followerId: number) {
   const { data } = await api.delete(`/users/me/followers/${followerId}`)
   return data
 }
+
+/**
+ * POST /users/me/profile-images
+ * Guarda la URL de la foto de perfil en la base de datos y la marca como activa.
+ * Auth: Requerida.
+ */
+export async function setProfileImage(cloudinaryId: string, url: string): Promise<{ id: number; url: string; is_active: boolean }> {
+  const { data } = await api.post('/users/me/profile-images', { cloudinary_id: cloudinaryId, url })
+  return data
+}

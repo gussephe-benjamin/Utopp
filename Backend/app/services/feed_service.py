@@ -8,6 +8,7 @@ from app.models.post import Post, PostStatus, PostType, SubPostType
 from app.models.saved_post import SavedPost
 from app.models.event_participant import PostParticipant
 from app.models.user import User
+from app.models.user_profile_image import UserProfileImage
 from app.schemas.feed import FeedPostOut, FeedResponse
 
 
@@ -86,6 +87,18 @@ def build_feed(
             ).all()
             participation_map = {p.post_id: p.status.value for p in participations}
     
+    # Batch-fetch active profile images for all post authors
+    author_ids = list({p.user_id for p in posts})
+    profile_image_map: dict[int, str] = {}
+    if author_ids:
+        profile_images = db.scalars(
+            select(UserProfileImage).where(
+                UserProfileImage.user_id.in_(author_ids),
+                UserProfileImage.is_active.is_(True),
+            )
+        ).all()
+        profile_image_map = {img.user_id: img.url for img in profile_images}
+
     # Construir respuesta
     items = []
     for post in posts:
@@ -108,6 +121,7 @@ def build_feed(
                 created_at=post.created_at,
                 user_name=post.user.full_name if post.user else None,
                 user_email=post.user.email if post.user else None,
+                user_profile_image_url=profile_image_map.get(post.user_id),
                 image_url=first_image_url,
                 images_count=len(post.images) if post.images else 0,
                 links_count=len(post.links) if post.links else 0,

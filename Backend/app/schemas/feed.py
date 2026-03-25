@@ -28,6 +28,7 @@ class FeedPostOut(BaseModel):
     
     user_name: Optional[str] = None
     user_email: Optional[str] = None
+    user_profile_image_url: Optional[str] = None
     
     image_url: Optional[str] = None
     images_count: int = 0

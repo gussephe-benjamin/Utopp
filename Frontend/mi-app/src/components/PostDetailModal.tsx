@@ -26,6 +26,7 @@ interface PostUserOut {
   id: number
   full_name?: string | null
   email: string
+  profile_image_url?: string | null
 }
 
 interface PostDetail {
@@ -187,9 +188,17 @@ export default function PostDetailModal({ postId, onClose, onUnsaved }: PostDeta
             <div className="space-y-0">
               {/* Author row */}
               <div className="px-5 pt-4 pb-3 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-sm font-semibold shrink-0">
-                  {userName.charAt(0).toUpperCase()}
-                </div>
+                {post.user?.profile_image_url ? (
+                  <img
+                    src={post.user.profile_image_url}
+                    alt={userName}
+                    className="w-9 h-9 rounded-full object-cover shrink-0 border border-gray-200"
+                  />
+                ) : (
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-sm font-semibold shrink-0">
+                    {userName.charAt(0).toUpperCase()}
+                  </div>
+                )}
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-gray-900 truncate">{userName}</p>
                   <p className="text-xs text-gray-400">{timeAgo(post.created_at)}</p>

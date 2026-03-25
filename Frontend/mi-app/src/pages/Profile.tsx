@@ -4,7 +4,7 @@ import { useParams } from "react-router-dom"
 import {
   getMyProfile, getUserProfile as apiGetProfile,
   followUser, unfollowUser, updateInterests, updateMyProfile,
-  getUserPosts, getFollowers, getFollowing, removeFollower,
+  getUserPosts, getFollowers, getFollowing, removeFollower, setProfileImage,
 } from "../api/users.api"
 import { archivePost, unarchivePost, deletePost } from "../api/posts.api"
 import { uploadToCloudinary } from "../api/cloudinary"
@@ -290,8 +290,14 @@ export default function Profile({ viewUserId }: { viewUserId?: number } = {}) {
           posts_count: d.posts_count ?? 0,
         })
         setInterestInput((d.interests || []).join(", "))
-        const saved = localStorage.getItem(`avatar_${d.id}`)
-        if (saved) setAvatarUrl(saved)
+        const apiUrl = (d as { profile_image_url?: string }).profile_image_url
+        if (apiUrl) {
+          setAvatarUrl(apiUrl)
+          localStorage.setItem(`avatar_${d.id}`, apiUrl)
+        } else {
+          const saved = localStorage.getItem(`avatar_${d.id}`)
+          if (saved) setAvatarUrl(saved)
+        }
       } else if (userId) {
         const [d, me] = await Promise.all([apiGetProfile(userId), getMyProfile().catch(() => null)])
         if (me) setCurrentUserId(me.id)
@@ -302,8 +308,14 @@ export default function Profile({ viewUserId }: { viewUserId?: number } = {}) {
           following_count: d.following_count,
           posts_count: d.posts_count,
         })
-        const saved = localStorage.getItem(`avatar_${d.id}`)
-        if (saved) setAvatarUrl(saved)
+        const apiUrl = (d as { profile_image_url?: string }).profile_image_url
+        if (apiUrl) {
+          setAvatarUrl(apiUrl)
+          localStorage.setItem(`avatar_${d.id}`, apiUrl)
+        } else {
+          const saved = localStorage.getItem(`avatar_${d.id}`)
+          if (saved) setAvatarUrl(saved)
+        }
       }
     })()
   }, [isMe, userId])
@@ -435,6 +447,7 @@ export default function Profile({ viewUserId }: { viewUserId?: number } = {}) {
     try {
       const file = new File([blob], 'avatar.jpg', { type: 'image/jpeg' })
       const result = await uploadToCloudinary(file)
+      await setProfileImage(result.public_id, result.secure_url)
       setAvatarUrl(result.secure_url)
       localStorage.setItem(`avatar_${data.id}`, result.secure_url)
       window.dispatchEvent(new CustomEvent('avatarUpdated', {

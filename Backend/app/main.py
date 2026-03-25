@@ -17,6 +17,7 @@ from app.routers import (
     posts,
     post_images,
     post_links,
+    user_profile_images,
     feed,
     saved_posts,
     participants,
@@ -77,6 +78,7 @@ app.include_router(setup.router, prefix="/setup", tags=["setup"])
 # USUARIOS Y ONBOARDING
 # ═══════════════════════════════════════════════════════════
 app.include_router(users.router, prefix="/users", tags=["users"])
+app.include_router(user_profile_images.router, prefix="/users", tags=["user-profile-images"])
 app.include_router(onboardings.router, prefix="/onboarding", tags=["onboarding"])
 
 # ═══════════════════════════════════════════════════════════

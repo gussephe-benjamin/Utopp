@@ -62,6 +62,7 @@ class UserOut(BaseModel):
     followers_count: int = 0
     following_count: int = 0
     posts_count: int = 0
+    profile_image_url: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -77,6 +78,7 @@ class UserPublicOut(BaseModel):
     followers_count: int = 0
     following_count: int = 0
     posts_count: int = 0
+    profile_image_url: Optional[str] = None
 
     class Config:
         from_attributes = True
