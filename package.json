@@ -1,5 +1,6 @@
 {
   "dependencies": {
-    "react-remove-scroll": "^2.7.2"
+    "react-remove-scroll": "^2.7.2",
+    "zxcvbn": "^4.4.2"
   }
 }

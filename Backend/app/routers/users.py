@@ -105,6 +105,34 @@ def update_interests(
 
 
 # ============================================================
+# GET /users/check-username?username=...
+# Verifica si un nombre de usuario ya está en uso.
+# Devuelve { "available": bool }
+# Auth: No requerida
+# ============================================================
+@router.get("/check-username")
+def check_username(username: str, db: Session = Depends(get_db)):
+    exists = db.scalars(
+        select(User).where(func.lower(User.full_name) == func.lower(username))
+    ).first()
+    return {"available": exists is None}
+
+
+# ============================================================
+# GET /users/check-email?email=...
+# Verifica si un correo ya está registrado.
+# Devuelve { "available": bool }
+# Auth: No requerida
+# ============================================================
+@router.get("/check-email")
+def check_email(email: str, db: Session = Depends(get_db)):
+    exists = db.scalars(
+        select(User).where(func.lower(User.email) == func.lower(email))
+    ).first()
+    return {"available": exists is None}
+
+
+# ============================================================
 # GET /users/{user_id}
 # Devuelve el perfil público de un usuario con conteos
 # de seguidores, seguidos y cantidad de posts.

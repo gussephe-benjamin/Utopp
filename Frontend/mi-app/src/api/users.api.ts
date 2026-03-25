@@ -2,6 +2,8 @@
  * API de Usuarios
  *
  * Endpoints del backend (prefix: /users):
+ *   GET    /users/check-username      — Verifica si un username está disponible
+ *   GET    /users/check-email         — Verifica si un email ya está registrado
  *   GET    /users/all-users          — Lista todos los usuarios (legacy)
  *   GET    /users/me                 — Perfil completo del usuario autenticado
  *   PATCH  /users/me                 — Actualiza perfil del usuario autenticado
@@ -15,6 +17,28 @@
  */
 
 import api from "./axios"
+
+/**
+ * GET /users/check-username?username=...
+ * Verifica si un nombre de usuario está disponible.
+ * Devuelve { available: boolean }
+ * Auth: No requerida.
+ */
+export async function checkUsername(username: string): Promise<{ available: boolean }> {
+  const { data } = await api.get("/users/check-username", { params: { username } })
+  return data
+}
+
+/**
+ * GET /users/check-email?email=...
+ * Verifica si un correo ya está registrado.
+ * Devuelve { available: boolean }
+ * Auth: No requerida.
+ */
+export async function checkEmail(email: string): Promise<{ available: boolean }> {
+  const { data } = await api.get("/users/check-email", { params: { email } })
+  return data
+}
 
 /**
  * GET /users/all-users

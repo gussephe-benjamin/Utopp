@@ -1,11 +1,12 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { register } from "../../api/auth.api";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
-import { User, Mail, Lock, Eye, EyeOff, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
+import { User, Mail, Lock, Eye, EyeOff, CheckCircle2, XCircle, AlertCircle, ShieldCheck, Loader2 } from "lucide-react";
 import GoogleRegister from "../../auth/GoogleRegister";
 import type { AxiosError } from "axios";
+import { checkUsername, checkEmail } from "../../api/users.api";
 
 type RegisterFormData = {
   full_name: string;
@@ -34,18 +35,10 @@ function parseApiError(err: unknown): string {
   return "Error al registrar. Intenta de nuevo.";
 }
 
-/** Calcula la fortaleza de la contraseña: 0-3 */
-function passwordStrength(pwd: string): number {
-  let score = 0;
-  if (pwd.length >= 6) score++;
-  if (pwd.length >= 10) score++;
-  if (/[A-Z]/.test(pwd) || /[0-9]/.test(pwd) || /[^a-zA-Z0-9]/.test(pwd)) score++;
-  return score;
-}
-
-const STRENGTH_LABELS = ["Muy débil", "Débil", "Regular", "Fuerte"];
-const STRENGTH_COLORS = ["bg-red-400", "bg-orange-400", "bg-yellow-400", "bg-green-500"];
-const STRENGTH_TEXT   = ["text-red-500", "text-orange-500", "text-yellow-600", "text-green-600"];
+const STRENGTH_LABELS = ["Muy débil", "Débil", "Regular", "Fuerte", "Muy fuerte"];
+const STRENGTH_COLORS = ["bg-red-500", "bg-orange-400", "bg-yellow-400", "bg-lime-500", "bg-green-500"];
+const STRENGTH_TEXT   = ["text-red-500", "text-orange-500", "text-yellow-600", "text-lime-600", "text-green-600"];
+const STRENGTH_BG     = ["bg-red-50 border-red-200", "bg-orange-50 border-orange-200", "bg-yellow-50 border-yellow-200", "bg-lime-50 border-lime-200", "bg-green-50 border-green-200"];
 
 export default function Register() {
   const navigate = useNavigate();
@@ -60,19 +53,91 @@ export default function Register() {
   const [showConfirm, setShowConfirm]   = useState(false);
   const [loading, setLoading]           = useState(false);
   const [error, setError]               = useState<string | null>(null);
+  const [zxcvbnScore, setZxcvbnScore]       = useState(0);
+  const [zxcvbnFeedback, setZxcvbnFeedback] = useState<string>("");
+  const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
+  const [emailStatus, setEmailStatus]       = useState<"idle" | "checking" | "available" | "taken">("idle");
+  const debounceRef      = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const emailDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const evaluatePassword = useCallback(async (pwd: string) => {
+    if (!pwd) { setZxcvbnScore(0); setZxcvbnFeedback(""); return; }
+    const { default: zxcvbn } = await import("zxcvbn");
+    const result = zxcvbn(pwd);
+    setZxcvbnScore(result.score);
+    if (result.feedback.warning) {
+      setZxcvbnFeedback(result.feedback.warning);
+    } else if (result.feedback.suggestions.length > 0) {
+      setZxcvbnFeedback(result.feedback.suggestions[0]);
+    } else {
+      setZxcvbnFeedback("");
+    }
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const updated = { ...form, [e.target.name]: e.target.value };
+    setForm(updated);
     if (error) setError(null);
+    if (e.target.name === "password") evaluatePassword(e.target.value);
+    if (e.target.name === "full_name") {
+      const val = e.target.value.trim();
+      setUsernameStatus(val.length >= 3 ? "checking" : "idle");
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (val.length >= 3) {
+        debounceRef.current = setTimeout(async () => {
+          try {
+            const { available } = await checkUsername(val);
+            setUsernameStatus(available ? "available" : "taken");
+          } catch {
+            setUsernameStatus("idle");
+          }
+        }, 500);
+      }
+    }
+    if (e.target.name === "email") {
+      const val = e.target.value.trim();
+      setEmailStatus(isValidUtecEmail(val) ? "checking" : "idle");
+      if (emailDebounceRef.current) clearTimeout(emailDebounceRef.current);
+      if (isValidUtecEmail(val)) {
+        emailDebounceRef.current = setTimeout(async () => {
+          try {
+            const { available } = await checkEmail(val);
+            setEmailStatus(available ? "available" : "taken");
+          } catch {
+            setEmailStatus("idle");
+          }
+        }, 600);
+      }
+    }
   };
 
   // Reglas de validación de contraseña calculadas en tiempo real
+
   const rules = useMemo(() => [
-    { label: "Mínimo 6 caracteres",     ok: form.password.length >= 6 },
-    { label: "Las contraseñas coinciden", ok: form.password === form.confirmPassword && form.confirmPassword.length > 0 },
+    { label: "Mínimo 6 caracteres",            ok: form.password.length >= 6 },
+    { label: "Contiene mayúsculas",            ok: /[A-Z]/.test(form.password) },
+    { label: "Contiene minúsculas",            ok: /[a-z]/.test(form.password) },
+    { label: "Contiene números",               ok: /[0-9]/.test(form.password) },
+    { label: "Contiene caracteres especiales", ok: /[^A-Za-z0-9]/.test(form.password) },
+    { label: "Las contraseñas coinciden",      ok: form.password === form.confirmPassword && form.confirmPassword.length > 0 },
   ], [form.password, form.confirmPassword]);
 
-  const strength = useMemo(() => passwordStrength(form.password), [form.password]);
+
+  // Función para evaluar el dominio del correo y restringir correo diferentes a UTEC
+  const isValidUtecEmail = (email: string): boolean => {
+    return /^[^\s@]+@utec\.edu\.pe$/i.test(email);
+  };
+
+  const emailBorderClass =
+    form.email.length === 0
+      ? "border-gray-200"
+      : !isValidUtecEmail(form.email)
+        ? "border-red-400 focus:border-red-500 focus:ring-red-400/20"
+        : emailStatus === "taken"
+          ? "border-red-400 focus:border-red-500 focus:ring-red-400/20"
+          : emailStatus === "available"
+            ? "border-green-400 focus:border-green-500 focus:ring-green-400/20"
+            : "border-gray-200";
 
   const confirmBorderClass =
     form.confirmPassword.length === 0
@@ -82,9 +147,17 @@ export default function Register() {
         : "border-red-400 focus:border-red-500 focus:ring-red-400/20";
 
   const validate = (): string | null => {
+    if (!form.full_name.trim())                          return "El nombre de usuario es obligatorio";
+    if (usernameStatus === "taken")                      return "El nombre de usuario ya está en uso";
     if (!form.email)                                     return "El email es obligatorio";
+    if (!isValidUtecEmail(form.email))                   return "Solo se permiten correos institucionales UTEC (@utec.edu.pe)";
+    if (emailStatus === "taken")                         return "Este correo ya está registrado. Intenta iniciar sesión.";
     if (!form.password)                                  return "La contraseña es obligatoria";
     if (form.password.length < 6)                        return "La contraseña debe tener al menos 6 caracteres";
+    if (!/[A-Z]/.test(form.password))                    return "La contraseña debe contener al menos una mayúscula";
+    if (!/[a-z]/.test(form.password))                    return "La contraseña debe contener al menos una minúscula";
+    if (!/[0-9]/.test(form.password))                    return "La contraseña debe contener al menos un número";
+    if (!/[^A-Za-z0-9]/.test(form.password))             return "La contraseña debe contener al menos un carácter especial";
     if (form.password !== form.confirmPassword)          return "Las contraseñas no coinciden";
     return null;
   };
@@ -144,29 +217,63 @@ export default function Register() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Nombre completo */}
-            <div className="relative">
-              <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <Input
-                name="full_name"
-                placeholder="Nombre completo (opcional)"
-                value={form.full_name}
-                onChange={handleChange}
-                className="h-14 pl-12 rounded-2xl bg-gray-50 border-gray-200"
-              />
+            <div className="space-y-1">
+              <div className="relative">
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <Input
+                  name="full_name"
+                  placeholder="Nombre de usuario"
+                  value={form.full_name}
+                  onChange={handleChange}
+                  required
+                  className={`h-14 pl-12 pr-10 rounded-2xl bg-gray-50 border transition-colors ${
+                    usernameStatus === "available" ? "border-green-400" :
+                    usernameStatus === "taken"     ? "border-red-400"   :
+                    "border-gray-200"
+                  }`}
+                />
+                <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                  {usernameStatus === "checking"  && <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />}
+                  {usernameStatus === "available" && <CheckCircle2 className="w-4 h-4 text-green-500" />}
+                  {usernameStatus === "taken"     && <XCircle className="w-4 h-4 text-red-500" />}
+                </div>
+              </div>
+              {usernameStatus === "taken" && (
+                <p className="text-xs text-red-500 px-1">El nombre de usuario ya está en uso</p>
+              )}
+              {usernameStatus === "available" && (
+                <p className="text-xs text-green-600 px-1">Nombre de usuario disponible</p>
+              )}
             </div>
 
             {/* Email */}
-            <div className="relative">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <Input
-                type="email"
-                name="email"
-                placeholder="Email institucional UTEC"
-                value={form.email}
-                onChange={handleChange}
-                required
-                className="h-14 pl-12 rounded-2xl bg-gray-50 border-gray-200"
-              />
+            <div className="space-y-1">
+              <div className="relative">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <Input
+                  type="email"
+                  name="email"
+                  placeholder="Email institucional UTEC"
+                  value={form.email}
+                  onChange={handleChange}
+                  required
+                  className={`h-14 pl-12 pr-10 rounded-2xl bg-gray-50 border ${emailBorderClass} transition-colors`}
+                />
+                <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                  {isValidUtecEmail(form.email) && emailStatus === "checking"  && <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />}
+                  {isValidUtecEmail(form.email) && emailStatus === "available" && <CheckCircle2 className="w-4 h-4 text-green-500" />}
+                  {isValidUtecEmail(form.email) && emailStatus === "taken"     && <XCircle className="w-4 h-4 text-red-500" />}
+                </div>
+              </div>
+              {form.email.length > 0 && !isValidUtecEmail(form.email) && (
+                <p className="text-xs text-red-500 px-1">Solo se permiten correos @utec.edu.pe</p>
+              )}
+              {isValidUtecEmail(form.email) && emailStatus === "taken" && (
+                <p className="text-xs text-red-500 px-1">Este correo ya está registrado. Intenta iniciar sesión.</p>
+              )}
+              {isValidUtecEmail(form.email) && emailStatus === "available" && (
+                <p className="text-xs text-green-600 px-1">Correo disponible</p>
+              )}
             </div>
 
             {/* Contraseña */}
@@ -194,20 +301,30 @@ export default function Register() {
 
               {/* Barra de fortaleza — aparece al escribir */}
               {form.password.length > 0 && (
-                <div className="space-y-1.5 px-1">
-                  <div className="flex gap-1">
-                    {[0, 1, 2].map((i) => (
+                <div className="space-y-2 px-1">
+                  <div className="flex gap-1.5">
+                    {[0, 1, 2, 3, 4].map((i) => (
                       <div
                         key={i}
-                        className={`h-1.5 flex-1 rounded-full transition-colors duration-300 ${
-                          i < strength ? STRENGTH_COLORS[strength] : "bg-gray-200"
+                        className={`h-2 flex-1 rounded-full transition-all duration-400 ${
+                          i <= zxcvbnScore ? STRENGTH_COLORS[zxcvbnScore] : "bg-gray-200"
                         }`}
                       />
                     ))}
                   </div>
-                  <p className={`text-xs font-medium ${STRENGTH_TEXT[strength]}`}>
-                    {STRENGTH_LABELS[strength]}
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <p className={`text-xs font-semibold ${STRENGTH_TEXT[zxcvbnScore]}`}>
+                      {STRENGTH_LABELS[zxcvbnScore]}
+                    </p>
+                    {zxcvbnScore >= 3 && (
+                      <ShieldCheck className={`w-4 h-4 ${STRENGTH_TEXT[zxcvbnScore]}`} />
+                    )}
+                  </div>
+                  {zxcvbnFeedback && (
+                    <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 leading-snug">
+                      💡 {zxcvbnFeedback}
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -236,7 +353,7 @@ export default function Register() {
 
             {/* Checklist de reglas — visible al escribir contraseña */}
             {form.password.length > 0 && (
-              <div className="bg-gray-50 rounded-xl p-3 space-y-1.5 border border-gray-100">
+              <div className={`rounded-xl p-3 space-y-1.5 border transition-colors duration-300 ${STRENGTH_BG[zxcvbnScore]}`}>
                 {rules.map((rule) => (
                   <div key={rule.label} className="flex items-center gap-2">
                     {rule.ok

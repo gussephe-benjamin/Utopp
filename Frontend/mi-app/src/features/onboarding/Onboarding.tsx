@@ -35,6 +35,7 @@ export default function Onboarding(): JSX.Element {
 
   const next = () => setStep((s) => s + 1);
   const back = () => setStep((s) => s - 1);
+  const showCareerInNext = step === 1 && data.career !== "";
 
   const canContinue = () => {
     if (step === 1) return data.career !== "";
@@ -76,12 +77,16 @@ export default function Onboarding(): JSX.Element {
 
   return (
 
-    <div style={{ maxWidth: 400, margin: "40px auto" }}>
+    <div
+      className="px-4"
+      style={{ maxWidth: step === 1 ? 400 : 400, margin: "40px auto", transition: "max-width 0.4s ease" }}
+    >
 
       <StepBar step={step}/>
     
       {/* CONTENIDO */}
       <div
+        className="pb-28"
         style={{
           transition: "all 0.8s",
           opacity: 1,
@@ -96,7 +101,13 @@ export default function Onboarding(): JSX.Element {
       </div>
 
       {/* BOTONES */}
-      <div className="flex justify-between mt-6 gap-4">
+      <div className="sticky bottom-0 z-20 border-t border-gray-200 bg-white/95 backdrop-blur">
+        {step === 1 && data.career && (
+          <p className="text-center text-xs text-gray-400 pt-3 px-4 animate-in fade-in duration-300">
+            Seleccionaste: <span className="font-semibold text-gray-600">{data.career}</span>
+          </p>
+        )}
+        <div className="flex justify-between gap-4 py-4 px-0">
         
         {/* BOTÓN ATRÁS */}
         {step > 1 && (
@@ -112,15 +123,26 @@ export default function Onboarding(): JSX.Element {
         <button
           disabled={!canContinue()}
           onClick={step < 4 ? next : finishOnboarding}
-          className={`flex-1 py-3 rounded-2xl font-semibold transition-all duration-300 transform active:scale-[0.98] 
+          className={`flex-1 py-3 rounded-2xl font-semibold transition-all duration-300 transform active:scale-[0.98] flex items-center justify-center
             ${
               canContinue()
                 ? 'bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white shadow-lg shadow-violet-500/30 hover:brightness-105'
                 : 'bg-white/10 text-white/50 cursor-not-allowed'
             }`}
         >
-          {step < 4 ? 'Siguiente' : 'Finalizar'}
+          {step < 4 ? (
+            showCareerInNext ? (
+              <span className="flex flex-col leading-tight text-center">
+                <span>Siguiente</span>
+              </span>
+            ) : (
+              'Siguiente'
+            )
+          ) : (
+            'Finalizar'
+          )}
         </button>
+        </div>
       </div>
 
     </div>
