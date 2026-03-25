@@ -2,10 +2,12 @@ import { BrowserRouter, Routes, Route } from "react-router-dom"
 import { AuthProvider } from "./auth/AuthContext"
 import ProtectedRoute from "./auth/ProtectedRoute"
 import AppRoute from "./auth/AppRoute"
-import Login from "./pages/auth/Login"
+//import Login from "./pages/auth/Login"
+import LoginOG from "./pages/auth/LoginOG"
 import DashboardLayout from "./pages/Dashboard"
 import Onboarding from "./features/onboarding/Onboarding"
-import Register from "./pages/auth/Register"
+//import Register from "./pages/auth/Register"
+import RegisterOG from "./pages/auth/RegisterOG"
 import Schedule from "./pages/Schedule"
 
 function App() {
@@ -17,7 +19,7 @@ function App() {
           <Route path="/" element={<AppRoute />} />
 
           {/* Ruta direccionamiento al Login Original */}
-          <Route path="/login" element={<Login />} />
+          <Route path="/login" element={<LoginOG />} />
 
           {/* Rutas del dashboard con navegación compartida */}
           <Route
@@ -47,7 +49,7 @@ function App() {
             path="/register"
             element={
           
-                <Register/>
+                <RegisterOG/>
           
             }
           />

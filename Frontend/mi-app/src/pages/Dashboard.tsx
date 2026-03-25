@@ -90,6 +90,8 @@ export default function DashboardLayout() {
   const isActive = (path: string) => location.pathname === path
   const isFeedActive    = location.pathname === '/app/inicio'
   const isProfileActive = location.pathname.startsWith('/app/perfil')
+  const profileViewIdMatch = location.pathname.match(/^\/app\/perfil\/(\d+)$/)
+  const profileViewId = profileViewIdMatch ? Number(profileViewIdMatch[1]) : undefined
 
   const handleLogout = () => {
     logout()
@@ -110,7 +112,7 @@ export default function DashboardLayout() {
         </div>
         {/* Perfil — siempre montado, invisible cuando no está activo */}
         <div className={`absolute inset-0 overflow-y-auto pb-20 bg-gray-50${isProfileActive ? '' : ' invisible pointer-events-none'}`}>
-          <Profile />
+          <Profile viewUserId={profileViewId} />
         </div>
         {/* Otras rutas (Horario, etc.) via Outlet */}
         {!isFeedActive && !isProfileActive && (

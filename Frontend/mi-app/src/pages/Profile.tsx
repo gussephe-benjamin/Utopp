@@ -222,10 +222,11 @@ function PostCard({
 
 // ─── Componente principal ──────────────────────────────────
 
-export default function Profile() {
+export default function Profile({ viewUserId }: { viewUserId?: number } = {}) {
   const params   = useParams()
-  const isMe   = useMemo(() => !params.id, [params.id])
-  const userId  = params.id ? Number(params.id) : null
+  const resolvedId = viewUserId ?? (params.id ? Number(params.id) : undefined)
+  const isMe   = useMemo(() => !resolvedId, [resolvedId])
+  const userId  = resolvedId ?? null
 
   const [data, setData]             = useState<ProfileData | null>(null)
   const [activeTab, setActiveTab]   = useState<Tab>('posts')
@@ -274,7 +275,9 @@ export default function Profile() {
   // ── Carga de datos del perfil ────────────────────────────
 
   useEffect(() => {
-    (async () => {
+    setData(null)
+    setAvatarUrl(null)
+    ;(async () => {
       if (isMe) {
         const d = await getMyProfile()
         setCurrentUserId(d.id)

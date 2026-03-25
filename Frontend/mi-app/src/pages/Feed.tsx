@@ -17,21 +17,28 @@ import {
 
 /** Avatar del usuario: muestra foto de Cloudinary si está en localStorage, si no iniciales */
 const UserAvatar = ({ userName, userId, gradient }: { userName?: string; userId?: number; gradient: string }) => {
+  const navigate = useNavigate()
   const avatarUrl = userId ? localStorage.getItem(`avatar_${userId}`) : null
   const initial = (userName ?? 'U').charAt(0).toUpperCase()
+  const handleClick = () => { if (userId) navigate(`/app/perfil/${userId}`) }
   if (avatarUrl) {
     return (
-      <img
-        src={avatarUrl}
-        alt={userName ?? 'Usuario'}
-        className="w-10 h-10 rounded-full object-cover border border-gray-200"
-      />
+      <button onClick={handleClick} className="shrink-0 rounded-full focus:outline-none">
+        <img
+          src={avatarUrl}
+          alt={userName ?? 'Usuario'}
+          className="w-10 h-10 rounded-full object-cover border border-gray-200 hover:opacity-90 transition-opacity"
+        />
+      </button>
     )
   }
   return (
-    <div className={`w-10 h-10 ${gradient} rounded-full flex items-center justify-center text-white font-semibold text-sm shrink-0`}>
+    <button
+      onClick={handleClick}
+      className={`w-10 h-10 ${gradient} rounded-full flex items-center justify-center text-white font-semibold text-sm shrink-0 hover:opacity-90 transition-opacity focus:outline-none`}
+    >
       {initial}
-    </div>
+    </button>
   )
 }
 
