@@ -69,17 +69,21 @@ const timeAgo = (iso?: string) => {
   return `hace ${Math.floor(diff / 604800)} sem`
 }
 
+const MAX_DESC_CHARS = 1000
+
 export default function PostDetailModal({ postId, onClose, onUnsaved }: PostDetailModalProps) {
-  const [post, setPost]         = useState<PostDetail | null>(null)
-  const [loading, setLoading]   = useState(false)
-  const [imgIdx, setImgIdx]     = useState(0)
-  const [unsaving, setUnsaving] = useState(false)
+  const [post, setPost]             = useState<PostDetail | null>(null)
+  const [loading, setLoading]       = useState(false)
+  const [imgIdx, setImgIdx]         = useState(0)
+  const [unsaving, setUnsaving]     = useState(false)
+  const [descExpanded, setDescExpanded] = useState(false)
 
   useEffect(() => {
     if (!postId) { setPost(null); return }
     let cancelled = false
     setLoading(true)
     setImgIdx(0)
+    setDescExpanded(false)
     getPost(postId)
       .then(d => { if (!cancelled) setPost(d as PostDetail) })
       .catch(console.error)
@@ -110,10 +114,9 @@ export default function PostDetailModal({ postId, onClose, onUnsaved }: PostDeta
   const sortedImages = post ? [...post.images].sort((a, b) => a.position - b.position) : []
   const sortedLinks  = post ? [...post.links].sort((a, b) => a.position - b.position) : []
   const totalImgs    = sortedImages.length
-  const currentImg   = sortedImages[imgIdx]
 
-  const prevImg = () => setImgIdx(i => (i - 1 + totalImgs) % totalImgs)
-  const nextImg = () => setImgIdx(i => (i + 1) % totalImgs)
+  const prevImg = () => setImgIdx(i => Math.max(0, i - 1))
+  const nextImg = () => setImgIdx(i => Math.min(totalImgs - 1, i + 1))
 
   const typeLabel = post ? POST_TYPE_LABELS[post.post_type as keyof typeof POST_TYPE_LABELS] : ''
   const typeIcon  = post ? POST_TYPE_ICONS[post.post_type as keyof typeof POST_TYPE_ICONS]  : ''
@@ -205,31 +208,46 @@ export default function PostDetailModal({ postId, onClose, onUnsaved }: PostDeta
                 </div>
               </div>
 
-              {/* Image carousel */}
+              {/* Image carousel (slide CSS) */}
               {totalImgs > 0 && (
                 <div className="relative w-full bg-black overflow-hidden" style={{ aspectRatio: '1/1', maxHeight: '55vh' }}>
-                  <img
-                    src={currentImg.url}
-                    alt=""
-                    className="w-full h-full"
+                  {/* Fila de imágenes: slide via translateX */}
+                  <div
+                    className="flex h-full"
                     style={{
-                      objectFit: 'cover',
-                      objectPosition: currentImg.object_position ?? 'center center',
-                      transform: `scale(${currentImg.scale ?? 1})`,
-                      transformOrigin: 'center center',
+                      width: `${totalImgs * 100}%`,
+                      transform: `translateX(-${(imgIdx / totalImgs) * 100}%)`,
+                      transition: 'transform 350ms ease-in-out',
                     }}
-                  />
+                  >
+                    {sortedImages.map((img, i) => (
+                      <img
+                        key={i}
+                        src={img.url}
+                        alt={`Imagen ${i + 1}`}
+                        className="h-full object-cover"
+                        style={{
+                          width: `${100 / totalImgs}%`,
+                          objectPosition: img.object_position ?? 'center center',
+                          transform: `scale(${img.scale ?? 1})`,
+                          transformOrigin: 'center center',
+                        }}
+                      />
+                    ))}
+                  </div>
                   {totalImgs > 1 && (
                     <>
                       <button
                         onClick={prevImg}
-                        className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-black/60 transition-colors"
+                        disabled={imgIdx === 0}
+                        className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-black/60 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                       >
                         <ChevronLeft className="w-4 h-4" />
                       </button>
                       <button
                         onClick={nextImg}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-black/60 transition-colors"
+                        disabled={imgIdx === totalImgs - 1}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-black/60 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                       >
                         <ChevronRight className="w-4 h-4" />
                       </button>
@@ -252,7 +270,25 @@ export default function PostDetailModal({ postId, onClose, onUnsaved }: PostDeta
                 {post.title && (
                   <h2 className="text-base font-bold text-gray-900 leading-snug">{post.title}</h2>
                 )}
-                <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{post.description}</p>
+                {(() => {
+                  const needsTrunc = post.description.length > MAX_DESC_CHARS
+                  const displayText = needsTrunc && !descExpanded
+                    ? post.description.slice(0, MAX_DESC_CHARS) + '…'
+                    : post.description
+                  return (
+                    <>
+                      <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{displayText}</p>
+                      {needsTrunc && (
+                        <button
+                          onClick={() => setDescExpanded(v => !v)}
+                          className="mt-1 text-xs font-medium text-[#4F46E5] hover:text-[#7C3AED] transition-colors"
+                        >
+                          {descExpanded ? 'Ver menos' : 'Ver más'}
+                        </button>
+                      )}
+                    </>
+                  )
+                })()}
               </div>
 
               {/* Deadline */}

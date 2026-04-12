@@ -146,3 +146,72 @@ def run_migrations(engine: Engine) -> None:
         """))
 
         conn.commit()
+
+        # 10. Agregar columna identifier a roles si no existe
+        conn.execute(text("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name = 'roles' AND column_name = 'identifier'
+                ) THEN
+                    ALTER TABLE roles ADD COLUMN identifier SMALLINT;
+                END IF;
+            END$$;
+        """))
+
+        conn.commit()
+
+        # 11. Garantizar datos válidos para roles.identifier existentes y futuros
+        conn.execute(text("""
+            UPDATE roles
+            SET identifier = CASE LOWER(name)
+                WHEN 'estudiante' THEN 1
+                WHEN 'organización estudiantil' THEN 2
+                WHEN 'oficina' THEN 3
+                WHEN 'administrador' THEN 4
+                WHEN 'root' THEN 5
+                ELSE identifier
+            END
+            WHERE identifier IS NULL;
+        """))
+
+        conn.execute(text("""
+            WITH missing_roles AS (
+                SELECT id, ROW_NUMBER() OVER (ORDER BY id) AS row_num
+                FROM roles
+                WHERE identifier IS NULL
+            ),
+            max_identifier AS (
+                SELECT COALESCE(MAX(identifier), 0) AS current_max
+                FROM roles
+            )
+            UPDATE roles
+            SET identifier = max_identifier.current_max + missing_roles.row_num
+            FROM missing_roles
+            CROSS JOIN max_identifier
+            WHERE roles.id = missing_roles.id;
+        """))
+
+        conn.execute(text("""
+            CREATE UNIQUE INDEX IF NOT EXISTS uq_roles_identifier ON roles (identifier);
+        """))
+
+        conn.execute(text("""
+            DO $$
+            BEGIN
+                IF EXISTS (
+                    SELECT 1
+                    FROM information_schema.columns
+                    WHERE table_name = 'roles'
+                    AND column_name = 'identifier'
+                    AND is_nullable = 'YES'
+                ) AND NOT EXISTS (
+                    SELECT 1 FROM roles WHERE identifier IS NULL
+                ) THEN
+                    ALTER TABLE roles ALTER COLUMN identifier SET NOT NULL;
+                END IF;
+            END$$;
+        """))
+
+        conn.commit()

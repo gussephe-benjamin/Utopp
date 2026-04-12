@@ -78,7 +78,27 @@ def bootstrap_admin(
 
     return UserRoleOut(
         user_id=user_role.user_id,
+        user_email=user.email,
         role_id=user_role.role_id,
+        role_identifier=admin_role.identifier,
         role_name=admin_role.name,
         assigned_at=user_role.assigned_at,
     )
+
+
+# ============================================================
+# POST /setup/ensure-default-roles
+# Sincroniza estrictamente los cuatro roles base del sistema.
+# Elimina roles no canónicos, crea los faltantes y corrige descripciones.
+# Si ya coincide exactamente con el catálogo esperado, no realiza cambios.
+# Auth: No requerida (endpoint idempotente de mantenimiento)
+# ============================================================
+@router.post("/ensure-default-roles")
+def ensure_default_roles(db: Session = Depends(get_db)):
+    # Sincronizar el catálogo de roles base e informar el resultado
+    sync_result = role_service.ensure_default_roles(db)
+
+    return {
+        "status": "ok",
+        **sync_result,
+    }

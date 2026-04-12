@@ -36,6 +36,7 @@ type WizardAction =
   | { type: 'SET_LINKS'; payload: WizardLink[] }
   | { type: 'SET_IMAGES'; payload: WizardImage[] }
   | { type: 'SET_GENERAL_INFO'; payload: { title: string; description: string; deadline_at: string } }
+  | { type: 'SET_TAGS'; payload: string[] }
   | { type: 'RESET' }
 
 /** Reducer puro que maneja todas las actualizaciones de estado del formulario */
@@ -52,6 +53,8 @@ function wizardReducer(state: WizardFormData, action: WizardAction): WizardFormD
       return { ...state, images: action.payload }
     case 'SET_GENERAL_INFO':
       return { ...state, ...action.payload }
+    case 'SET_TAGS':
+      return { ...state, tags: action.payload }
     case 'RESET':
       return initialFormData
     default:
@@ -62,6 +65,7 @@ function wizardReducer(state: WizardFormData, action: WizardAction): WizardFormD
 interface PublicationWizardProps {
   isOpen: boolean
   onClose: () => void
+  allowedTypes?: PostType[]
 }
 
 /**
@@ -78,7 +82,7 @@ interface PublicationWizardProps {
  *           (c) POST /posts/{id}/links   → registra cada enlace
  *           (d) POST /posts/{id}/publish → cambia status a published
  */
-export default function PublicationWizard({ isOpen, onClose }: PublicationWizardProps) {
+export default function PublicationWizard({ isOpen, onClose, allowedTypes }: PublicationWizardProps) {
   const [formData, dispatch] = useReducer(wizardReducer, initialFormData)
   const [currentStep, setCurrentStep] = useState(1)
   const [isPublishing, setIsPublishing] = useState(false)
@@ -181,7 +185,7 @@ export default function PublicationWizard({ isOpen, onClose }: PublicationWizard
         description: formData.description,
         post_type: formData.post_type,
         subtype: formData.subtype,
-        deadline_at: formData.deadline_at || undefined,
+        deadline_at: formData.deadline_at ? new Date(formData.deadline_at).toISOString() : undefined,
         tags: formData.tags.length > 0 ? formData.tags : undefined,
       })
 
@@ -248,6 +252,7 @@ export default function PublicationWizard({ isOpen, onClose }: PublicationWizard
           <Step1TypeSelection
             selectedType={formData.post_type}
             onSelectType={type => dispatch({ type: 'SET_POST_TYPE', payload: type })}
+            allowedTypes={allowedTypes}
           />
         )
       case 2:
@@ -272,9 +277,11 @@ export default function PublicationWizard({ isOpen, onClose }: PublicationWizard
             description={formData.description}
             deadline_at={formData.deadline_at}
             images={formData.images}
+            tags={formData.tags}
             requiresDeadline={formData.post_type === 'announcement'}
             onChange={data => dispatch({ type: 'SET_GENERAL_INFO', payload: data })}
             onImagesChange={images => dispatch({ type: 'SET_IMAGES', payload: images })}
+            onTagsChange={tags => dispatch({ type: 'SET_TAGS', payload: tags })}
           />
         )
       case 5:

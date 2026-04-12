@@ -8,6 +8,7 @@ import {
 } from "../api/users.api"
 import { archivePost, unarchivePost, deletePost } from "../api/posts.api"
 import { uploadToCloudinary } from "../api/cloudinary"
+import { getMyRoles, getUserRoles } from '../api/roles.api'
 import {
   Edit2, Users, Calendar, BookOpen, Clock, Camera, Check, X,
   FileText, UserPlus, UserMinus, Trash2, Archive, ArchiveRestore, Pencil,
@@ -17,6 +18,7 @@ import { getSavedPosts, unsavePost } from "../api/saved-posts.api"
 import { POST_TYPE_LABELS, POST_TYPE_ICONS, SUBTYPE_LABELS } from "../types/post.types"
 import PostDetailModal from "../components/PostDetailModal"
 import EditPostWizard from "../components/EditPostWizard"
+import { INTERESTS } from "../constants/interests"
 
 // ─── Tipos unificados ──────────────────────────────────────
 
@@ -31,6 +33,7 @@ interface ProfileData {
   followers_count: number
   following_count: number
   posts_count: number
+  role_name?: string
 }
 
 interface PostItem {
@@ -65,15 +68,40 @@ const AVAILABILITY_OPTIONS = [
   { id: 4, label: 'Máxima disponibilidad', emoji: '🌟', description: '15+ hrs/semana' },
 ]
 
-const CAREER_OPTIONS = [
-  { id: 'software',       label: 'Ingeniería de Software',  icon: '💻' },
-  { id: 'industrial',     label: 'Ingeniería Industrial',   icon: '🏭' },
-  { id: 'mecanica',       label: 'Ingeniería Mecánica',     icon: '⚙️' },
-  { id: 'electronica',    label: 'Ingeniería Electrónica',  icon: '🔌' },
-  { id: 'civil',          label: 'Ingeniería Civil',        icon: '🏗️' },
-  { id: 'datos',          label: 'Ciencia de Datos',        icon: '📊' },
-  { id: 'administracion', label: 'Administración',          icon: '📈' },
+const CAREER_FACULTIES = [
+  {
+    label: 'Facultad de Negocios',
+    careers: [
+      { id: 'admin_digital',      label: 'Administración y Negocios Digitales', icon: '📱' },
+      { id: 'business_analytics', label: 'Business Analytics',                  icon: '📊' },
+    ],
+  },
+  {
+    label: 'Facultad de Computación',
+    careers: [
+      { id: 'ciberseguridad',      label: 'Ciberseguridad',                              icon: '�' },
+      { id: 'ciencia_datos_ia',    label: 'Ciencia de Datos e Inteligencia Artificial',  icon: '🤖' },
+      { id: 'ciencia_computacion', label: 'Ciencia de la Computación',                  icon: '💻' },
+      { id: 'sistemas_info',       label: 'Sistemas de Información',                     icon: '🗂️' },
+    ],
+  },
+  {
+    label: 'Facultad de Ingeniería',
+    careers: [
+      { id: 'bioingenieria', label: 'Bioingeniería',              icon: '🧬' },
+      { id: 'ambiental',     label: 'Ingeniería Ambiental',       icon: '🌱' },
+      { id: 'civil',         label: 'Ingeniería Civil',            icon: '🏗️' },
+      { id: 'energia',       label: 'Ingeniería de la Energía',   icon: '⚡' },
+      { id: 'electronica',   label: 'Ingeniería Electrónica',     icon: '�' },
+      { id: 'industrial',    label: 'Ingeniería Industrial',      icon: '🏭' },
+      { id: 'mecatronica',   label: 'Ingeniería Mecatrónica',     icon: '🤖' },
+      { id: 'mecanica',      label: 'Ingeniería Mecánica',        icon: '⚙️' },
+      { id: 'quimica',       label: 'Ingeniería Química',         icon: '⚗️' },
+    ],
+  },
 ]
+
+const CAREER_OPTIONS = CAREER_FACULTIES.flatMap(f => f.careers)
 
 const STATUS_BADGE: Record<string, { label: string; color: string }> = {
   published: { label: 'Publicado',  color: 'bg-green-100 text-green-700' },
@@ -242,7 +270,7 @@ export default function Profile({ viewUserId }: { viewUserId?: number } = {}) {
 
   // Intereses edición
   const [editingInterests, setEditingInterests] = useState(false)
-  const [interestInput, setInterestInput]       = useState("")
+  const [selectedInterests, setSelectedInterests] = useState<string[]>([])
 
   // Foto de perfil — MVP: almacenada en localStorage por user id
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -279,7 +307,7 @@ export default function Profile({ viewUserId }: { viewUserId?: number } = {}) {
     setAvatarUrl(null)
     ;(async () => {
       if (isMe) {
-        const d = await getMyProfile()
+        const [d, roles] = await Promise.all([getMyProfile(), getMyRoles().catch(() => [])])
         setCurrentUserId(d.id)
         setData({
           id: d.id, email: d.email, full_name: d.full_name,
@@ -288,8 +316,9 @@ export default function Profile({ viewUserId }: { viewUserId?: number } = {}) {
           followers_count: d.followers_count ?? 0,
           following_count: d.following_count ?? 0,
           posts_count: d.posts_count ?? 0,
+          role_name: roles[0]?.name ?? undefined,
         })
-        setInterestInput((d.interests || []).join(", "))
+        setSelectedInterests(d.interests || [])
         const apiUrl = (d as { profile_image_url?: string }).profile_image_url
         if (apiUrl) {
           setAvatarUrl(apiUrl)
@@ -299,7 +328,11 @@ export default function Profile({ viewUserId }: { viewUserId?: number } = {}) {
           if (saved) setAvatarUrl(saved)
         }
       } else if (userId) {
-        const [d, me] = await Promise.all([apiGetProfile(userId), getMyProfile().catch(() => null)])
+        const [d, me, roles] = await Promise.all([
+          apiGetProfile(userId),
+          getMyProfile().catch(() => null),
+          getUserRoles(userId).catch(() => []),
+        ])
         if (me) setCurrentUserId(me.id)
         setData({
           id: d.id, full_name: d.full_name, interests: d.interests,
@@ -307,6 +340,7 @@ export default function Profile({ viewUserId }: { viewUserId?: number } = {}) {
           followers_count: d.followers_count,
           following_count: d.following_count,
           posts_count: d.posts_count,
+          role_name: (roles as { name: string }[])[0]?.name ?? undefined,
         })
         const apiUrl = (d as { profile_image_url?: string }).profile_image_url
         if (apiUrl) {
@@ -460,8 +494,7 @@ export default function Profile({ viewUserId }: { viewUserId?: number } = {}) {
   // ── Intereses ────────────────────────────────────────────
 
   const saveInterests = async () => {
-    const arr = interestInput.split(",").map(s => s.trim()).filter(Boolean)
-    const d = await updateInterests(arr)
+    const d = await updateInterests(selectedInterests)
     setData(prev => prev ? { ...prev, interests: d.interests } : prev)
     setEditingInterests(false)
   }
@@ -500,7 +533,7 @@ export default function Profile({ viewUserId }: { viewUserId?: number } = {}) {
   const shouldHideFollow = isMe || (data.id === currentUserId)
 
   const TABS: { id: Tab; label: string; icon: React.ReactNode; count?: number }[] = [
-    { id: 'posts',    label: 'Publicaciones', icon: <FileText className="w-4 h-4" />, count: data.posts_count },
+    ...(data.role_name !== 'estudiante' ? [{ id: 'posts' as Tab, label: 'Publicaciones', icon: <FileText className="w-4 h-4" />, count: data.posts_count }] : []),
     ...(isMe ? [
       { id: 'saved'    as Tab, label: 'Guardadas',  icon: <Bookmark className="w-4 h-4" />, count: savedPosts.length },
       { id: 'archived' as Tab, label: 'Archivadas', icon: <Archive  className="w-4 h-4" />, count: archivedPosts.length },
@@ -556,10 +589,10 @@ export default function Profile({ viewUserId }: { viewUserId?: number } = {}) {
       <div className="relative z-10 max-w-2xl mx-auto px-4 -mt-16 pb-24">
 
         {/* ── Card de cabecera ───────────────────────────── */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 px-6 pt-4 pb-6 mb-4">
-          <div className="flex items-end gap-4 mb-4">
-            {/* Avatar */}
-            <div className="relative shrink-0">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 px-6 pt-6 pb-6 mb-4">
+          {/* Avatar centrado */}
+          <div className="flex flex-col items-center text-center mb-4">
+            <div className="relative mb-3">
               <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
                 {avatarUrl ? (
                   <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
@@ -582,22 +615,41 @@ export default function Profile({ viewUserId }: { viewUserId?: number } = {}) {
               )}
             </div>
 
-            {/* Nombre + acciones */}
-            <div className="flex-1 min-w-0 pb-1">
-              <h1 className="text-xl font-bold text-gray-900 truncate">{displayName}</h1>
-              {data.email && <p className="text-sm text-gray-500 truncate">{data.email}</p>}
-              {data.career && (
-                <p className="text-sm text-purple-600 font-medium mt-0.5 truncate">
-                  {data.career}{data.cycle ? ` · Ciclo ${data.cycle}` : ""}
-                </p>
-              )}
-            </div>
+            {/* Nombre */}
+            <h1 className="text-xl font-bold text-gray-900">{displayName}</h1>
 
-            {/* Botón follow (perfil ajeno) — oculto si es el propio perfil */}
+            {/* Carrera · Ciclo */}
+            {data.career && (
+              <p className="text-sm text-purple-600 font-medium mt-0.5">
+                {data.career}{data.cycle ? ` · Ciclo ${data.cycle}` : ""}
+              </p>
+            )}
+
+            {/* Email */}
+            {data.email && <p className="text-sm text-gray-500 mt-0.5">{data.email}</p>}
+
+            {/* Badge de Rol */}
+            {data.role_name && (
+              <span className={`inline-flex items-center gap-1 text-xs font-medium px-2.5 py-0.5 rounded-full mt-2 ${
+                data.role_name === 'root'                      ? 'bg-red-100 text-red-700' :
+                data.role_name === 'administrador'            ? 'bg-orange-100 text-orange-700' :
+                data.role_name === 'oficina'                  ? 'bg-blue-100 text-blue-700' :
+                data.role_name === 'organización estudiantil' ? 'bg-green-100 text-green-700' :
+                                                                'bg-gray-100 text-gray-600'
+              }`}>
+                {data.role_name === 'root'                      ? '⚡' :
+                 data.role_name === 'administrador'            ? '🛡️' :
+                 data.role_name === 'oficina'                  ? '🏢' :
+                 data.role_name === 'organización estudiantil' ? '🎪' : '🎓'}
+                {data.role_name}
+              </span>
+            )}
+
+            {/* Botón follow (perfil ajeno) */}
             {!shouldHideFollow && (
               <button
                 onClick={isFollowing ? handleUnfollow : handleFollow}
-                className={`shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                className={`mt-3 flex items-center gap-1.5 px-5 py-2 rounded-xl text-sm font-semibold transition-all ${
                   isFollowing
                     ? 'bg-gray-100 text-gray-700 hover:bg-red-50 hover:text-red-600'
                     : 'bg-gradient-to-r from-[#4F46E5] to-[#7C3AED] text-white shadow-md hover:shadow-lg'
@@ -611,10 +663,12 @@ export default function Profile({ viewUserId }: { viewUserId?: number } = {}) {
 
           {/* Stats rápidas */}
           <div className="flex gap-4 border-t border-gray-100 pt-4">
-            <div className="flex-1 text-center">
-              <p className="text-lg font-bold text-gray-900">{data.posts_count}</p>
-              <p className="text-xs text-gray-500">Publicaciones</p>
-            </div>
+            {data.role_name !== 'estudiante' && (
+              <div className="flex-1 text-center">
+                <p className="text-lg font-bold text-gray-900">{data.posts_count}</p>
+                <p className="text-xs text-gray-500">Publicaciones</p>
+              </div>
+            )}
             <button
               className="flex-1 text-center hover:bg-gray-50 rounded-xl py-1 transition-colors"
               onClick={() => openSocialModal('followers')}
@@ -639,11 +693,11 @@ export default function Profile({ viewUserId }: { viewUserId?: number } = {}) {
             isMe={isMe}
             avail={avail}
             editingInterests={editingInterests}
-            interestInput={interestInput}
-            onEditInterests={() => setEditingInterests(true)}
+            selectedInterests={selectedInterests}
+            onEditInterests={() => { setSelectedInterests(data.interests || []); setEditingInterests(true) }}
             onCancelInterests={() => setEditingInterests(false)}
             onSaveInterests={saveInterests}
-            onInterestInputChange={setInterestInput}
+            onToggleInterest={(id: string) => setSelectedInterests(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])}
             onProfileUpdate={async (patch: Record<string, unknown>) => {
               const updated = await updateMyProfile(patch)
               setData(prev => {
@@ -1208,19 +1262,19 @@ function ArchivedPostCard({
 
 function InfoTab({
   data, isMe, avail,
-  editingInterests, interestInput,
-  onEditInterests, onCancelInterests, onSaveInterests, onInterestInputChange,
+  editingInterests, selectedInterests,
+  onEditInterests, onCancelInterests, onSaveInterests, onToggleInterest,
   onProfileUpdate,
 }: {
   data: ProfileData
   isMe: boolean
   avail: typeof AVAILABILITY_OPTIONS[number]
   editingInterests: boolean
-  interestInput: string
+  selectedInterests: string[]
   onEditInterests: () => void
   onCancelInterests: () => void
   onSaveInterests: () => void
-  onInterestInputChange: (v: string) => void
+  onToggleInterest: (id: string) => void
   onProfileUpdate: (patch: Record<string, unknown>) => Promise<void>
 }) {
   const [showAllInterests, setShowAllInterests] = useState(false)
@@ -1277,8 +1331,12 @@ function InfoTab({
                 onChange={e => setEditCareer(e.target.value)}
               >
                 <option value="">Seleccionar carrera</option>
-                {CAREER_OPTIONS.map(c => (
-                  <option key={c.id} value={c.label}>{c.icon} {c.label}</option>
+                {CAREER_FACULTIES.map(f => (
+                  <optgroup key={f.label} label={f.label}>
+                    {f.careers.map(c => (
+                      <option key={c.id} value={c.label}>{c.icon} {c.label}</option>
+                    ))}
+                  </optgroup>
                 ))}
               </select>
               <div className="flex gap-1.5">
@@ -1319,7 +1377,7 @@ function InfoTab({
                 value={editCycle}
                 onChange={e => setEditCycle(Number(e.target.value))}
               >
-                {Array.from({ length: 12 }, (_, i) => i + 1).map(c => (
+                {Array.from({ length: 10 }, (_, i) => i + 1).map(c => (
                   <option key={c} value={c}>Ciclo {c}</option>
                 ))}
               </select>
@@ -1407,13 +1465,45 @@ function InfoTab({
 
         {editingInterests ? (
           <div className="space-y-3">
-            <textarea
-              className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-purple-400 focus:border-transparent resize-none outline-none"
-              rows={3}
-              value={interestInput}
-              onChange={e => onInterestInputChange(e.target.value)}
-              placeholder="Separa los intereses con comas: programación, diseño, IA..."
-            />
+            {/* Conjunto total de intereses */}
+            <div>
+              <p className="text-xs text-gray-500 mb-2 font-medium">Disponibles</p>
+              <div className="flex flex-wrap gap-1.5">
+                {INTERESTS.filter(i => !selectedInterests.includes(i.id)).map(interest => (
+                  <button
+                    key={interest.id}
+                    onClick={() => onToggleInterest(interest.id)}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200 hover:bg-purple-50 hover:text-purple-600 hover:border-purple-200 transition-colors"
+                  >
+                    <span>{interest.icon}</span> {interest.label}
+                  </button>
+                ))}
+                {INTERESTS.filter(i => !selectedInterests.includes(i.id)).length === 0 && (
+                  <span className="text-xs text-gray-400">Todos seleccionados</span>
+                )}
+              </div>
+            </div>
+            {/* Conjunto personal */}
+            <div>
+              <p className="text-xs text-gray-500 mb-2 font-medium">Tus intereses ({selectedInterests.length})</p>
+              <div className="flex flex-wrap gap-1.5 min-h-[32px] bg-purple-50/50 rounded-lg p-2 border border-dashed border-purple-200">
+                {selectedInterests.length === 0 && (
+                  <span className="text-xs text-gray-400">Selecciona intereses de arriba</span>
+                )}
+                {selectedInterests.map(id => {
+                  const interest = INTERESTS.find(i => i.id === id)
+                  return interest ? (
+                    <button
+                      key={id}
+                      onClick={() => onToggleInterest(id)}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700 border border-purple-300 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
+                    >
+                      <span>{interest.icon}</span> {interest.label} <X className="w-3 h-3 ml-0.5" />
+                    </button>
+                  ) : null
+                })}
+              </div>
+            </div>
             <div className="flex gap-2">
               <button onClick={onSaveInterests} className="flex items-center gap-1.5 px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors">
                 <Check className="w-4 h-4" /> Guardar
@@ -1429,11 +1519,14 @@ function InfoTab({
               <p className="text-gray-400 text-sm">Sin intereses registrados</p>
             ) : (
               <div className="flex flex-wrap gap-1.5">
-                {visible.map((tag, i) => (
-                  <span key={i} className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-xs font-medium">
-                    #{tag}
-                  </span>
-                ))}
+                {visible.map((tag, i) => {
+                  const known = INTERESTS.find(int => int.id === tag)
+                  return (
+                    <span key={i} className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-xs font-medium inline-flex items-center gap-1">
+                      {known && <span>{known.icon}</span>}{known ? known.label : `#${tag}`}
+                    </span>
+                  )
+                })}
                 {interests.length > 6 && (
                   <button
                     onClick={() => setShowAllInterests(v => !v)}

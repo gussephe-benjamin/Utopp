@@ -21,12 +21,14 @@ interface Step5PreviewProps {
   links: WizardLink[]
 }
 
-/** Formato legible de fecha ISO YYYY-MM-DD → "12 de enero de 2026" */
+/** Formato legible de fecha ISO (date o datetime-local) */
 function formatDate(isoDate: string): string {
   if (!isoDate) return ''
+  const d = new Date(isoDate)
+  if (isNaN(d.getTime())) return ''
   return new Intl.DateTimeFormat('es-ES', {
-    day: '2-digit', month: 'long', year: 'numeric', timeZone: 'UTC',
-  }).format(new Date(isoDate + 'T00:00:00Z'))
+    day: '2-digit', month: 'long', year: 'numeric',
+  }).format(d)
 }
 
 /**
@@ -41,7 +43,10 @@ export default function Step5Preview({
   const [userEmail, setUserEmail]         = useState<string | null>(null)
   const [avatarUrl, setAvatarUrl]         = useState<string | null>(null)
   const [extraMenuOpen, setExtraMenuOpen] = useState(false)
+  const [descExpanded, setDescExpanded]   = useState(false)
   const extraMenuRef                      = useRef<HTMLDivElement>(null)
+
+  const MAX_DESC_CHARS = 500
 
   useEffect(() => {
     getMyProfile()
@@ -67,8 +72,8 @@ export default function Step5Preview({
   }, [extraMenuOpen])
 
   const readyImages = images.filter(img => img.status === 'done' && img.cloudinaryUrl)
-  const prevImage   = () => setCurrentImage(i => (i - 1 + readyImages.length) % readyImages.length)
-  const nextImage   = () => setCurrentImage(i => (i + 1) % readyImages.length)
+  const prevImage   = () => setCurrentImage(i => Math.max(0, i - 1))
+  const nextImage   = () => setCurrentImage(i => Math.min(readyImages.length - 1, i + 1))
 
   const initial = (userName ?? 'T').charAt(0).toUpperCase()
 
@@ -144,30 +149,46 @@ export default function Step5Preview({
             )}
           </div>
 
-          {/* Carrusel de imágenes — aspect-ratio 4:5 */}
+          {/* Carrusel de imágenes (slide CSS) — aspect-ratio 4:5 */}
           {readyImages.length > 0 && (
             <div className="relative w-full max-w-[500px] mx-auto aspect-[4/5] bg-gray-100 overflow-hidden">
-              <img
-                src={readyImages[currentImage].cloudinaryUrl!}
-                alt={`Imagen ${currentImage + 1}`}
-                className="w-full h-full object-cover object-center"
-                style={(() => {
-                  const objPos = readyImages[currentImage].objectPosition ?? 'center center'
-                  const sc     = readyImages[currentImage].scale ?? 1
-                  return { objectPosition: objPos, transform: `scale(${sc})`, transformOrigin: objPos }
-                })()}
-              />
+              {/* Fila de imágenes: slide via translateX */}
+              <div
+                className="flex h-full"
+                style={{
+                  width: `${readyImages.length * 100}%`,
+                  transform: `translateX(-${(currentImage / readyImages.length) * 100}%)`,
+                  transition: 'transform 350ms ease-in-out',
+                }}
+              >
+                {readyImages.map((img, i) => (
+                  <img
+                    key={i}
+                    src={img.cloudinaryUrl!}
+                    alt={`Imagen ${i + 1}`}
+                    className="h-full object-cover"
+                    style={{
+                      width: `${100 / readyImages.length}%`,
+                      objectPosition: img.objectPosition ?? 'center center',
+                      transform: `scale(${img.scale ?? 1})`,
+                      transformOrigin: img.objectPosition ?? 'center center',
+                    }}
+                  />
+                ))}
+              </div>
               {readyImages.length > 1 && (
                 <>
                   <button
                     onClick={prevImage}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/40 hover:bg-black/60 rounded-full flex items-center justify-center text-white transition-colors"
+                    disabled={currentImage === 0}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/40 hover:bg-black/60 rounded-full flex items-center justify-center text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </button>
                   <button
                     onClick={nextImage}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/40 hover:bg-black/60 rounded-full flex items-center justify-center text-white transition-colors"
+                    disabled={currentImage === readyImages.length - 1}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/40 hover:bg-black/60 rounded-full flex items-center justify-center text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                   >
                     <ChevronRight className="w-5 h-5" />
                   </button>
@@ -190,7 +211,27 @@ export default function Step5Preview({
             {title && (
               <h3 className="font-bold text-gray-900 text-base mb-1 leading-snug">{title}</h3>
             )}
-            <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-line line-clamp-4">{description}</p>
+            {(() => {
+              const needsTrunc = description.length > MAX_DESC_CHARS
+              const displayText = needsTrunc && !descExpanded
+                ? description.slice(0, MAX_DESC_CHARS) + '…'
+                : description
+              return (
+                <>
+                  <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-line">
+                    {displayText}
+                  </p>
+                  {needsTrunc && (
+                    <button
+                      onClick={() => setDescExpanded(v => !v)}
+                      className="mt-1 text-xs font-medium text-[#4F46E5] hover:text-[#7C3AED] transition-colors"
+                    >
+                      {descExpanded ? 'Ver menos' : 'Ver más'}
+                    </button>
+                  )}
+                </>
+              )
+            })()}
             {deadline_at && (
               <div className="flex items-center gap-1.5 mt-2 text-xs text-gray-500">
                 <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

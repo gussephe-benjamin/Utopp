@@ -48,9 +48,12 @@ function parseBackendId(tempId: string): number | null {
   return isNaN(n) ? null : n
 }
 
-function isoDateOnly(value?: string | null): string {
+function isoToDatetimeLocal(value?: string | null): string {
   if (!value) return ''
-  return value.split('T')[0]
+  const d = new Date(value)
+  if (isNaN(d.getTime())) return ''
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
 // ── Componente principal ─────────────────────────────────────
@@ -61,7 +64,7 @@ export default function EditPostWizard({ post, onClose, onSaved }: EditPostWizar
   // ── Form state ──────────────────────────────────────────────
   const [title, setTitle]           = useState(post?.title ?? '')
   const [description, setDescription] = useState(post?.description ?? '')
-  const [deadlineAt, setDeadlineAt] = useState(isoDateOnly(post?.deadline_at))
+  const [deadlineAt, setDeadlineAt] = useState(isoToDatetimeLocal(post?.deadline_at))
   const [tags, setTags]             = useState<string[]>(post?.tags ?? [])
   const [images, setImages]         = useState<WizardImage[]>([])
   const [links, setLinks]           = useState<WizardLink[]>([])
@@ -100,7 +103,7 @@ export default function EditPostWizard({ post, onClose, onSaved }: EditPostWizar
     if (!postId || !post) return
     setTitle(post.title ?? '')
     setDescription(post.description)
-    setDeadlineAt(isoDateOnly(post.deadline_at))
+    setDeadlineAt(isoToDatetimeLocal(post.deadline_at))
     setTags(post.tags ?? [])
     setCurrentStep(1)
     setSaveError(null)
@@ -189,7 +192,7 @@ export default function EditPostWizard({ post, onClose, onSaved }: EditPostWizar
         title:       title.trim() || undefined,
         description: description.trim(),
         tags:        tags.length > 0 ? tags : undefined,
-        deadline_at: deadlineAt || null,
+        ...(deadlineAt ? { deadline_at: new Date(deadlineAt).toISOString() } : { deadline_at: null }),
       })
 
       // 2. Image diff
@@ -300,8 +303,7 @@ export default function EditPostWizard({ post, onClose, onSaved }: EditPostWizar
         await reorderLinks(postId, reorderLinkList).catch(console.error)
       }
 
-      onSaved({ ...post, ...updated, title: title.trim() || undefined, tags })
-      onClose()
+      onSaved({ ...post, ...updated, title: title.trim() || undefined, tags, deadline_at: updated.deadline_at })
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : 'Error al guardar los cambios')
     } finally {
@@ -337,6 +339,7 @@ export default function EditPostWizard({ post, onClose, onSaved }: EditPostWizar
             description={description}
             deadline_at={deadlineAt}
             images={images}
+            tags={tags}
             requiresDeadline={post.post_type === 'announcement'}
             onChange={d => {
               setTitle(d.title)
@@ -345,6 +348,7 @@ export default function EditPostWizard({ post, onClose, onSaved }: EditPostWizar
               markDirty()
             }}
             onImagesChange={handleImagesChange}
+            onTagsChange={t => { setTags(t); markDirty() }}
           />
         )
       case 3:

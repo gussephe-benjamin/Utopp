@@ -20,15 +20,21 @@ interface Step1TypeSelectionProps {
   selectedType: PostType | ''
   /** Callback que recibe el tipo elegido. El subtipo se elige en el Paso 2. */
   onSelectType: (type: PostType) => void
+  /** Tipos permitidos según el rol del usuario. Si no se pasa, se muestran todos. */
+  allowedTypes?: PostType[]
 }
 
-export default function Step1TypeSelection({ onSelectType, selectedType }: Step1TypeSelectionProps) {
+export default function Step1TypeSelection({ onSelectType, selectedType, allowedTypes }: Step1TypeSelectionProps) {
   const [hoveredType, setHoveredType] = useState<PostType | null>(null)
+
+  const visibleTypes = allowedTypes && allowedTypes.length > 0
+    ? ALL_POST_TYPES.filter(t => allowedTypes.includes(t))
+    : ALL_POST_TYPES
 
   return (
     <div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {ALL_POST_TYPES.map((type) => (
+        {visibleTypes.map((type) => (
           <button
             key={type}
             onClick={() => onSelectType(type)}

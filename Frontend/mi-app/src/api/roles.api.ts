@@ -67,6 +67,16 @@ export async function getUserRoles(userId: number) {
   return data
 }
 
+/**
+ * GET /roles/me
+ * Retorna los roles asignados al usuario autenticado.
+ * Auth: Requerida (cualquier usuario con sesión activa).
+ */
+export async function getMyRoles(): Promise<{ id: number; name: string; description?: string }[]> {
+  const { data } = await api.get('/roles/me')
+  return data
+}
+
 // ─── Bootstrap ───────────────────────────────────────────
 
 /**

@@ -4,6 +4,7 @@ import { Home, User, X, MoreVertical, LogOut, Settings } from 'lucide-react'
 import PublicationWizard from '../components/PublicationWizard'
 import { useAuth } from '../auth/useAuth'
 import { getMyProfile } from '../api/users.api'
+import { useRole } from '../hooks/useRole'
 import Feed from '../pages/Feed'
 import Profile from '../pages/Profile'
 
@@ -15,6 +16,8 @@ export default function DashboardLayout() {
   const navigate  = useNavigate()
   const location  = useLocation()
   const { logout } = useAuth()
+
+  const { canCreate, allowedTypes } = useRole()
 
   const [showWizard, setShowWizard]           = useState(false)
   const [showOptionsModal, setShowOptionsModal] = useState(false)
@@ -141,20 +144,22 @@ export default function DashboardLayout() {
             <span className="text-[10px] font-medium">Inicio</span>
           </button>
 
-          {/* Botón central de creación */}
-          <button
-            onClick={() => setShowWizard(true)}
-            className="relative group"
-            title="Crear Publicación"
-          >
-            <div className="absolute -inset-1 bg-gradient-to-r from-[#4F46E5] to-[#7C3AED] rounded-full blur opacity-60 group-hover:opacity-90 transition duration-300" />
-            <div className="relative bg-gradient-to-r from-[#4F46E5] to-[#7C3AED] rounded-full p-3.5 shadow-lg transform transition-all duration-200 hover:scale-105">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19" />
-                <line x1="5" y1="12" x2="19" y2="12" />
-              </svg>
-            </div>
-          </button>
+          {/* Botón central de creación — visible solo si el rol permite crear */}
+          {canCreate && (
+            <button
+              onClick={() => setShowWizard(true)}
+              className="relative group"
+              title="Crear Publicación"
+            >
+              <div className="absolute -inset-1 bg-gradient-to-r from-[#4F46E5] to-[#7C3AED] rounded-full blur opacity-60 group-hover:opacity-90 transition duration-300" />
+              <div className="relative bg-gradient-to-r from-[#4F46E5] to-[#7C3AED] rounded-full p-3.5 shadow-lg transform transition-all duration-200 hover:scale-105">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </div>
+            </button>
+          )}
 
           {/* Perfil */}
           <button
@@ -179,7 +184,7 @@ export default function DashboardLayout() {
       </nav>
 
       {/* Wizard de publicación */}
-      <PublicationWizard isOpen={showWizard} onClose={() => setShowWizard(false)} />
+      <PublicationWizard isOpen={showWizard} onClose={() => setShowWizard(false)} allowedTypes={allowedTypes} />
 
       {/* ── Panel de opciones (bottom sheet) ─────────────── */}
       {showOptionsModal && (

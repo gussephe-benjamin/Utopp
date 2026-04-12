@@ -11,7 +11,7 @@ from app.models.user_role import UserRole
 from app.models.role import Role
 
 
-ADMIN_ROLE_NAME = "admin"
+ADMIN_ROLE_NAME = "administrador"
 
 
 def is_admin(user: User, db: Session) -> bool:

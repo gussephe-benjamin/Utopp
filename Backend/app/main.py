@@ -63,13 +63,14 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 
 
 @app.get("/")
-def health():
+def root_check():
     return {"status": "ok"}
 
 
 # ═══════════════════════════════════════════════════════════
 # AUTENTICACIÓN
 # ═══════════════════════════════════════════════════════════
+app.include_router(health.router)
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(googleAuth.router, prefix="/google", tags=["google-auth"])
 app.include_router(setup.router, prefix="/setup", tags=["setup"])
@@ -99,3 +100,4 @@ app.include_router(participants.router, tags=["participants"])
 # ADMINISTRACIÓN
 # ═══════════════════════════════════════════════════════════
 app.include_router(roles.router, prefix="/roles", tags=["roles"])
+

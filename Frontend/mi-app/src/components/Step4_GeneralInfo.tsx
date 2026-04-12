@@ -1,16 +1,19 @@
 import { useRef, useState, useCallback, useEffect } from 'react'
 import { type WizardImage } from '../types/post.types'
 import { uploadToCloudinary } from '../api/cloudinary'
+import { INTERESTS } from '../constants/interests'
 
 interface Step4GeneralInfoProps {
   title: string
   description: string
-  deadline_at: string   // string ISO YYYY-MM-DD, vacío si no aplica
+  deadline_at: string   // string ISO YYYY-MM-DDTHH:mm o YYYY-MM-DD
   images: WizardImage[]
+  tags?: string[]
   /** Indica si el tipo de publicación requiere deadline obligatorio (ej: announcement) */
   requiresDeadline?: boolean
   onChange: (data: { title: string; description: string; deadline_at: string }) => void
   onImagesChange: (images: WizardImage[]) => void
+  onTagsChange?: (tags: string[]) => void
 }
 
 export default function Step4GeneralInfo({
@@ -18,9 +21,11 @@ export default function Step4GeneralInfo({
   description,
   deadline_at,
   images,
+  tags = [],
   requiresDeadline = false,
   onChange,
   onImagesChange,
+  onTagsChange,
 }: Step4GeneralInfoProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   // Controla si el usuario está arrastrando un archivo sobre la zona de drop
@@ -117,7 +122,8 @@ export default function Step4GeneralInfo({
     onImagesChange(images.filter(img => img.tempId !== tempId))
   }
 
-  const today = new Date().toISOString().split('T')[0]
+  const now = new Date()
+  const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}T${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`
 
   return (
     <div className="space-y-6">
@@ -162,16 +168,57 @@ export default function Step4GeneralInfo({
           {!requiresDeadline && <span className="text-gray-400 font-normal"> (opcional)</span>}
         </label>
         <input
-          type="date"
+          type="datetime-local"
           value={deadline_at}
           onChange={e => onChange({ title, description, deadline_at: e.target.value })}
           min={today}
           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
         />
         <div className="text-xs text-gray-400 mt-1">
-          Fecha hasta la que el post es relevante
+          Fecha y hora hasta la que el post es relevante
         </div>
       </div>
+
+      {/* Sección: Tags (intereses) */}
+      {onTagsChange && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Tags <span className="text-gray-400 font-normal">(opcional, máx. 5)</span>
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {INTERESTS.map(interest => {
+              const active = tags.includes(interest.id)
+              return (
+                <button
+                  key={interest.id}
+                  type="button"
+                  onClick={() => {
+                    if (active) {
+                      onTagsChange(tags.filter(t => t !== interest.id))
+                    } else if (tags.length < 5) {
+                      onTagsChange([...tags, interest.id])
+                    }
+                  }}
+                  className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                    active
+                      ? 'bg-purple-100 text-purple-700 border-purple-300'
+                      : tags.length >= 5
+                        ? 'bg-gray-50 text-gray-300 border-gray-200 cursor-not-allowed'
+                        : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
+                  }`}
+                  disabled={!active && tags.length >= 5}
+                >
+                  <span>{interest.icon}</span>
+                  {interest.label}
+                </button>
+              )
+            })}
+          </div>
+          <div className="text-xs text-gray-400 mt-1">
+            {tags.length}/5 seleccionados
+          </div>
+        </div>
+      )}
 
       {/* Sección: Subir imágenes */}
       <div>

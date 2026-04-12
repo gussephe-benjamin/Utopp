@@ -19,6 +19,8 @@ export interface FeedParams {
   type?: string
   subtype?: string
   tags?: string[]
+  time_status?: string
+  sort?: string
   page?: number
   size?: number
 }

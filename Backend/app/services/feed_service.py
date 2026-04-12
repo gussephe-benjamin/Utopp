@@ -1,10 +1,10 @@
 from datetime import datetime, timezone
 from typing import Optional, List
 
-from sqlalchemy import select, func, or_, and_
+from sqlalchemy import select, func, or_, and_, case, literal_column, text as sa_text
 from sqlalchemy.orm import Session, selectinload
 
-from app.models.post import Post, PostStatus, PostType, SubPostType
+from app.models.post import Post, PostStatus, PostType, SubPostType, TimeStatus as TSEnum
 from app.models.saved_post import SavedPost
 from app.models.event_participant import PostParticipant
 from app.models.user import User
@@ -18,6 +18,8 @@ def build_feed(
     post_type: Optional[PostType] = None,
     subtype: Optional[SubPostType] = None,
     tags: Optional[List[str]] = None,
+    time_status: Optional[str] = None,
+    sort: Optional[str] = None,
     page: int = 1,
     size: int = 20,
 ) -> FeedResponse:
@@ -26,14 +28,28 @@ def build_feed(
     
     now = datetime.now(timezone.utc)
     
-    # Query base: solo posts publicados con deadline válido
+    # Query base: solo posts publicados (incluye vencidos)
     base_conditions = [
         Post.status == PostStatus.published,
-        or_(
-            Post.deadline_at.is_(None),
-            Post.deadline_at > now
-        )
     ]
+    
+    # Filtro por time_status — calculado en tiempo real a partir de deadline_at
+    # vigente = sin deadline O deadline en el futuro
+    # vencida = tiene deadline Y ya expiró
+    if time_status == 'vigente':
+        base_conditions.append(
+            or_(
+                Post.deadline_at.is_(None),
+                Post.deadline_at > now,
+            )
+        )
+    elif time_status == 'vencida':
+        base_conditions.append(
+            and_(
+                Post.deadline_at.is_not(None),
+                Post.deadline_at <= now,
+            )
+        )
     
     # Filtros opcionales
     if post_type:
@@ -43,9 +59,9 @@ def build_feed(
         base_conditions.append(Post.subtype == subtype)
     
     if tags:
-        # Filtrar posts que contengan al menos uno de los tags
-        for tag in tags:
-            base_conditions.append(Post.tags.contains([tag]))
+        # Filtrar posts que contengan AL MENOS UNO de los tags seleccionados (OR)
+        tag_conditions = [Post.tags.contains([tag]) for tag in tags]
+        base_conditions.append(or_(*tag_conditions))
     
     # Contar total
     count_query = select(func.count()).select_from(Post).where(and_(*base_conditions))
@@ -60,7 +76,25 @@ def build_feed(
             selectinload(Post.links),
         )
         .where(and_(*base_conditions))
-        .order_by(Post.created_at.desc())
+        .order_by(
+            *(
+                # Orden por urgencia (default)
+                [
+                    case(
+                        (Post.deadline_at.is_(None), literal_column('1')),
+                        (Post.deadline_at > now,     literal_column('0')),
+                        else_=literal_column('2'),
+                    ),
+                    case(
+                        (and_(Post.deadline_at.is_not(None), Post.deadline_at > now), Post.deadline_at),
+                        else_=literal_column('NULL'),
+                    ).asc().nullslast(),
+                    Post.created_at.desc(),
+                ] if sort != 'recent' else
+                # Orden por más recientes primero
+                [Post.created_at.desc()]
+            )
+        )
         .offset((page - 1) * size)
         .limit(size)
     )
@@ -107,6 +141,15 @@ def build_feed(
             sorted_images = sorted(post.images, key=lambda x: x.position)
             first_image_url = sorted_images[0].url if sorted_images else None
         
+        # Calcular time_status en tiempo real (no depender del valor almacenado en DB)
+        if post.deadline_at is None:
+            computed_status = TSEnum.no_deadline
+        else:
+            dl = post.deadline_at
+            if dl.tzinfo is None:
+                dl = dl.replace(tzinfo=timezone.utc)
+            computed_status = TSEnum.in_time if dl > now else TSEnum.out_of_time
+        
         items.append(
             FeedPostOut(
                 id=post.id,
@@ -117,7 +160,7 @@ def build_feed(
                 subtype=post.subtype,
                 tags=post.tags,
                 deadline_at=post.deadline_at,
-                time_status=post.time_status,
+                time_status=computed_status,
                 created_at=post.created_at,
                 user_name=post.user.full_name if post.user else None,
                 user_email=post.user.email if post.user else None,

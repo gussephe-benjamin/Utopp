@@ -469,6 +469,93 @@
           "response": []
         },
         {
+          "name": "Check Username Availability",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/check-username?username=Juan%20Perez",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "check-username"
+              ],
+              "query": [
+                {
+                  "key": "username",
+                  "value": "Juan Perez",
+                  "description": "Nombre a validar contra `users.full_name`"
+                }
+              ]
+            },
+            "description": "GET /users/check-username?username=... — Verifica si un nombre ya está en uso. Devuelve `{ \"available\": true | false }`. No requiere autenticación."
+          },
+          "response": []
+        },
+        {
+          "name": "Check Email Availability",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/check-email?email=alumno@utec.edu.pe",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "check-email"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "alumno@utec.edu.pe",
+                  "description": "Correo a validar contra `users.email`"
+                }
+              ]
+            },
+            "description": "GET /users/check-email?email=... — Verifica si un correo ya está registrado. Devuelve `{ \"available\": true | false }`. No requiere autenticación."
+          },
+          "response": []
+        },
+        {
+          "name": "Set My Profile Image",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cloudinary_id\": \"utopp/profile/user_1_main\",\n  \"url\": \"https://res.cloudinary.com/demo/image/upload/v1/utopp/profile/user_1_main.jpg\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/me/profile-images",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "profile-images"
+              ]
+            },
+            "description": "POST /users/me/profile-images — Guarda una nueva foto de perfil para el usuario autenticado y la deja como activa, desactivando cualquier imagen anterior. Requiere autenticación."
+          },
+          "response": []
+        },
+        {
           "name": "Get User Public Profile",
           "request": {
             "auth": {
@@ -486,7 +573,7 @@
                 "{{user_id}}"
               ]
             },
-            "description": "GET /users/{user_id} — Devuelve el perfil público de cualquier usuario: nombre, carrera, ciclo, intereses y conteos de seguidores, seguidos y posts publicados. No requiere autenticación."
+            "description": "GET /users/{user_id} — Devuelve el perfil público de cualquier usuario: nombre, carrera, ciclo, intereses, `profile_image_url` y conteos de seguidores, seguidos y posts. No requiere autenticación."
           },
           "response": []
         },
@@ -628,9 +715,30 @@
             "description": "GET /users/{user_id}/following — Lista los usuarios a los que sigue el usuario con `{user_id}`. Consulta `follows` donde `follower_id = user_id`. Paginado. No requiere autenticación."
           },
           "response": []
+        },
+        {
+          "name": "Remove Follower",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/me/followers/{{follower_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "followers",
+                "{{follower_id}}"
+              ]
+            },
+            "description": "DELETE /users/me/followers/{follower_id} — Elimina un seguidor del usuario autenticado. Si el usuario indicado no te sigue, responde `404`. Requiere autenticación."
+          },
+          "response": []
         }
       ],
-      "description": "Gestión del perfil de usuario y el sistema social de seguimiento. El perfil incluye datos personales y académicos. El sistema de follows usa la tabla `follows` (many-to-many entre usuarios). Los conteos de seguidores y seguidos se calculan en tiempo real."
+      "description": "Gestión del perfil de usuario, validaciones de disponibilidad (`check-username`, `check-email`), imagen de perfil y sistema social de seguimiento. El perfil incluye datos personales y académicos; los conteos de seguidores y seguidos se calculan en tiempo real."
     },
     {
       "name": "Posts",
@@ -1075,6 +1183,26 @@
           "response": []
         },
         {
+          "name": "Unarchive Post",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/posts/{{post_id}}/unarchive",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "{{post_id}}",
+                "unarchive"
+              ]
+            },
+            "description": "POST /posts/{post_id}/unarchive — Revierte el estado de un post de `archived` a `published`. Solo dueño o admin. Error 400 si el post no está archivado."
+          },
+          "response": []
+        },
+        {
           "name": "Delete Post",
           "request": {
             "method": "DELETE",
@@ -1123,7 +1251,7 @@
           "response": []
         }
       ],
-      "description": "Gestión completa del ciclo de vida de los posts. Los posts se crean en estado `draft` y deben publicarse para aparecer en el feed.\n\nCiclo de vida: draft → published → archived (irreversible).\n\nEstados de tiempo (`time_status`): `no_deadline` (sin fecha), `in_time` (fecha futura), `out_of_time` (fecha pasada o cerrado manualmente). Se recalcula automáticamente.\n\nEndpoints especializados por tipo: `/posts/academic-projects`, `/posts/simple-posts`, `/posts/announcements`.\n\nGestión de deadline para proyectos académicos: `POST /{id}/close` (cierra manualmente), `PATCH /{id}/deadline` (asigna/reemplaza fecha), `DELETE /{id}/deadline` (elimina fecha)."
+      "description": "Gestión completa del ciclo de vida de los posts. Los posts se crean en estado `draft` y deben publicarse para aparecer en el feed.\n\nCiclo de vida: draft → published ↔ archived (`unarchive` permite revertir).\n\nEstados de tiempo (`time_status`): `no_deadline` (sin fecha), `in_time` (fecha futura), `out_of_time` (fecha pasada o cerrado manualmente). Se recalcula automáticamente.\n\nEndpoints especializados por tipo: `/posts/academic-projects`, `/posts/simple-posts`, `/posts/announcements`.\n\nGestión de deadline para proyectos académicos: `POST /{id}/close` (cierra manualmente), `PATCH /{id}/deadline` (asigna/reemplaza fecha), `DELETE /{id}/deadline` (elimina fecha)."
     },
     {
       "name": "Post Images",
@@ -1849,51 +1977,7 @@
                 ""
               ]
             },
-            "description": "GET /roles — Lista todos los roles del sistema. Solo admin."
-          },
-          "response": []
-        },
-        {
-          "name": "Create Role",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "if (pm.response.code === 201) {",
-                  "    var jsonData = pm.response.json();",
-                  "    pm.collectionVariables.set('role_id', jsonData.id);",
-                  "}"
-                ],
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {}
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"name\": \"estudiante\",\n    \"description\": \"Este usuario solo puede acceder a servicios como estudiante\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/roles/",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "roles",
-                ""
-              ]
-            },
-            "description": "POST /roles — Crea un nuevo rol. Error 409 si el nombre ya existe. Solo admin."
+            "description": "GET /roles — Lista todos los roles del catálogo del sistema. Cada rol incluye `id`, `identifier` (número fijo), `name` y `description`. Requiere autenticación."
           },
           "response": []
         },
@@ -1903,7 +1987,7 @@
             "method": "POST",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/roles/users/{{user_id}}/roles/{{role_id}}",
+              "raw": "{{base_url}}/roles/users/{{user_id}}/roles/{{role_identifier}}",
               "host": [
                 "{{base_url}}"
               ],
@@ -1912,32 +1996,10 @@
                 "users",
                 "{{user_id}}",
                 "roles",
-                "{{role_id}}"
+                "{{role_identifier}}"
               ]
             },
-            "description": "POST /roles/users/{user_id}/roles/{role_id} — Asigna un rol a un usuario. Error 409 si ya lo tiene. Solo admin."
-          },
-          "response": []
-        },
-        {
-          "name": "Remove Role from User",
-          "request": {
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/roles/users/{{user_id}}/roles/{{role_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "roles",
-                "users",
-                "{{user_id}}",
-                "roles",
-                "{{role_id}}"
-              ]
-            },
-            "description": "DELETE /roles/users/{user_id}/roles/{role_id} — Quita un rol de un usuario. Solo admin."
+            "description": "POST /roles/users/{user_id}/roles/{role_identifier} — Asigna un rol a un usuario usando el **identifier numérico** del rol (1=estudiante, 2=organización estudiantil, 3=oficina, 4=administrador, 5=root). Reemplaza cualquier rol previo (exclusividad). Respuesta incluye `user_email`, `role_identifier`, `role_name` y `assigned_at`. Requiere autenticación."
           },
           "response": []
         },
@@ -1958,18 +2020,77 @@
                 "roles"
               ]
             },
-            "description": "GET /roles/users/{user_id}/roles — Lista los roles asignados a un usuario. Solo admin."
+            "description": "GET /roles/users/{user_id}/roles — Lista los roles asignados a un usuario. Cada objeto incluye `id`, `identifier` (número fijo), `name`, `description` y `user_email`. Requiere autenticación."
           },
           "response": []
         },
         {
-          "name": "bootstrap-admin",
+          "name": "Get My Roles",
           "request": {
-            "method": "POST",
+            "method": "GET",
             "header": [],
+            "url": {
+              "raw": "{{base_url}}/roles/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "roles",
+                "me"
+              ]
+            },
+            "description": "GET /roles/me — Retorna los roles del usuario autenticado. Cada objeto incluye `id`, `identifier` (número fijo del rol), `name`, `description` y `user_email`. Útil para que el frontend conozca el rol y adapte la UI."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Roles by Email",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/roles/by-email?email=alumno@utec.edu.pe",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "roles",
+                "by-email"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "alumno@utec.edu.pe",
+                  "description": "Correo electrónico del usuario a consultar"
+                }
+              ]
+            },
+            "description": "GET /roles/by-email?email=... — Retorna los roles asignados a un usuario identificado por su correo. Cada objeto incluye `id`, `identifier`, `name`, `description` y `user_email`. Error 404 si el correo no existe. Requiere autenticación."
+          },
+          "response": []
+        }
+      ],
+      "description": "Gestión de roles del sistema. Los roles se crean únicamente desde `/setup/ensure-default-roles`. Todos los endpoints requieren autenticación.\n\nPara asignar un rol se usa el **identifier numérico fijo** del rol en la URL (no el `id` interno):\n| identifier | Rol |\n|---|---|\n| 1 | `estudiante` |\n| 2 | `organización estudiantil` |\n| 3 | `oficina` |\n| 4 | `administrador` |\n| 5 | `root` |\n\nLas respuestas de roles en contexto de usuario incluyen `identifier`, `role_name` y `user_email`."
+    },
+    {
+      "name": "Setup",
+      "item": [
+        {
+          "name": "Bootstrap Admin",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
-              "raw": "{ \"email\": \"alumno@utec.edu.pe\" }",
+              "raw": "{\n  \"email\": \"alumno@utec.edu.pe\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1985,12 +2106,35 @@
                 "setup",
                 "bootstrap-admin"
               ]
-            }
+            },
+            "description": "POST /setup/bootstrap-admin — Asigna el rol **administrador** al primer usuario del sistema.\n\n**Condiciones de uso:**\n- Solo funciona si **no existe ningún admin** en la base de datos. Si ya hay un admin, responde `409 Conflict`.\n- El usuario indicado debe existir previamente (registrado en `/auth/register` o Google). Si no existe, responde `404 Not Found`.\n- No requiere autenticación JWT; está protegido por la lógica de \"primer admin únicamente\".\n\n**Body:**\n```json\n{ \"email\": \"correo@utec.edu.pe\" }\n```\n\n**Respuesta `201 Created`:**\n```json\n{\n  \"user_id\": 1,\n  \"user_email\": \"correo@utec.edu.pe\",\n  \"role_id\": 4,\n  \"role_identifier\": 4,\n  \"role_name\": \"administrador\",\n  \"assigned_at\": \"2025-01-01T00:00:00\"\n}\n```\n\n**Errores:**\n- `404 Not Found` → el correo no corresponde a ningún usuario registrado.\n- `409 Conflict` → ya existe al menos un administrador en el sistema.\n\n**Cuándo usarlo:** Una única vez al inicializar el sistema por primera vez, para designar al primer administrador antes de poder gestionar roles desde la UI."
+          },
+          "response": []
+        },
+        {
+          "name": "Ensure Default Roles",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/setup/ensure-default-roles",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "setup",
+                "ensure-default-roles"
+              ]
+            },
+            "description": "POST /setup/ensure-default-roles — Sincroniza los **5 roles base** del sistema en la base de datos.\n\n**Roles canónicos gestionados:**\n| identifier | Rol | Descripción |\n|---|---|---|\n| 1 | `estudiante` | Rol por defecto para todos los estudiantes registrados |\n| 2 | `organización estudiantil` | Rol para organizaciones que publican eventos |\n| 3 | `oficina` | Rol para personal de oficinas y dependencias universitarias |\n| 4 | `administrador` | Rol con permisos de administración total del sistema |\n| 5 | `root` | Rol raíz con acceso irrestricto al sistema |\n\n**Comportamiento:**\n- Si un rol no existe → lo crea con su `identifier` fijo.\n- Si ya existe → corrige descripción e identifier si difieren.\n- Elimina roles que no pertenezcan al catálogo canónico.\n\n**No requiere autenticación.**\n\n**Respuesta `200 OK`:**\n```json\n{\n  \"status\": \"ok\",\n  \"roles\": {\n    \"estudiante\": \"already_exists\",\n    \"organización estudiantil\": \"already_exists\",\n    \"oficina\": \"already_exists\",\n    \"administrador\": \"already_exists\",\n    \"root\": \"created\"\n  },\n  \"removed_roles\": []\n}\n```\n\n**Cuándo usarlo:** Al desplegar el sistema por primera vez, tras un reset de BD, o para verificar que los roles base estén presentes y actualizados."
           },
           "response": []
         }
       ],
-      "description": "Gestión de roles. Todos los endpoints requieren permisos de admin."
+      "description": "Endpoints de inicialización y mantenimiento del sistema. Permiten configurar el estado base: crear el primer administrador y sincronizar los 5 roles canónicos (estudiante, organización estudiantil, oficina, administrador, root). **No requieren autenticación JWT** — diseñados para ejecutarse al arrancar el sistema o tras un reset de BD."
     }
   ],
   "auth": {
@@ -2035,8 +2179,13 @@
       "type": "string"
     },
     {
-      "key": "role_id",
+      "key": "role_identifier",
       "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "follower_id",
+      "value": "2",
       "type": "string"
     }
   ]

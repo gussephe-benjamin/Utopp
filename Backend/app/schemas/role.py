@@ -13,11 +13,17 @@ class RoleCreate(BaseModel):
 class RoleOut(BaseModel):
     """Schema de salida de rol."""
     id: int
+    identifier: int
     name: str
     description: Optional[str] = None
     
     class Config:
         from_attributes = True
+
+
+class RoleWithUserOut(RoleOut):
+    """Schema de salida de rol enriquecido con el email del usuario al que pertenece."""
+    user_email: str
 
 
 class UserRoleAssign(BaseModel):
@@ -28,7 +34,9 @@ class UserRoleAssign(BaseModel):
 class UserRoleOut(BaseModel):
     """Schema de salida de rol asignado."""
     user_id: int
+    user_email: str
     role_id: int
+    role_identifier: int
     role_name: str
     assigned_at: datetime
     

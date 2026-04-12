@@ -8,6 +8,7 @@ from app.models.user import User
 from app.core.security import hash_password, verify_password
 from app.core.config import settings
 from app.database.session import get_db
+from app.services import role_service  # asignación automática de rol al registrarse
 
 SECRET_KEY = settings.JWT_SECRET_KEY
 ALGORITHM = settings.ALGORITHM
@@ -18,8 +19,17 @@ def get_user_by_email(db: Session, email: str) -> User | None:
     return db.scalar(stmt)
 
 
+def get_user_by_id(db: Session, user_id: int) -> User | None:
+    """Busca un usuario por ID. Retorna None si no existe."""
+    return db.get(User, user_id)
+
+
 def create_user(db: Session, email: str, password: str, full_name: str | None = None) -> User:
-    """Crea un usuario con email y contraseña hasheada."""
+    """Crea un usuario con email y contraseña hasheada.
+    
+    Después de persistir el usuario, le asigna automáticamente
+    el rol 'estudiante' como rol por defecto del sistema.
+    """
     user = User(
         email=email,
         full_name=full_name,
@@ -28,6 +38,10 @@ def create_user(db: Session, email: str, password: str, full_name: str | None = 
     db.add(user)
     db.commit()
     db.refresh(user)
+
+    # Asignar rol estudiante de forma automática e idempotente
+    role_service.assign_student_role(db, user.id)
+
     return user
 
 
@@ -55,7 +69,7 @@ def get_current_user(
 ) -> User:
     """Decodifica el JWT y retorna el usuario autenticado."""
 
-    print("🔑 TOKEN RECIBIDO:", token)
+    print("TOKEN RECIBIDO:", token)
     
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -63,26 +77,26 @@ def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        print("🔧 SECRET_KEY:", SECRET_KEY)
-        print("🔧 ALGORITHM:", ALGORITHM)
+        print("SECRET_KEY:", SECRET_KEY)
+        print("ALGORITHM:", ALGORITHM)
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        print(" PAYLOAD:", payload)
+        print("PAYLOAD:", payload)
 
         user_id: str = payload.get("sub")
         if user_id is None:
-            print(" No user_id in payload")
+            print("No user_id in payload")
             raise credentials_exception
     except JWTError as e:
-        print(" JWT Error:", str(e))
+        print("JWT Error:", str(e))
         if "expired" in str(e).lower() or "signature has expired" in str(e).lower():
-            print(" Token expirado - usuario debe iniciar sesión nuevamente")
+            print("Token expirado - usuario debe iniciar sesión nuevamente")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token expirado. Por favor inicia sesión nuevamente.",
                 headers={"WWW-Authenticate": "Bearer"},
             )
         else:
-            print(" Token inválido o malformado")
+            print("Token inválido o malformado")
             raise credentials_exception
 
     user = db.query(User).filter(User.id == int(user_id)).first()
@@ -100,7 +114,11 @@ def create_google_user(
     full_name: str,
     google_id: str
 ):
-    """Crea un usuario autenticado vía Google OAuth."""
+    """Crea un usuario autenticado vía Google OAuth.
+    
+    Después de persistir el usuario, le asigna automáticamente
+    el rol 'estudiante' como rol por defecto del sistema.
+    """
     user = User(
         email=email,
         full_name=full_name,
@@ -109,6 +127,10 @@ def create_google_user(
     db.add(user)
     db.commit()
     db.refresh(user)
+
+    # Asignar rol estudiante de forma automática e idempotente
+    role_service.assign_student_role(db, user.id)
+
     return user
 
 def obtener_organizacion(email):

@@ -9,6 +9,8 @@ class Role(Base):
 
     id: Mapped[int] = mapped_column(SmallInteger, primary_key=True)
     
+    identifier: Mapped[int] = mapped_column(SmallInteger, nullable=False, unique=True)
+
     name: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
     
     description: Mapped[str | None] = mapped_column(Text, nullable=True)

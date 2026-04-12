@@ -29,6 +29,8 @@ def get_feed(
     type: Optional[PostType] = Query(None, description="Filtrar por tipo de post"),
     subtype: Optional[SubPostType] = Query(None, description="Filtrar por subtipo"),
     tags: Optional[List[str]] = Query(None, description="Filtrar por tags"),
+    time_status: Optional[str] = Query(None, description="Filtrar por vigencia: 'vigente' o 'vencida'"),
+    sort: Optional[str] = Query(None, description="Orden: 'recent' para más recientes primero"),
     pagination: PaginationParams = Depends(),
     db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(get_optional_user),
@@ -39,6 +41,8 @@ def get_feed(
         post_type=type,
         subtype=subtype,
         tags=tags,
+        time_status=time_status,
+        sort=sort,
         page=pagination.page,
         size=pagination.size,
     )

@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Info, MoreVertical, Bookmark, BookmarkCheck, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Info, MoreVertical, Bookmark, BookmarkCheck, ChevronLeft, ChevronRight, Pencil, Filter, Clock } from 'lucide-react'
 import { getFeed } from '../api/feed.api'
 import { listImages, type PostImage } from '../api/post-images.api'
 import { listLinks } from '../api/post-links.api'
 import { savePost, unsavePost } from '../api/saved-posts.api'
+import { getMyProfile } from '../api/users.api'
+import EditPostWizard from '../components/EditPostWizard'
+import { INTERESTS } from '../constants/interests'
 import {
   type FeedPostOut,
   type FeedResponse,
@@ -16,11 +19,14 @@ import {
 // ── Helpers de UI ────────────────────────────────────────
 
 /** Avatar del usuario: muestra foto de Cloudinary si está en localStorage, si no iniciales */
-const UserAvatar = ({ userName, userId, gradient, profileImageUrl }: { userName?: string; userId?: number; gradient: string; profileImageUrl?: string }) => {
+const UserAvatar = ({ userName, userId, gradient, profileImageUrl, currentUserId }: { userName?: string; userId?: number; gradient: string; profileImageUrl?: string; currentUserId?: number | null }) => {
   const navigate = useNavigate()
   const avatarUrl = profileImageUrl ?? (userId ? localStorage.getItem(`avatar_${userId}`) : null)
   const initial = (userName ?? 'U').charAt(0).toUpperCase()
-  const handleClick = () => { if (userId) navigate(`/app/perfil/${userId}`) }
+  const handleClick = () => {
+    if (!userId) return
+    navigate(userId === currentUserId ? '/app/perfil' : `/app/perfil/${userId}`)
+  }
   if (avatarUrl) {
     return (
       <button onClick={handleClick} className="shrink-0 rounded-full focus:outline-none">
@@ -51,12 +57,19 @@ const getDisplayName = (userName?: string, userId?: number) => {
 /** Formatea una fecha ISO a texto legible en español */
 const formatDate = (iso?: string) => {
   if (!iso) return ''
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return ''
   return new Intl.DateTimeFormat('es-ES', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
-    timeZone: 'UTC',
-  }).format(new Date(iso))
+  }).format(d)
+}
+
+/** Determina si una fecha ya venció (client-side, ignora time_status almacenado) */
+function isExpired(iso?: string): boolean {
+  if (!iso) return false
+  return new Date(iso).getTime() <= Date.now()
 }
 
 /** Convierte fecha ISO a tiempo relativo en español */
@@ -71,16 +84,18 @@ function timeAgo(iso?: string): string {
   return `hace ${Math.floor(diff / 2592000)} meses`
 }
 
-interface PostLink  { id: number; label: string; url: string; display_type: string; position: number }
-const imageWarmCache = new Set<string>()
-
-function warmImage(url?: string) {
-  if (!url || imageWarmCache.has(url)) return
-  const img = new Image()
-  img.decoding = 'async'
-  img.src = url
-  imageWarmCache.add(url)
+/** Retorna texto de tiempo restante hasta una fecha futura */
+function timeRemaining(iso?: string): string | null {
+  if (!iso) return null
+  const diff = Math.floor((new Date(iso).getTime() - Date.now()) / 1000)
+  if (diff <= 0) return null
+  if (diff < 3600)    return `${Math.floor(diff / 60)}min`
+  if (diff < 86400)   return `${Math.floor(diff / 3600)}h ${Math.floor((diff % 3600) / 60)}min`
+  if (diff < 604800)  return `${Math.floor(diff / 86400)}d ${Math.floor((diff % 86400) / 3600)}h`
+  return `${Math.floor(diff / 604800)} sem`
 }
+
+interface PostLink  { id: number; label: string; url: string; display_type: string; position: number }
 
 // ── Componente de explicación de relevancia ───────────────
 
@@ -143,7 +158,7 @@ const ScoreExplanation = ({ score }: { score?: number }) => {
  * Incluye carrusel de imágenes (carga lazy), botones de links, avatar real,
  * email + tiempo relativo, menú de guardar post.
  */
-const PostCard = ({ post }: { post: FeedPostOut }) => {
+const PostCard = ({ post, currentUserId, onEdited }: { post: FeedPostOut; currentUserId: number | null; onEdited: (updated: FeedPostOut) => void }) => {
   const navigate = useNavigate()
 
   // ── Claves de sessionStorage para este post ───────────
@@ -151,6 +166,9 @@ const PostCard = ({ post }: { post: FeedPostOut }) => {
   const SS_IMGS = `utopp:carousel:imgs:${post.id}`
 
   // ── Estado local del post card ────────────────────────
+  const MAX_DESC_CHARS = 500
+  const [descExpanded, setDescExpanded] = useState(false)
+
   const [images, setImages] = useState<PostImage[]>(() => {
     try {
       const saved = sessionStorage.getItem(SS_IMGS)
@@ -166,13 +184,14 @@ const PostCard = ({ post }: { post: FeedPostOut }) => {
     setImgIndex(i)
     try { sessionStorage.setItem(SS_IDX, String(i)) } catch { /* noop */ }
   }
-  const [visibleImgUrl, setVisibleImgUrl] = useState<string | null>(null)
-  const [imgChanging, setImgChanging] = useState(false)
-  const [links, setLinks]             = useState<PostLink[]>([])
+  const [links, setLinks] = useState<PostLink[]>([])
   const [isSaved, setIsSaved]           = useState(post.is_saved)
   const [menuOpen, setMenuOpen]         = useState(false)
   const [savingPost, setSavingPost]     = useState(false)
   const [extraMenuOpen, setExtraMenuOpen] = useState(false)
+  const [editingPost, setEditingPost]   = useState(false)
+
+  const isOwnPost = currentUserId !== null && post.user_id === currentUserId
   const menuRef                         = useRef<HTMLDivElement>(null)
   const extraMenuRef                    = useRef<HTMLDivElement>(null)
 
@@ -225,6 +244,11 @@ const PostCard = ({ post }: { post: FeedPostOut }) => {
     finally { setSavingPost(false); setMenuOpen(false) }
   }
 
+  const handleEditSaved = (updated: { id: number; title?: string; description: string; post_type: string; subtype?: string; status: string; time_status?: string; tags?: string[] }) => {
+    onEdited({ ...post, ...updated } as import('../types/post.types').FeedPostOut)
+    setEditingPost(false)
+  }
+
   // Si el post tiene imágenes con datos de recorte, usarlas directamente.
   // Si no hay imágenes cargadas aún pero images_count > 0, mostrar skeleton (no fallback sin crop).
   // Solo usar post.image_url si images_count === 0 (post sin galería adicional).
@@ -237,17 +261,10 @@ const PostCard = ({ post }: { post: FeedPostOut }) => {
     [images, post.image_url, post.images_count],
   )
   const totalImages = displayImages.length
-  const currentImgUrl = displayImages[imgIndex]?.url
-  const visibleUrl = visibleImgUrl ?? currentImgUrl
-  const prevImg = () => setImgIndexSaved((imgIndex - 1 + totalImages) % (totalImages || 1))
-  const nextImg = () => setImgIndexSaved((imgIndex + 1) % (totalImages || 1))
 
-  // Asegura que el índice siempre esté dentro del rango cuando cambia la lista de imágenes
+  // Mantiene el índice dentro del rango cuando cambia la lista
   useEffect(() => {
-    if (totalImages === 0) {
-      setImgChanging(false)
-      return
-    }
+    if (totalImages === 0) return
     setImgIndex(prev => {
       const clamped = prev >= totalImages ? 0 : prev
       if (clamped !== prev) try { sessionStorage.setItem(SS_IDX, String(clamped)) } catch { /* noop */ }
@@ -256,51 +273,28 @@ const PostCard = ({ post }: { post: FeedPostOut }) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [totalImages])
 
-  // Cambia la imagen visible solo cuando la imagen objetivo está lista para pintarse
-  useEffect(() => {
-    if (!currentImgUrl) return
-    if (visibleImgUrl === currentImgUrl) return
-    let cancelled = false
-    const next = new Image()
-    next.decoding = 'async'
-    setImgChanging(true)
-    next.src = currentImgUrl
-    const commit = () => {
-      if (cancelled) return
-      imageWarmCache.add(currentImgUrl)
-      setVisibleImgUrl(currentImgUrl)
-      setImgChanging(false)
-    }
-    if (next.complete) commit()
-    else {
-      next.onload = commit
-      next.onerror = commit
-    }
-    return () => { cancelled = true }
-  }, [currentImgUrl, visibleImgUrl])
-
-  // Precarga imágenes adyacentes para evitar “flash” al navegar
-  useEffect(() => {
-    if (totalImages <= 1) return
-    const nextUrl = displayImages[(imgIndex + 1) % totalImages]?.url
-    const prevUrl = displayImages[(imgIndex - 1 + totalImages) % totalImages]?.url
-    warmImage(nextUrl)
-    warmImage(prevUrl)
-  }, [displayImages, imgIndex, totalImages])
-
-  const currentDisplayImg = displayImages.find(img => img.url === visibleUrl) ?? displayImages[imgIndex]
+  const prevImg = () => setImgIndexSaved(Math.max(0, imgIndex - 1))
+  const nextImg = () => setImgIndexSaved(Math.min(totalImages - 1, imgIndex + 1))
 
   return (
+    <>
+    {editingPost && (
+      <EditPostWizard
+        post={{ id: post.id, title: post.title, description: post.description, post_type: post.post_type, subtype: post.subtype, status: 'published', tags: post.tags, created_at: post.created_at }}
+        onClose={() => setEditingPost(false)}
+        onSaved={handleEditSaved}
+      />
+    )}
     <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
 
       {/* ── Header: avatar + nombre + email + tiempo + badges + menú ── */}
       <div className="flex items-start justify-between px-4 pt-4 pb-4 sm:pb-3">
         <div className="flex items-center gap-3">
-          <UserAvatar userName={post.user_name} userId={post.user_id} gradient={gradient} profileImageUrl={post.user_profile_image_url} />
+          <UserAvatar userName={post.user_name} userId={post.user_id} gradient={gradient} profileImageUrl={post.user_profile_image_url} currentUserId={currentUserId} />
           <div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => navigate(`/app/perfil/${post.user_id}`)}
+                onClick={() => navigate(post.user_id === currentUserId ? '/app/perfil' : `/app/perfil/${post.user_id}`)}
                 className="font-semibold text-gray-900 hover:text-[#4F46E5] transition-colors text-sm leading-tight"
               >
                 {getDisplayName(post.user_name, post.user_id)}
@@ -350,6 +344,14 @@ const PostCard = ({ post }: { post: FeedPostOut }) => {
                     : <><Bookmark className="w-4 h-4 text-gray-500" /> Guardar publicación</>
                   }
                 </button>
+                {isOwnPost && (
+                  <button
+                    onClick={() => { setMenuOpen(false); setEditingPost(true) }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-t border-gray-100"
+                  >
+                    <Pencil className="w-4 h-4 text-gray-500" /> Editar publicación
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -373,44 +375,55 @@ const PostCard = ({ post }: { post: FeedPostOut }) => {
         <div className="w-full max-w-[500px] mx-auto aspect-[4/5] bg-gray-200 animate-pulse" />
       )}
 
-      {/* ── Carrusel de imágenes ────────────────────────── */}
-      {visibleUrl && (
-        <div data-carousel className="relative w-full max-w-[500px] mx-auto aspect-[4/5] bg-gray-100 overflow-hidden">
-          <img
-            key={visibleUrl}
-            src={visibleUrl}
-            alt={`Imagen ${imgIndex + 1}`}
-            className="w-full h-full object-cover"
-            onError={e => { const p = (e.target as HTMLImageElement).closest('[data-carousel]'); if (p) (p as HTMLElement).style.display = 'none' }}
-            style={(() => {
-              const imgData = currentDisplayImg as PostImage | { url: string }
+      {/* ── Carrusel de imágenes (slide CSS) ────────────────────────── */}
+      {totalImages > 0 && (
+        <div className="relative w-full max-w-[500px] mx-auto aspect-[4/5] bg-gray-100 overflow-hidden">
+          {/* Fila de imágenes: slide via translateX */}
+          <div
+            className="flex h-full"
+            style={{
+              width: `${totalImages * 100}%`,
+              transform: `translateX(-${(imgIndex / totalImages) * 100}%)`,
+              transition: 'transform 350ms ease-in-out',
+            }}
+          >
+            {displayImages.map((img, i) => {
+              const imgData = img as PostImage | { url: string }
               const objPos = 'object_position' in imgData ? (imgData.object_position ?? 'center center') : 'center center'
               const sc     = 'scale' in imgData ? (imgData.scale ?? 1) : 1
-              return {
-                objectPosition: objPos,
-                transform: `scale(${sc})`,
-                transformOrigin: objPos,
-              }
-            })()}
-          />
-          {/* Flechas de navegación (solo si hay más de 1 imagen cargada) */}
+              return (
+                <img
+                  key={i}
+                  src={img.url}
+                  alt={`Imagen ${i + 1}`}
+                  className="h-full object-cover"
+                  style={{
+                    width: `${100 / totalImages}%`,
+                    objectPosition: objPos,
+                    transform: `scale(${sc})`,
+                    transformOrigin: objPos,
+                  }}
+                />
+              )
+            })}
+          </div>
+          {/* Flechas de navegación */}
           {totalImages > 1 && (
             <>
               <button
                 onClick={prevImg}
-                className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/40 hover:bg-black/60 rounded-full flex items-center justify-center text-white transition-colors"
+                disabled={imgIndex === 0}
+                className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/40 hover:bg-black/60 rounded-full flex items-center justify-center text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
               <button
                 onClick={nextImg}
-                className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/40 hover:bg-black/60 rounded-full flex items-center justify-center text-white transition-colors"
+                disabled={imgIndex === totalImages - 1}
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/40 hover:bg-black/60 rounded-full flex items-center justify-center text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               >
                 <ChevronRight className="w-5 h-5" />
               </button>
-              {imgChanging && (
-                <div className="absolute inset-0 bg-black/10 pointer-events-none" />
-              )}
               {/* Dots indicadores */}
               <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
                 {displayImages.map((_, i) => (
@@ -431,21 +444,46 @@ const PostCard = ({ post }: { post: FeedPostOut }) => {
         {post.title && (
           <h3 className="font-bold text-gray-900 text-base mb-1 leading-snug">{post.title}</h3>
         )}
-        <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-line line-clamp-4">
-          {post.description}
-        </p>
+        {(() => {
+          const needsTrunc = post.description.length > MAX_DESC_CHARS
+          const displayText = needsTrunc && !descExpanded
+            ? post.description.slice(0, MAX_DESC_CHARS) + '…'
+            : post.description
+          return (
+            <>
+              <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-line">
+                {displayText}
+              </p>
+              {needsTrunc && (
+                <button
+                  onClick={() => setDescExpanded(v => !v)}
+                  className="mt-1 text-xs font-medium text-[#4F46E5] hover:text-[#7C3AED] transition-colors"
+                >
+                  {descExpanded ? 'Ver menos' : 'Ver más'}
+                </button>
+              )}
+            </>
+          )
+        })()}
 
         {post.deadline_at && (
-          <div className="flex items-center gap-1.5 mt-2 text-xs text-gray-500">
-            <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            <span>
-              Fecha límite: {formatDate(post.deadline_at)}
-              {post.time_status === 'out_of_time' && (
-                <span className="ml-1 text-red-500 font-medium">(Vencido)</span>
-              )}
-            </span>
+          <div className="flex items-center justify-between gap-2 mt-2">
+            <div className="flex items-center gap-1.5 text-xs text-gray-500">
+              <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <span>Fecha límite: {formatDate(post.deadline_at)}</span>
+            </div>
+            {post.deadline_at && isExpired(post.deadline_at) ? (
+              <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full shrink-0">
+                Vencido
+              </span>
+            ) : post.deadline_at && !isExpired(post.deadline_at) && timeRemaining(post.deadline_at) ? (
+              <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full shrink-0">
+                <Clock className="w-3 h-3" />
+                {timeRemaining(post.deadline_at)}
+              </span>
+            ) : null}
           </div>
         )}
 
@@ -515,6 +553,7 @@ const PostCard = ({ post }: { post: FeedPostOut }) => {
         </div>
       )}
     </div>
+    </>
   )
 }
 
@@ -547,14 +586,38 @@ export default function Feed() {
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
   const [loading, setLoading] = useState(false)
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null)
   const loaderRef = useRef<HTMLDivElement | null>(null)
+
+  // ── Filtros ──────────────────────────────────────────────
+  const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined)
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [showTagFilter, setShowTagFilter] = useState(false)
+  const [sortOrder, setSortOrder] = useState<'urgency' | 'recent'>('urgency')
+
+  useEffect(() => {
+    getMyProfile().then((d: { id: number }) => setCurrentUserId(d.id)).catch(() => {})
+  }, [])
+
+  // Reset feed when filters change
+  useEffect(() => {
+    setPosts([])
+    setPage(1)
+    setHasMore(true)
+  }, [statusFilter, selectedTags, sortOrder])
 
   /** Carga una página del feed y la agrega al estado */
   const fetchPage = useCallback(async (pageNum: number) => {
     if (loading) return
     setLoading(true)
     try {
-      const data: FeedResponse = await getFeed({ page: pageNum, size: 10 })
+      const data: FeedResponse = await getFeed({
+        page: pageNum,
+        size: 10,
+        time_status: statusFilter,
+        tags: selectedTags.length > 0 ? selectedTags : undefined,
+        sort: sortOrder === 'recent' ? 'recent' : undefined,
+      })
       setPosts(prev => pageNum === 1 ? data.items : [...prev, ...data.items])
       setHasMore(data.has_next)
       if (data.has_next) setPage(pageNum + 1)
@@ -563,7 +626,7 @@ export default function Feed() {
     } finally {
       setLoading(false)
     }
-  }, [loading])
+  }, [loading, statusFilter, selectedTags, sortOrder])
 
   // Escucha el evento global emitido por PublicationWizard al publicar.
   // Recarga el feed desde la página 1 para mostrar el nuevo post.
@@ -661,9 +724,104 @@ export default function Feed() {
           </div>
         </div>
 
+        {/* ── Barra de filtros (sticky) ───────────────── */}
+        <div className="sticky top-0 z-30 -mx-4 px-4 py-2 bg-gray-50/95 backdrop-blur-sm border-b border-gray-100 shadow-sm space-y-2">
+          {/* Status pills + sort + tag toggle */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {([
+              { value: undefined, label: 'Todas' },
+              { value: 'vigente', label: 'Vigentes' },
+              { value: 'vencida', label: 'Vencidas' },
+            ] as const).map(opt => (
+              <button
+                key={opt.label}
+                onClick={() => setStatusFilter(statusFilter === opt.value ? undefined : opt.value)}
+                className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${
+                  statusFilter === opt.value
+                    ? 'bg-[#4F46E5] text-white border-[#4F46E5]'
+                    : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+
+            {/* Separador visual */}
+            <div className="w-px h-5 bg-gray-200 mx-0.5" />
+
+            {/* Sort: Urgencia / Más recientes */}
+            {([
+              { value: 'urgency' as const, label: '⚡ Urgencia' },
+              { value: 'recent' as const,  label: '🕐 Recientes' },
+            ]).map(opt => (
+              <button
+                key={opt.value}
+                onClick={() => setSortOrder(opt.value)}
+                className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${
+                  sortOrder === opt.value
+                    ? 'bg-amber-500 text-white border-amber-500'
+                    : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+
+            <button
+              onClick={() => setShowTagFilter(v => !v)}
+              className={`ml-auto p-1.5 rounded-full border transition-colors ${
+                showTagFilter || selectedTags.length > 0
+                  ? 'bg-purple-50 border-purple-300 text-purple-600'
+                  : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'
+              }`}
+              title="Filtrar por tags"
+            >
+              <Filter className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Tag chips */}
+          {showTagFilter && (
+            <div className="flex flex-wrap gap-1.5 bg-white rounded-xl border border-gray-200 p-3">
+              {INTERESTS.map(interest => {
+                const active = selectedTags.includes(interest.id)
+                return (
+                  <button
+                    key={interest.id}
+                    onClick={() => setSelectedTags(prev =>
+                      active ? prev.filter(t => t !== interest.id) : [...prev, interest.id]
+                    )}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                      active
+                        ? 'bg-purple-100 text-purple-700 border border-purple-300'
+                        : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
+                    }`}
+                  >
+                    <span>{interest.icon}</span>
+                    {interest.label}
+                  </button>
+                )
+              })}
+              {selectedTags.length > 0 && (
+                <button
+                  onClick={() => setSelectedTags([])}
+                  className="text-xs text-gray-400 hover:text-gray-600 ml-1"
+                >
+                  Limpiar
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* Lista de posts */}
         {posts.map(post => (
-          <PostCard key={post.id} post={post} />
+          <PostCard
+            key={post.id}
+            post={post}
+            currentUserId={currentUserId}
+            onEdited={updated => setPosts(prev => prev.map(p => p.id === updated.id ? updated : p))}
+          />
         ))}
 
         {/* Estado vacío */}
