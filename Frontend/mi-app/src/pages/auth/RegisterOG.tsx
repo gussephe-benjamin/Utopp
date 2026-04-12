@@ -8,7 +8,8 @@ export default function Register() {
 
   return (
     <div className="min-h-screen
-  bg-gradient-to-br from-[#7C3AED] via-[#A855F7] to-[#EC4899]
+  bg-[linear-gradient(to_bottom_right,rgba(124,58,237,0.85),rgba(168,85,247,0.85),rgba(236,72,153,0.85)),url('https://posgrado.utec.edu.pe/sites/default/files/2023-08/Campus-utec---nuestro-enfoque---web.jpg')]
+  bg-cover bg-center
   flex items-center justify-center p-6 relative overflow-hidden">
 
       {/* Background decorativos */}
