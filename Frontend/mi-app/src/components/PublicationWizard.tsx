@@ -1,4 +1,6 @@
 import { useReducer, useState, useEffect } from 'react'
+import { Pin } from 'lucide-react'
+import { useRole, ROLE_ADMIN, ROLE_ROOT, ROLE_OFICINA } from '../hooks/useRole'
 import {
   type PostType,
   type SubPostType,
@@ -86,6 +88,9 @@ export default function PublicationWizard({ isOpen, onClose, allowedTypes }: Pub
   const [formData, dispatch] = useReducer(wizardReducer, initialFormData)
   const [currentStep, setCurrentStep] = useState(1)
   const [isPublishing, setIsPublishing] = useState(false)
+  const [isPinned, setIsPinned] = useState(false)
+  const { roleName } = useRole()
+  const canPin = roleName === ROLE_ADMIN || roleName === ROLE_ROOT || roleName === ROLE_OFICINA
   // Mensaje de progreso durante la publicación (visible en el botón)
   const [publishProgress, setPublishProgress] = useState<string | null>(null)
   const [publishError, setPublishError] = useState<string | null>(null)
@@ -186,6 +191,7 @@ export default function PublicationWizard({ isOpen, onClose, allowedTypes }: Pub
         post_type: formData.post_type,
         subtype: formData.subtype,
         deadline_at: formData.deadline_at ? new Date(formData.deadline_at).toISOString() : undefined,
+        is_pinned: isPinned,
         tags: formData.tags.length > 0 ? formData.tags : undefined,
       })
 
@@ -367,6 +373,23 @@ export default function PublicationWizard({ isOpen, onClose, allowedTypes }: Pub
             >
               Anterior
             </button>
+
+            {/* Toggle de prioridad máxima — solo para admin/root/oficina */}
+            {canPin && (
+              <button
+                type="button"
+                onClick={() => setIsPinned(v => !v)}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border transition-all ${
+                  isPinned
+                    ? 'bg-amber-500 text-white border-amber-500 shadow-md'
+                    : 'bg-white text-gray-500 border-gray-200 hover:border-amber-400 hover:text-amber-600'
+                }`}
+                title="Prioridad máxima: siempre aparece primero en el feed"
+              >
+                <Pin className="w-3.5 h-3.5" />
+                {isPinned ? 'Prioritario' : 'Prioridad máxima'}
+              </button>
+            )}
 
             {currentStep === PREVIEW_STEP ? (
               // En el último paso el botón publica directamente

@@ -6,12 +6,35 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.models.post import Post, PostStatus, TimeStatus, PostType, SubPostType, VALID_SUBTYPES
 from app.models.user import User
+from app.models.user_role import UserRole
+from app.models.role import Role
 from app.schemas.post import (
     PostCreate, PostUpdate,
     AcademicProjectCreate, SimplePostCreate, AnnouncementCreate,
     AcademicProjectDeadlineUpdate,
 )
 from app.core.exceptions import NotFoundException, BadRequestException, ValidationException
+
+
+# Mapeo de nombre de rol → prioridad de pin
+_PIN_PRIORITY: dict[str, int] = {
+    'oficina':        1,
+    'administrador':  2,
+    'root':           3,
+}
+
+
+def get_user_pin_priority(db: Session, user_id: int) -> int:
+    """Devuelve la pin_priority máxima del usuario según su rol."""
+    user_role = db.scalars(
+        select(UserRole).where(UserRole.user_id == user_id)
+    ).first()
+    if not user_role:
+        return 0
+    role = db.get(Role, user_role.role_id)
+    if not role:
+        return 0
+    return _PIN_PRIORITY.get(role.name.lower(), 0)
 
 
 def compute_time_status(deadline_at: Optional[datetime]) -> TimeStatus:
@@ -51,6 +74,8 @@ def create_post(db: Session, user_id: int, data: PostCreate) -> Post:
     """Crea un nuevo post en estado draft."""
     validate_subtype(data.post_type, data.subtype)
     
+    pin_priority = get_user_pin_priority(db, user_id) if data.is_pinned else 0
+
     post = Post(
         user_id=user_id,
         title=data.title,
@@ -62,6 +87,8 @@ def create_post(db: Session, user_id: int, data: PostCreate) -> Post:
         specific_fields=data.specific_fields or {},
         deadline_at=data.deadline_at,
         time_status=compute_time_status(data.deadline_at),
+        is_pinned=data.is_pinned,
+        pin_priority=pin_priority,
     )
     
     db.add(post)
@@ -93,7 +120,7 @@ def get_post(db: Session, post_id: int, load_relations: bool = True) -> Post:
     return check_and_update_time_status(db, post)
 
 
-def update_post(db: Session, post: Post, data: PostUpdate) -> Post:
+def update_post(db: Session, post: Post, data: PostUpdate, user_id: Optional[int] = None) -> Post:
     """Actualiza un post existente."""
     if post.status == PostStatus.archived:
         raise BadRequestException("No se puede modificar un post archivado")
@@ -102,6 +129,11 @@ def update_post(db: Session, post: Post, data: PostUpdate) -> Post:
         validate_subtype(post.post_type, data.subtype)
     
     update_data = data.model_dump(exclude_unset=True)
+    
+    # Si se cambia is_pinned, recalcular pin_priority según el rol del autor
+    if 'is_pinned' in update_data:
+        uid = user_id or post.user_id
+        update_data['pin_priority'] = get_user_pin_priority(db, uid) if update_data['is_pinned'] else 0
     
     for field, value in update_data.items():
         setattr(post, field, value)

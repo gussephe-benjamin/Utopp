@@ -2,8 +2,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom"
 import { AuthProvider } from "./auth/AuthContext"
 import ProtectedRoute from "./auth/ProtectedRoute"
 import AppRoute from "./auth/AppRoute"
-//import Login from "./pages/auth/Login"
-import LoginOG from "./pages/auth/LoginOG"
+import Login from "./pages/auth/Login"
+//import LoginOG from "./pages/auth/LoginOG"
 import DashboardLayout from "./pages/Dashboard"
 import Onboarding from "./features/onboarding/Onboarding"
 //import Register from "./pages/auth/Register"
@@ -18,8 +18,8 @@ function App() {
           {/* Ruta por defecto - redirige según estado de autenticación y onboarding */}
           <Route path="/" element={<AppRoute />} />
 
-          {/* Ruta direccionamiento al Login Original */}
-          <Route path="/login" element={<LoginOG />} />
+          {/* Ruta direccionamiento al Login */}
+          <Route path="/login" element={<Login />} />
 
           {/* Rutas del dashboard con navegación compartida */}
           <Route

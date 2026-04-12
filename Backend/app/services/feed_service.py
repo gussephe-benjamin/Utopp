@@ -77,8 +77,11 @@ def build_feed(
         )
         .where(and_(*base_conditions))
         .order_by(
+            # 1. Pinned siempre primero, por prioridad de rol (root > admin > oficina)
+            Post.is_pinned.desc(),
+            Post.pin_priority.desc(),
             *(
-                # Orden por urgencia (default)
+                # 2a. Orden por urgencia (default)
                 [
                     case(
                         (Post.deadline_at.is_(None), literal_column('1')),
@@ -91,7 +94,7 @@ def build_feed(
                     ).asc().nullslast(),
                     Post.created_at.desc(),
                 ] if sort != 'recent' else
-                # Orden por más recientes primero
+                # 2b. Orden por más recientes primero
                 [Post.created_at.desc()]
             )
         )
@@ -161,6 +164,8 @@ def build_feed(
                 tags=post.tags,
                 deadline_at=post.deadline_at,
                 time_status=computed_status,
+                is_pinned=post.is_pinned,
+                pin_priority=post.pin_priority,
                 created_at=post.created_at,
                 user_name=post.user.full_name if post.user else None,
                 user_email=post.user.email if post.user else None,

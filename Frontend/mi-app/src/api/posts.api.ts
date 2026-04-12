@@ -29,6 +29,7 @@ export interface PostCreate {
   tags?: string[]
   specific_fields?: Record<string, unknown>
   deadline_at?: string
+  is_pinned?: boolean
 }
 
 export interface AcademicProjectCreate {
@@ -63,6 +64,7 @@ export interface PostUpdate {
   tags?: string[]
   specific_fields?: Record<string, unknown>
   deadline_at?: string | null
+  is_pinned?: boolean
 }
 
 export interface DeadlineUpdate {

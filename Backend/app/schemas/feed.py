@@ -34,6 +34,8 @@ class FeedPostOut(BaseModel):
     images_count: int = 0
     links_count: int = 0
     
+    is_pinned: bool = False
+    pin_priority: int = 0
     is_saved: bool = False
     participation_status: Optional[str] = None
     

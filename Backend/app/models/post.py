@@ -1,6 +1,6 @@
 import enum
 from datetime import datetime
-from sqlalchemy import BigInteger, DateTime, Enum, ForeignKey, String, Text, func, text
+from sqlalchemy import BigInteger, Boolean, DateTime, Enum, ForeignKey, SmallInteger, String, Text, func, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -137,6 +137,14 @@ class Post(Base):
         nullable=False,
         server_default=text("'no_deadline'"),
         index=True,
+    )
+
+    is_pinned: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("false"), index=True,
+    )
+
+    pin_priority: Mapped[int] = mapped_column(
+        SmallInteger, nullable=False, server_default=text("0"),
     )
 
     specific_fields: Mapped[dict] = mapped_column(

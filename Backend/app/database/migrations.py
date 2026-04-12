@@ -215,3 +215,30 @@ def run_migrations(engine: Engine) -> None:
         """))
 
         conn.commit()
+
+        # 12. Agregar columnas is_pinned y pin_priority a posts si no existen
+        conn.execute(text("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name = 'posts' AND column_name = 'is_pinned'
+                ) THEN
+                    ALTER TABLE posts ADD COLUMN is_pinned BOOLEAN NOT NULL DEFAULT false;
+                END IF;
+            END$$;
+        """))
+
+        conn.execute(text("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name = 'posts' AND column_name = 'pin_priority'
+                ) THEN
+                    ALTER TABLE posts ADD COLUMN pin_priority SMALLINT NOT NULL DEFAULT 0;
+                END IF;
+            END$$;
+        """))
+
+        conn.commit()

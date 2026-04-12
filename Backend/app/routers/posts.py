@@ -120,8 +120,9 @@ def update_post(
     data: PostUpdate,
     post: Post = Depends(require_owner_or_admin),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    updated = post_service.update_post(db, post, data)
+    updated = post_service.update_post(db, post, data, user_id=current_user.id)
     return post_service.get_post(db, updated.id)
 
 

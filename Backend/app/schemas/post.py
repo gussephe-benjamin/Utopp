@@ -15,6 +15,7 @@ class PostBase(BaseModel):
     tags: Optional[List[str]] = None
     specific_fields: Optional[Dict[str, Any]] = Field(default_factory=dict)
     deadline_at: Optional[datetime] = None
+    is_pinned: bool = False
     
     @field_validator("subtype", mode="after")
     @classmethod
@@ -121,6 +122,7 @@ class PostUpdate(BaseModel):
     tags: Optional[List[str]] = None
     specific_fields: Optional[Dict[str, Any]] = None
     deadline_at: Optional[datetime] = None
+    is_pinned: Optional[bool] = None
 
 
 class PostImageOut(BaseModel):

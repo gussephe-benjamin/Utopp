@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import ReactDOM from 'react-dom'
-import { X } from 'lucide-react'
+import { X, Pin } from 'lucide-react'
+import { useRole, ROLE_ADMIN, ROLE_ROOT, ROLE_OFICINA } from '../hooks/useRole'
 import { updatePost } from '../api/posts.api'
 import {
   listImages, addImage, deleteImage, reorderImages,
@@ -31,6 +32,7 @@ interface PostItem {
   tags?: string[]
   deadline_at?: string
   created_at: string
+  is_pinned?: boolean
 }
 
 interface EditPostWizardProps {
@@ -66,6 +68,9 @@ export default function EditPostWizard({ post, onClose, onSaved }: EditPostWizar
   const [description, setDescription] = useState(post?.description ?? '')
   const [deadlineAt, setDeadlineAt] = useState(isoToDatetimeLocal(post?.deadline_at))
   const [tags, setTags]             = useState<string[]>(post?.tags ?? [])
+  const [isPinned, setIsPinned]     = useState(post?.is_pinned ?? false)
+  const { roleName } = useRole()
+  const canPin = roleName === ROLE_ADMIN || roleName === ROLE_ROOT || roleName === ROLE_OFICINA
   const [images, setImages]         = useState<WizardImage[]>([])
   const [links, setLinks]           = useState<WizardLink[]>([])
 
@@ -193,6 +198,7 @@ export default function EditPostWizard({ post, onClose, onSaved }: EditPostWizar
         description: description.trim(),
         tags:        tags.length > 0 ? tags : undefined,
         ...(deadlineAt ? { deadline_at: new Date(deadlineAt).toISOString() } : { deadline_at: null }),
+        is_pinned: isPinned,
       })
 
       // 2. Image diff
@@ -443,6 +449,23 @@ export default function EditPostWizard({ post, onClose, onSaved }: EditPostWizar
               >
                 Anterior
               </button>
+
+              {/* Toggle prioridad máxima — solo para admin/root/oficina */}
+              {canPin && (
+                <button
+                  type="button"
+                  onClick={() => { setIsPinned(v => !v); markDirty() }}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border transition-all ${
+                    isPinned
+                      ? 'bg-amber-500 text-white border-amber-500 shadow-md'
+                      : 'bg-white text-gray-500 border-gray-200 hover:border-amber-400 hover:text-amber-600'
+                  }`}
+                  title="Prioridad máxima: siempre aparece primero en el feed"
+                >
+                  <Pin className="w-3.5 h-3.5" />
+                  {isPinned ? 'Prioritario' : 'Prioridad máxima'}
+                </button>
+              )}
 
               {currentStep === PREVIEW_STEP ? (
                 <button

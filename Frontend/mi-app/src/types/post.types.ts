@@ -247,6 +247,8 @@ export interface FeedPostOut {
   image_url?: string
   images_count: number
   links_count: number
+  is_pinned: boolean
+  pin_priority: number
   is_saved: boolean
   participation_status?: string
 }

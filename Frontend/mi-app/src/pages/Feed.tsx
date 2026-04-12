@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Info, MoreVertical, Bookmark, BookmarkCheck, ChevronLeft, ChevronRight, Pencil, Filter, Clock } from 'lucide-react'
+import { Info, MoreVertical, Bookmark, BookmarkCheck, ChevronLeft, ChevronRight, Pencil, Filter, Clock, Pin } from 'lucide-react'
 import { getFeed } from '../api/feed.api'
 import { listImages, type PostImage } from '../api/post-images.api'
 import { listLinks } from '../api/post-links.api'
@@ -280,12 +280,25 @@ const PostCard = ({ post, currentUserId, onEdited }: { post: FeedPostOut; curren
     <>
     {editingPost && (
       <EditPostWizard
-        post={{ id: post.id, title: post.title, description: post.description, post_type: post.post_type, subtype: post.subtype, status: 'published', tags: post.tags, created_at: post.created_at }}
+        post={{ id: post.id, title: post.title, description: post.description, post_type: post.post_type, subtype: post.subtype, status: 'published', tags: post.tags, deadline_at: post.deadline_at, created_at: post.created_at, is_pinned: post.is_pinned }}
         onClose={() => setEditingPost(false)}
         onSaved={handleEditSaved}
       />
     )}
-    <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+    <div className={`bg-white border rounded-2xl shadow-sm overflow-hidden ${
+      post.is_pinned ? 'border-amber-300 shadow-amber-100 ring-1 ring-amber-200' : 'border-gray-200'
+    }`}>
+
+      {/* ── Banner de prioridad máxima ────────────────────── */}
+      {post.is_pinned && (
+        <div className="flex items-center gap-1.5 px-4 py-1.5 bg-gradient-to-r from-amber-400 to-yellow-400 text-white text-xs font-bold">
+          <Pin className="w-3 h-3" />
+          Publicación destacada
+          {post.pin_priority === 3 && <span className="ml-auto opacity-80 text-[10px]">UTEC Root</span>}
+          {post.pin_priority === 2 && <span className="ml-auto opacity-80 text-[10px]">UTEC Admin</span>}
+          {post.pin_priority === 1 && <span className="ml-auto opacity-80 text-[10px]">UTEC Oficina</span>}
+        </div>
+      )}
 
       {/* ── Header: avatar + nombre + email + tiempo + badges + menú ── */}
       <div className="flex items-start justify-between px-4 pt-4 pb-4 sm:pb-3">
@@ -815,14 +828,27 @@ export default function Feed() {
         </div>
 
         {/* Lista de posts */}
-        {posts.map(post => (
-          <PostCard
-            key={post.id}
-            post={post}
-            currentUserId={currentUserId}
-            onEdited={updated => setPosts(prev => prev.map(p => p.id === updated.id ? updated : p))}
-          />
-        ))}
+        {(() => {
+          const lastPinnedIdx = posts.reduce((acc, p, i) => p.is_pinned ? i : acc, -1)
+          return posts.map((post, i) => (
+            <div key={post.id}>
+              <PostCard
+                post={post}
+                currentUserId={currentUserId}
+                onEdited={updated => setPosts(prev => prev.map(p => p.id === updated.id ? updated : p))}
+              />
+              {i === lastPinnedIdx && posts.length > lastPinnedIdx + 1 && (
+                <div className="flex items-center gap-3 py-1">
+                  <div className="flex-1 h-px bg-amber-200" />
+                  <span className="text-[10px] font-semibold text-amber-500 uppercase tracking-widest whitespace-nowrap">
+                    — Publicaciones generales —
+                  </span>
+                  <div className="flex-1 h-px bg-amber-200" />
+                </div>
+              )}
+            </div>
+          ))
+        })()}
 
         {/* Estado vacío */}
         {!loading && posts.length === 0 && (
