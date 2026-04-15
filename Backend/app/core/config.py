@@ -1,17 +1,25 @@
 from pydantic_settings import BaseSettings
-import os
+from pydantic import model_validator
+
 
 class Settings(BaseSettings):
-    SECRET_KEY: str = os.getenv("POSTGRES_PASSWORD", "default_secret_key_change_in_production")
-    JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", SECRET_KEY)
+    SECRET_KEY: str = "CHANGE-ME-IN-PRODUCTION"
+    JWT_SECRET_KEY: str = ""
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
-    GOOGLE_CLIENT_ID: str = os.getenv("GOOGLE_CLIENT_ID", "")
-    ENABLE_ADMIN_BOOTSTRAP: bool = os.getenv("ENABLE_ADMIN_BOOTSTRAP", "false").lower() in {"1", "true", "yes"}
-    BOOTSTRAP_ADMIN_TOKEN: str = os.getenv("BOOTSTRAP_ADMIN_TOKEN", "")
+    GOOGLE_CLIENT_ID: str = ""
+    ENABLE_ADMIN_BOOTSTRAP: bool = False
+    BOOTSTRAP_ADMIN_TOKEN: str = ""
+
+    @model_validator(mode="after")
+    def _set_jwt_secret(self) -> "Settings":
+        if not self.JWT_SECRET_KEY:
+            self.JWT_SECRET_KEY = self.SECRET_KEY
+        return self
 
     class Config:
         env_file = ".env"
-        extra = "ignore"  # Ignorar campos extra no definidos en el modelo
+        extra = "ignore"
+
 
 settings = Settings()

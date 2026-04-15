@@ -97,6 +97,14 @@ function timeRemaining(iso?: string): string | null {
 
 interface PostLink  { id: number; label: string; url: string; display_type: string; position: number }
 
+const TYPE_GRADIENTS: Record<string, string> = {
+  international_opportunity: 'bg-gradient-to-br from-blue-500 to-cyan-500',
+  event:                     'bg-gradient-to-br from-purple-500 to-pink-500',
+  academic_project:          'bg-gradient-to-br from-green-500 to-emerald-500',
+  announcement:              'bg-gradient-to-br from-orange-500 to-red-500',
+  simple_post:               'bg-gradient-to-br from-gray-500 to-slate-500',
+}
+
 // ── Componente de explicación de relevancia ───────────────
 
 /**
@@ -104,17 +112,17 @@ interface PostLink  { id: number; label: string; url: string; display_type: stri
  * Muestra un popover con los factores de relevancia del algoritmo.
  */
 
+const SCORE_FACTORS = [
+  { name: 'Intereses', pct: 40 },
+  { name: 'Proximidad social', pct: 25 },
+  { name: 'Recencia', pct: 20 },
+  { name: 'Ciclo académico', pct: 10 },
+  { name: 'Disponibilidad', pct: 5 },
+] as const
+
 const ScoreExplanation = ({ score }: { score?: number }) => {
   const [show, setShow] = useState(false)
   if (!score) return null
-
-  const factors = [
-    { name: 'Intereses', pct: 40 },
-    { name: 'Proximidad social', pct: 25 },
-    { name: 'Recencia', pct: 20 },
-    { name: 'Ciclo académico', pct: 10 },
-    { name: 'Disponibilidad', pct: 5 },
-  ]
 
   return (
     <div className="relative">
@@ -129,7 +137,7 @@ const ScoreExplanation = ({ score }: { score?: number }) => {
         <div className="absolute top-full right-0 w-72 bg-white rounded-lg shadow-lg p-4 z-50 border border-gray-200">
           <h4 className="font-semibold mb-3 text-gray-900 text-sm">¿Por qué te lo recomendamos?</h4>
           <div className="space-y-2">
-            {factors.map(f => (
+            {SCORE_FACTORS.map(f => (
               <div key={f.name} className="flex justify-between items-center">
                 <span className="text-xs text-gray-700">{f.name}</span>
                 <div className="flex items-center gap-2">
@@ -195,15 +203,7 @@ const PostCard = ({ post, currentUserId, onEdited }: { post: FeedPostOut; curren
   const menuRef                         = useRef<HTMLDivElement>(null)
   const extraMenuRef                    = useRef<HTMLDivElement>(null)
 
-  // Gradientes de color por tipo de post para el avatar de usuario
-  const typeGradients: Record<string, string> = {
-    international_opportunity: 'bg-gradient-to-br from-blue-500 to-cyan-500',
-    event:                     'bg-gradient-to-br from-purple-500 to-pink-500',
-    academic_project:          'bg-gradient-to-br from-green-500 to-emerald-500',
-    announcement:              'bg-gradient-to-br from-orange-500 to-red-500',
-    simple_post:               'bg-gradient-to-br from-gray-500 to-slate-500',
-  }
-  const gradient = typeGradients[post.post_type] ?? typeGradients.simple_post
+  const gradient = TYPE_GRADIENTS[post.post_type] ?? TYPE_GRADIENTS.simple_post
 
   // Carga lazy de imágenes y links al montar
   useEffect(() => {
@@ -599,6 +599,7 @@ export default function Feed() {
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
   const [loading, setLoading] = useState(false)
+  const loadingRef = useRef(false)
   const [currentUserId, setCurrentUserId] = useState<number | null>(null)
   const loaderRef = useRef<HTMLDivElement | null>(null)
 
@@ -621,7 +622,8 @@ export default function Feed() {
 
   /** Carga una página del feed y la agrega al estado */
   const fetchPage = useCallback(async (pageNum: number) => {
-    if (loading) return
+    if (loadingRef.current) return
+    loadingRef.current = true
     setLoading(true)
     try {
       const data: FeedResponse = await getFeed({
@@ -637,9 +639,10 @@ export default function Feed() {
     } catch (err) {
       console.error('Error cargando feed:', err)
     } finally {
+      loadingRef.current = false
       setLoading(false)
     }
-  }, [loading, statusFilter, selectedTags, sortOrder])
+  }, [statusFilter, selectedTags, sortOrder])
 
   // Escucha el evento global emitido por PublicationWizard al publicar.
   // Recarga el feed desde la página 1 para mostrar el nuevo post.
@@ -658,13 +661,13 @@ export default function Feed() {
     const el = loaderRef.current
     if (!el) return
     const io = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && hasMore && !loading) {
+      if (entries[0].isIntersecting && hasMore && !loadingRef.current) {
         fetchPage(page)
       }
     })
     io.observe(el)
     return () => io.disconnect()
-  }, [fetchPage, hasMore, loading, page])
+  }, [fetchPage, hasMore, page])
 
   return (
     <div className="min-h-screen bg-gray-50" style={{ overflowAnchor: 'none' }}>

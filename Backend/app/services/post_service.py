@@ -25,16 +25,16 @@ _PIN_PRIORITY: dict[str, int] = {
 
 
 def get_user_pin_priority(db: Session, user_id: int) -> int:
-    """Devuelve la pin_priority máxima del usuario según su rol."""
-    user_role = db.scalars(
-        select(UserRole).where(UserRole.user_id == user_id)
-    ).first()
-    if not user_role:
+    """Devuelve la pin_priority máxima del usuario según su rol (single JOIN)."""
+    role_name: str | None = db.scalar(
+        select(Role.name)
+        .join(UserRole, UserRole.role_id == Role.id)
+        .where(UserRole.user_id == user_id)
+        .limit(1)
+    )
+    if not role_name:
         return 0
-    role = db.get(Role, user_role.role_id)
-    if not role:
-        return 0
-    return _PIN_PRIORITY.get(role.name.lower(), 0)
+    return _PIN_PRIORITY.get(role_name.lower(), 0)
 
 
 def compute_time_status(deadline_at: Optional[datetime]) -> TimeStatus:
