@@ -30,15 +30,15 @@ export default function InterestsStep({
     <div className="space-y-10 ">
       {/* Title section */}
       <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <h1 className="text-3xl font-bold text-black mb-2">
+        <h1 className="text-3xl font-bold text-white mb-2">
           Elige{" "}
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-fuchsia-400">
             {remaining > 0 ? `${remaining} o más` : "tus"}
           </span>{" "}
           intereses
         </h1>
-        <h2 className="text-2xl font-bold text-black mb-3">favoritos</h2>
-        <p className="text-black text-base">
+        <h2 className="text-2xl font-bold text-violet-50 mb-3">favoritos</h2>
+        <p className="text-violet-100/80 text-base">
           Personalizaremos tu experiencia de eventos
         </p>
       </div>
@@ -96,22 +96,6 @@ export default function InterestsStep({
         })}
       </div>
 
-      {/* Counter */}
-      <div
-        className={`text-center py-4 animate-in fade-in duration-300 ${
-          selectedCount > 0 ? "opacity-100" : "opacity-0"
-        }`}
-      >
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm">
-          <span className="text-black font-medium">
-            {selectedCount}{" "}
-            {selectedCount === 1
-              ? "interés seleccionado"
-              : "intereses seleccionados"}
-          </span>
-          {selectedCount >= minSelected && <span className="text-fuchsia-400 font-semibold">✓</span>}
-        </div>
-      </div>
     </div>
   );
 }

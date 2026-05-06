@@ -65,11 +65,11 @@ export default function CareerStep({ data, setData }: CareerStepProps) {
     <div className="space-y-6">
       {/* Title section */}
       <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 ">
-        <h1 className="text-3xl font-bold text-black mb-2">
+        <h1 className="text-3xl font-bold text-white mb-2">
           Hola <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-fuchsia-400">estudiante</span>,
         </h1>
-        <h2 className="text-2xl font-bold text-black mb-3">¡cuéntanos de ti!</h2>
-        <p className="text-black text-base">¿Qué carrera estudias actualmente?</p>
+        <h2 className="text-2xl font-bold text-violet-50 mb-3">¡cuéntanos de ti!</h2>
+        <p className="text-violet-100/80 text-base">¿Qué carrera estudias actualmente?</p>
       </div>
 
       {/* Faculties in vertical layout */}
@@ -94,12 +94,12 @@ export default function CareerStep({ data, setData }: CareerStepProps) {
                   className={`w-full p-3 rounded-xl border-2 text-left flex items-start gap-2 transition-all duration-300 transform active:scale-[0.97] shadow-sm ${
                     isSelected
                       ? `${faculty.selected} shadow-lg`
-                      : 'border-gray-100 bg-white hover:border-gray-200 hover:bg-gray-50'
+                      : 'border-white/15 bg-white/5 hover:border-white/25 hover:bg-white/10'
                   }`}
                   style={{ animationDelay: `${index * 40}ms` }}
                 >
                   <span className="text-lg leading-none mt-0.5 shrink-0">{career.icon}</span>
-                  <span className={`text-xs font-medium leading-snug flex-1 ${isSelected ? 'text-gray-800' : 'text-gray-500'}`}>
+                  <span className={`text-xs font-medium leading-snug flex-1 ${isSelected ? 'text-violet-50' : 'text-violet-100/80'}`}>
                     {career.label}
                   </span>
                   {isSelected && (

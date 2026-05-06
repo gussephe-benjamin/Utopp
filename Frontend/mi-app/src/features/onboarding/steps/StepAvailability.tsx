@@ -29,10 +29,10 @@ export default function AvailabilityStep({ data, setData }: AvailabilityStepProp
     <div className="space-y-7">
       {/* Título */}
       <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <h1 className="text-3xl font-bold text-black mb-2">
+        <h1 className="text-3xl font-bold text-white mb-2">
           ¿Cuántas horas <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-fuchsia-400">libres</span> tienes?
         </h1>
-        <p className="text-black text-base">A la semana, aproximadamente</p>
+        <p className="text-violet-100/80 text-base">A la semana, aproximadamente</p>
       </div>
 
       {/* Ilustración
@@ -56,7 +56,7 @@ export default function AvailabilityStep({ data, setData }: AvailabilityStepProp
               className={`w-full p-4 rounded-2xl flex items-center gap-4 transition-all duration-300 transform active:scale-[0.98] ${
                 isSelected
                   ? `bg-gradient-to-r ${option.gradient} shadow-lg shadow-violet-500/20`
-                  : 'bg-white/5 hover:bg-white/10 border border-white/10'
+                  : 'bg-white/5 hover:bg-white/10 border border-white/15'
               }`}
               style={{ animationDelay: `${index * 50}ms` }}
             >
@@ -68,12 +68,12 @@ export default function AvailabilityStep({ data, setData }: AvailabilityStepProp
               {/* Contenido */}
               <div className="flex-1 text-left">
                 <div className="flex items-center gap-2">
-                  <p className={`font-semibold ${isSelected ? 'text-white' : 'text-black'}`}>{option.label}</p>
-                  <span className={`text-sm px-2 py-0.5 rounded-full ${isSelected ? 'bg-white/20 text-white' : 'bg-white/10 text-black'}`}>
+                  <p className={`font-semibold ${isSelected ? 'text-white' : 'text-violet-50'}`}>{option.label}</p>
+                  <span className={`text-sm px-2 py-0.5 rounded-full ${isSelected ? 'bg-white/20 text-white' : 'bg-white/10 text-violet-100'}`}>
                     {option.hours}h
                   </span>
                 </div>
-                <p className={`text-sm ${isSelected ? 'text-white/80' : 'text-black'}`}>{option.description}</p>
+                <p className={`text-sm ${isSelected ? 'text-white/80' : 'text-violet-100/80'}`}>{option.description}</p>
               </div>
 
               {/* Check */}
@@ -87,12 +87,6 @@ export default function AvailabilityStep({ data, setData }: AvailabilityStepProp
         })}
       </div>
 
-      {/* Texto auxiliar */}
-      <div className="text-center pt-2 animate-in fade-in duration-500">
-        <p className="text-black text-sm">
-          Esto nos ayuda a recomendarte la cantidad ideal de eventos
-        </p>
-      </div>
     </div>
   );
 }
