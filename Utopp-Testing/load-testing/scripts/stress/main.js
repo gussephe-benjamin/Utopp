@@ -117,6 +117,7 @@ export const options = {
         'http_req_duration{type:API}': ['p(95)<120000', 'p(99)<120000'],
         'http_req_failed{type:API}': [`rate<${failRateMax}`],
     },
+    summaryTrendStats: ['avg', 'min', 'med', 'p(90)', 'p(95)', 'p(99)', 'max'],
 };
 
 export function setup() {

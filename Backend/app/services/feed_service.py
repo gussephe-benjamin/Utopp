@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timezone
 from typing import Optional, List
 
@@ -59,9 +60,17 @@ def build_feed(
         base_conditions.append(Post.subtype == subtype)
     
     if tags:
-        # Filtrar posts que contengan AL MENOS UNO de los tags seleccionados (OR)
-        tag_conditions = [Post.tags.contains([tag]) for tag in tags]
-        base_conditions.append(or_(*tag_conditions))
+        # PostgreSQL: posts.tags es JSON/jsonb (array de strings). No usar LIKE sobre jsonb.
+        # @> comprueba que el array contenga el elemento (OR entre tags seleccionados).
+        fragments: list[str] = []
+        bind: dict[str, str] = {}
+        for i, tag in enumerate(tags):
+            key = f"feed_tag_{i}"
+            fragments.append(
+                f"(posts.tags IS NOT NULL AND posts.tags::jsonb @> CAST(:{key} AS jsonb))"
+            )
+            bind[key] = json.dumps([tag])
+        base_conditions.append(sa_text("(" + " OR ".join(fragments) + ")").bindparams(**bind))
     
     # Contar total
     count_query = select(func.count()).select_from(Post).where(and_(*base_conditions))

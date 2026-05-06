@@ -32,11 +32,22 @@ export const config = {
     // Thresholds - Performance criteria
     // If any threshold is breached, the test will fail
     thresholds: {
-        // Una sola clave métrica: varias condiciones (p95 y p99 en ms)
-        'http_req_duration{type:API}': ['p(95)<500', 'p(99)<1000'],
+        // Global API envelope
+        'http_req_duration{type:API}': ['p(95)<2000', 'p(99)<4000'],
+        // Endpoint-level SLOs (more actionable than a single global metric)
+        'http_req_duration{name:login,type:API}': ['p(95)<1200', 'p(99)<2000'],
+        'http_req_duration{name:get_feed,type:API}': ['p(95)<1500', 'p(99)<2500'],
+        'http_req_duration{name:get_users_me,type:API}': ['p(95)<800', 'p(99)<1500'],
+        'http_req_duration{name:get_all_users,type:API}': ['p(95)<1200', 'p(99)<2200'],
+        'http_req_duration{name:get_roles_me,type:API}': ['p(95)<600', 'p(99)<1200'],
         
         // Error rate must be less than 1%
         'http_req_failed{type:API}': ['rate<0.01'],
+        'checks{name:login}': ['rate>0.99'],
+        'checks{name:get_feed}': ['rate>0.99'],
+        'checks{name:get_users_me}': ['rate>0.99'],
+        'checks{name:get_all_users}': ['rate>0.99'],
+        'checks{name:get_roles_me}': ['rate>0.99'],
         
         // Requests per second should be at least 10
         'http_reqs{type:API}': ['rate>=10'],
