@@ -29,6 +29,7 @@ export const options = {
         // Picos pueden generar colas temporales
         'http_req_failed{type:API}': ['rate<0.40'],
     },
+    summaryTrendStats: ['avg', 'min', 'med', 'p(90)', 'p(95)', 'p(99)', 'max'],
 };
 
 export function setup() {

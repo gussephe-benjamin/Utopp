@@ -43,19 +43,23 @@ export function runAuthenticatedIteration(cfg, user, opts = {}) {
 
     const loginResponse = http.post(`${base}${cfg.auth.loginEndpoint}`, loginPayload, loginParams);
 
-    const loginOk = check(loginResponse, {
-        'login status 200': (r) => r.status === 200,
-        has_token: (r) => {
-            if (r.status !== 200 || !r.body || r.body.length === 0) {
-                return false;
-            }
-            try {
-                return r.json('access_token') !== undefined;
-            } catch (_) {
-                return false;
-            }
+    const loginOk = check(
+        loginResponse,
+        {
+            'login status 200': (r) => r.status === 200,
+            has_token: (r) => {
+                if (r.status !== 200 || !r.body || r.body.length === 0) {
+                    return false;
+                }
+                try {
+                    return r.json('access_token') !== undefined;
+                } catch (_) {
+                    return false;
+                }
+            },
         },
-    });
+        { name: 'login', type: 'API' },
+    );
 
     if (!loginOk) {
         recordFailure('login');
@@ -85,12 +89,16 @@ export function runAuthenticatedIteration(cfg, user, opts = {}) {
         tags: { ...tagApi, name: 'get_feed' },
     });
     if (
-        !check(rFeed, {
-            feed_200_o_401: (r) => r.status === 200 || r.status === 401,
-            feed_items_si_200: (r) =>
-                r.status !== 200 ||
-                (r.json && typeof r.json('items') !== 'undefined'),
-        })
+        !check(
+            rFeed,
+            {
+                feed_200_o_401: (r) => r.status === 200 || r.status === 401,
+                feed_items_si_200: (r) =>
+                    r.status !== 200 ||
+                    (r.json && typeof r.json('items') !== 'undefined'),
+            },
+            { name: 'get_feed', type: 'API' },
+        )
     ) {
         recordFailure('get_feed');
     }
@@ -102,9 +110,13 @@ export function runAuthenticatedIteration(cfg, user, opts = {}) {
         tags: { ...tagApi, name: 'get_users_me' },
     });
     if (
-        !check(rMe, {
-            users_me_200_o_401: (r) => r.status === 200 || r.status === 401,
-        })
+        !check(
+            rMe,
+            {
+                users_me_200_o_401: (r) => r.status === 200 || r.status === 401,
+            },
+            { name: 'get_users_me', type: 'API' },
+        )
     ) {
         recordFailure('get_users_me');
     }
@@ -116,10 +128,14 @@ export function runAuthenticatedIteration(cfg, user, opts = {}) {
         tags: { ...tagApi, name: 'get_all_users' },
     });
     if (
-        !check(rAll, {
-            all_users_200: (r) => r.status === 200,
-            all_users_array: (r) => r.status !== 200 || Array.isArray(r.json()),
-        })
+        !check(
+            rAll,
+            {
+                all_users_200: (r) => r.status === 200,
+                all_users_array: (r) => r.status !== 200 || Array.isArray(r.json()),
+            },
+            { name: 'get_all_users', type: 'API' },
+        )
     ) {
         recordFailure('get_all_users');
     }
@@ -131,11 +147,15 @@ export function runAuthenticatedIteration(cfg, user, opts = {}) {
         tags: { ...tagApi, name: 'get_roles_me' },
     });
     if (
-        !check(rRoles, {
-            roles_me_200: (r) => r.status === 200,
-            roles_me_array: (r) =>
-                r.status !== 200 || Array.isArray(r.json()),
-        })
+        !check(
+            rRoles,
+            {
+                roles_me_200: (r) => r.status === 200,
+                roles_me_array: (r) =>
+                    r.status !== 200 || Array.isArray(r.json()),
+            },
+            { name: 'get_roles_me', type: 'API' },
+        )
     ) {
         recordFailure('get_roles_me');
     }

@@ -14,6 +14,7 @@ export const options = {
     vus: Number(config.test.vus) || 50,
     duration: config.test.duration,
     thresholds: config.thresholds,
+    summaryTrendStats: ['avg', 'min', 'med', 'p(90)', 'p(95)', 'p(99)', 'max'],
 };
 
 export function setup() {

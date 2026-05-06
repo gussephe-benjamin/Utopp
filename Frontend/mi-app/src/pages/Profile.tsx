@@ -1,252 +1,27 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import ReactDOM from "react-dom"
 import { useParams } from "react-router-dom"
 import {
   getMyProfile, getUserProfile as apiGetProfile,
   followUser, unfollowUser, updateInterests, updateMyProfile,
   getUserPosts, getFollowers, getFollowing, removeFollower, setProfileImage,
 } from "../api/users.api"
-import { archivePost, unarchivePost, deletePost } from "../api/posts.api"
+import { unarchivePost, deletePost } from "../api/posts.api"
 import { uploadToCloudinary } from "../api/cloudinary"
 import { getMyRoles, getUserRoles } from '../api/roles.api'
 import {
   Edit2, Users, Calendar, BookOpen, Clock, Camera, Check, X,
   FileText, UserPlus, UserMinus, Trash2, Archive, ArchiveRestore, Pencil,
-  AlertTriangle, ChevronDown, ChevronUp, Bookmark,
+  ChevronDown, ChevronUp, Bookmark,
 } from "lucide-react"
 import { getSavedPosts, unsavePost } from "../api/saved-posts.api"
-import { POST_TYPE_LABELS, POST_TYPE_ICONS, SUBTYPE_LABELS } from "../types/post.types"
+import { POST_TYPE_LABELS, POST_TYPE_ICONS } from "../types/post.types"
 import PostDetailModal from "../components/PostDetailModal"
 import EditPostWizard from "../components/EditPostWizard"
 import { INTERESTS } from "../constants/interests"
-
-// ─── Tipos unificados ──────────────────────────────────────
-
-interface ProfileData {
-  id: number
-  email?: string
-  full_name?: string
-  interests?: string[]
-  career?: string
-  cycle?: number
-  availability?: number
-  followers_count: number
-  following_count: number
-  posts_count: number
-  role_name?: string
-}
-
-interface PostItem {
-  id: number
-  title?: string
-  description: string
-  post_type: string
-  subtype?: string
-  status: string
-  time_status?: string
-  tags?: string[]
-  deadline_at?: string
-  created_at: string
-}
-
-interface FollowerItem {
-  user_id: number
-  full_name?: string
-  email: string
-  followed_at: string
-}
-
-
-
-// ─── Constantes ────────────────────────────────────────────
-
-const AVAILABILITY_OPTIONS = [
-  { id: 0, label: 'Poco tiempo',         emoji: '☕', description: '1-3 hrs/semana' },
-  { id: 1, label: 'Moderado',            emoji: '⚖️', description: '4-6 hrs/semana' },
-  { id: 2, label: 'Disponible',          emoji: '⚡', description: '7-10 hrs/semana' },
-  { id: 3, label: 'Muy flexible',        emoji: '🚀', description: '11-15 hrs/semana' },
-  { id: 4, label: 'Máxima disponibilidad', emoji: '🌟', description: '15+ hrs/semana' },
-]
-
-const CAREER_FACULTIES = [
-  {
-    label: 'Facultad de Negocios',
-    careers: [
-      { id: 'admin_digital',      label: 'Administración y Negocios Digitales', icon: '📱' },
-      { id: 'business_analytics', label: 'Business Analytics',                  icon: '📊' },
-    ],
-  },
-  {
-    label: 'Facultad de Computación',
-    careers: [
-      { id: 'ciberseguridad',      label: 'Ciberseguridad',                              icon: '�' },
-      { id: 'ciencia_datos_ia',    label: 'Ciencia de Datos e Inteligencia Artificial',  icon: '🤖' },
-      { id: 'ciencia_computacion', label: 'Ciencia de la Computación',                  icon: '💻' },
-      { id: 'sistemas_info',       label: 'Sistemas de Información',                     icon: '🗂️' },
-    ],
-  },
-  {
-    label: 'Facultad de Ingeniería',
-    careers: [
-      { id: 'bioingenieria', label: 'Bioingeniería',              icon: '🧬' },
-      { id: 'ambiental',     label: 'Ingeniería Ambiental',       icon: '🌱' },
-      { id: 'civil',         label: 'Ingeniería Civil',            icon: '🏗️' },
-      { id: 'energia',       label: 'Ingeniería de la Energía',   icon: '⚡' },
-      { id: 'electronica',   label: 'Ingeniería Electrónica',     icon: '�' },
-      { id: 'industrial',    label: 'Ingeniería Industrial',      icon: '🏭' },
-      { id: 'mecatronica',   label: 'Ingeniería Mecatrónica',     icon: '🤖' },
-      { id: 'mecanica',      label: 'Ingeniería Mecánica',        icon: '⚙️' },
-      { id: 'quimica',       label: 'Ingeniería Química',         icon: '⚗️' },
-    ],
-  },
-]
-
-const CAREER_OPTIONS = CAREER_FACULTIES.flatMap(f => f.careers)
-
-const STATUS_BADGE: Record<string, { label: string; color: string }> = {
-  published: { label: 'Publicado',  color: 'bg-green-100 text-green-700' },
-  draft:     { label: 'Borrador',   color: 'bg-yellow-100 text-yellow-700' },
-  archived:  { label: 'Archivado',  color: 'bg-gray-100 text-gray-500' },
-}
-
-type Tab = 'posts' | 'saved' | 'archived'
-
-// ─── Componente modal de confirmación ─────────────────────
-
-function ConfirmModal({
-  title, message, onConfirm, onCancel, danger = false,
-}: {
-  title: string; message: string; onConfirm: () => void; onCancel: () => void; danger?: boolean
-}) {
-  return ReactDOM.createPortal(
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${danger ? 'bg-red-100' : 'bg-yellow-100'}`}>
-            <AlertTriangle className={`w-5 h-5 ${danger ? 'text-red-500' : 'text-yellow-500'}`} />
-          </div>
-          <h3 className="text-lg font-bold text-gray-900">{title}</h3>
-        </div>
-        <p className="text-gray-600 text-sm mb-6 leading-relaxed">{message}</p>
-        <div className="flex gap-3">
-          <button onClick={onCancel} className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 transition-colors">
-            Cancelar
-          </button>
-          <button
-            onClick={onConfirm}
-            className={`flex-1 px-4 py-2.5 rounded-xl text-white font-medium transition-colors ${danger ? 'bg-red-500 hover:bg-red-600' : 'bg-yellow-500 hover:bg-yellow-600'}`}
-          >
-            Confirmar
-          </button>
-        </div>
-      </div>
-    </div>,
-    document.body,
-  )
-}
-
-// ─── Componente de card de post con acciones ──────────────
-
-function PostCard({
-  post, onUpdated, onDeleted, onEdit,
-}: {
-  post: PostItem
-  onUpdated: (p: PostItem) => void
-  onDeleted: (id: number) => void
-  onEdit: (id: number) => void
-}) {
-  const [confirm, setConfirm] = useState<null | 'archive' | 'delete'>(null)
-
-  const isArchived = post.status === 'archived'
-
-  const handleArchive = async () => {
-    try { const updated = await archivePost(post.id); onUpdated({ ...post, ...updated }) }
-    catch (e) { console.error(e) }
-    finally { setConfirm(null) }
-  }
-
-  const handleDelete = async () => {
-    try { await deletePost(post.id); onDeleted(post.id) }
-    catch (e) { console.error(e) }
-    finally { setConfirm(null) }
-  }
-
-  return (
-    <>
-      {confirm === 'archive' && (
-        <ConfirmModal
-          title="Archivar publicación"
-          message="El post dejará de aparecer en el feed y no podrás editarlo. ¿Continuar?"
-          onConfirm={handleArchive}
-          onCancel={() => setConfirm(null)}
-        />
-      )}
-      {confirm === 'delete' && (
-        <ConfirmModal
-          title="Eliminar publicación"
-          message="Esta acción es permanente. El post se eliminará completamente. ¿Estás seguro?"
-          onConfirm={handleDelete}
-          onCancel={() => setConfirm(null)}
-          danger
-        />
-      )}
-
-      <div className={`bg-white border rounded-xl p-4 space-y-3 transition-opacity ${isArchived ? 'opacity-60' : ''}`}>
-        {/* Header del post */}
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap mb-1">
-              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                {POST_TYPE_ICONS[post.post_type as keyof typeof POST_TYPE_ICONS]} {POST_TYPE_LABELS[post.post_type as keyof typeof POST_TYPE_LABELS]}
-              </span>
-              {post.subtype && (
-                <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
-                  {SUBTYPE_LABELS[post.subtype as keyof typeof SUBTYPE_LABELS]}
-                </span>
-              )}
-              <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_BADGE[post.status]?.color ?? 'bg-gray-100 text-gray-500'}`}>
-                {STATUS_BADGE[post.status]?.label ?? post.status}
-              </span>
-            </div>
-
-            {post.title && <p className="font-semibold text-gray-900 text-sm">{post.title}</p>}
-            <p className="text-gray-600 text-sm line-clamp-2">{post.description}</p>
-          </div>
-
-          {/* Acciones */}
-          {!isArchived && (
-            <div className="flex items-center gap-1 shrink-0">
-              <button onClick={() => onEdit(post.id)} className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors" title="Editar">
-                <Pencil className="w-4 h-4" />
-              </button>
-              <button onClick={() => setConfirm('archive')} className="p-1.5 rounded-lg text-gray-400 hover:bg-yellow-50 hover:text-yellow-600 transition-colors" title="Archivar">
-                <Archive className="w-4 h-4" />
-              </button>
-              <button onClick={() => setConfirm('delete')} className="p-1.5 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors" title="Eliminar">
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
-          )}
-        </div>
-
-
-        {/* Tags */}
-        {post.tags && post.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {post.tags.map(t => (
-              <span key={t} className="text-xs bg-purple-50 text-purple-600 px-2 py-0.5 rounded-full">#{t}</span>
-            ))}
-          </div>
-        )}
-
-        {/* Fecha */}
-        <p className="text-xs text-gray-400">
-          {new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(post.created_at))}
-        </p>
-      </div>
-    </>
-  )
-}
+import { AVAILABILITY_OPTIONS, CAREER_FACULTIES, CAREER_OPTIONS } from "../features/profile/constants/profileOptions"
+import { ConfirmModal } from "../features/profile/components/ConfirmModal"
+import { ProfilePostListCard } from "../features/profile/components/ProfilePostListCard"
+import type { FollowerItem, PostItem, ProfileData, ProfileTab } from "../features/profile/types"
 
 // ─── Componente principal ──────────────────────────────────
 
@@ -257,12 +32,14 @@ export default function Profile({ viewUserId }: { viewUserId?: number } = {}) {
   const userId  = resolvedId ?? null
 
   const [data, setData]             = useState<ProfileData | null>(null)
-  const [activeTab, setActiveTab]   = useState<Tab>('posts')
+  const [activeTab, setActiveTab]   = useState<ProfileTab>('posts')
   const [posts, setPosts]           = useState<PostItem[]>([])
   const [loadingTab, setLoadingTab] = useState(false)
   const tabContentRef = useRef<HTMLDivElement>(null)
+  const postsLoaderRef = useRef<HTMLDivElement | null>(null)
   const [tabMinHeight, setTabMinHeight] = useState<number | null>(null)
-  const [tabLoaded, setTabLoaded] = useState<Record<Tab, boolean>>({
+  const [visiblePostsCount, setVisiblePostsCount] = useState(10)
+  const [tabLoaded, setTabLoaded] = useState<Record<ProfileTab, boolean>>({
     posts: false,
     saved: false,
     archived: false,
@@ -356,19 +133,19 @@ export default function Profile({ viewUserId }: { viewUserId?: number } = {}) {
 
   // ── Carga del tab activo ─────────────────────────────────
 
-  const loadTab = useCallback(async (tab: Tab) => {
+  const loadTab = useCallback(async (tab: ProfileTab) => {
     if (!data || tabLoaded[tab]) return
     const targetId = data.id
     setLoadingTab(true)
     try {
-      const loadedPatch: Partial<Record<Tab, boolean>> = {}
+      const loadedPatch: Partial<Record<ProfileTab, boolean>> = {}
       if (tab === 'posts') {
         const res = await getUserPosts(targetId)
         const all = res as PostItem[]
         // En "Publicaciones" solo mostramos no archivadas.
         setPosts(all.filter((p: PostItem) => p.status !== 'archived'))
         loadedPatch.posts = true
-        if (isMe) {
+        if (isMe && data.role_name !== 'estudiante') {
           setArchivedPosts(all.filter((p: PostItem) => p.status === 'archived'))
           loadedPatch.archived = true
         }
@@ -377,6 +154,7 @@ export default function Profile({ viewUserId }: { viewUserId?: number } = {}) {
         setSavedPosts(res)
         loadedPatch.saved = true
       } else if (tab === 'archived') {
+        if (data.role_name === 'estudiante') return
         const res = await getUserPosts(targetId)
         setArchivedPosts((res as PostItem[]).filter((p: PostItem) => p.status === 'archived'))
         loadedPatch.archived = true
@@ -436,7 +214,9 @@ export default function Profile({ viewUserId }: { viewUserId?: number } = {}) {
   }, [isMe, profileId])
 
   useEffect(() => {
-    setActiveTab('posts')
+    // Si el rol es alumno, el tab de “Publicaciones” no se muestra; arrancamos en “Guardadas”.
+    setActiveTab(isMe && data?.role_name === 'estudiante' ? 'saved' : 'posts')
+    setVisiblePostsCount(10)
     setPosts([])
     setSavedPosts([])
     setArchivedPosts([])
@@ -448,7 +228,7 @@ export default function Profile({ viewUserId }: { viewUserId?: number } = {}) {
     setTabMinHeight(null)
   }, [profileId])
 
-  const handleTabChange = (tab: Tab) => {
+  const handleTabChange = (tab: ProfileTab) => {
     if (tab === activeTab) return
     if (tab === 'saved') setTabLoaded(prev => ({ ...prev, saved: false }))
     if (!tabLoaded[tab]) {
@@ -461,6 +241,20 @@ export default function Profile({ viewUserId }: { viewUserId?: number } = {}) {
     }
     setActiveTab(tab)
   }
+
+  // Infinite scroll local en perfil: muestra 10 publicaciones y va cargando más al bajar.
+  useEffect(() => {
+    if (activeTab !== 'posts') return
+    const el = postsLoaderRef.current
+    if (!el) return
+    const io = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        setVisiblePostsCount((prev) => Math.min(prev + 10, posts.length))
+      }
+    })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [activeTab, posts.length])
 
   // ── Foto de perfil ───────────────────────────────────────
 
@@ -532,12 +326,18 @@ export default function Profile({ viewUserId }: { viewUserId?: number } = {}) {
 
   const shouldHideFollow = isMe || (data.id === currentUserId)
 
-  const TABS: { id: Tab; label: string; icon: React.ReactNode; count?: number }[] = [
-    ...(data.role_name !== 'estudiante' ? [{ id: 'posts' as Tab, label: 'Publicaciones', icon: <FileText className="w-4 h-4" />, count: data.posts_count }] : []),
-    ...(isMe ? [
-      { id: 'saved'    as Tab, label: 'Guardadas',  icon: <Bookmark className="w-4 h-4" />, count: savedPosts.length },
-      { id: 'archived' as Tab, label: 'Archivadas', icon: <Archive  className="w-4 h-4" />, count: archivedPosts.length },
-    ] : []),
+  const canSeeArchivedTab = isMe && data.role_name !== 'estudiante'
+
+  const TABS: { id: ProfileTab; label: string; icon: React.ReactNode; count?: number }[] = [
+    ...(data.role_name !== 'estudiante'
+      ? [{ id: 'posts' as ProfileTab, label: 'Publicaciones', icon: <FileText className="w-4 h-4" />, count: data.posts_count }]
+      : []),
+    ...(isMe
+      ? [{ id: 'saved' as ProfileTab, label: 'Guardadas', icon: <Bookmark className="w-4 h-4" />, count: savedPosts.length }]
+      : []),
+    ...(canSeeArchivedTab
+      ? [{ id: 'archived' as ProfileTab, label: 'Archivadas', icon: <Archive className="w-4 h-4" />, count: archivedPosts.length }]
+      : []),
   ]
 
   return (
@@ -579,7 +379,7 @@ export default function Profile({ viewUserId }: { viewUserId?: number } = {}) {
       )}
 
       {/* ── Cover / Banner ─────────────────────────────── */}
-      <div className="relative z-0 h-36 bg-gradient-to-r from-[#4F46E5] via-[#7C3AED] to-[#EC4899]">
+      <div className="relative z-0 h-36 bg-gradient-to-r from-[#2563EB] via-[#4F46E5] to-[#7C3AED]">
         <div className="absolute inset-0 opacity-20"
           style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)', backgroundSize: '60px 60px' }}
         />
@@ -718,7 +518,7 @@ export default function Profile({ viewUserId }: { viewUserId?: number } = {}) {
 
         {/* ── Tabs ───────────────────────────────────────── */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-4">
-          <div className="flex border-b border-gray-100 overflow-x-auto">
+          <div className="flex border-b border-gray-100 overflow-x-auto justify-center">
             {TABS.map(tab => (
               <button
                 key={tab.id}
@@ -760,10 +560,11 @@ export default function Profile({ viewUserId }: { viewUserId?: number } = {}) {
                     <FileText className="w-10 h-10 text-gray-300 mx-auto mb-2" />
                     <p className="text-gray-500 text-sm">Sin publicaciones aún</p>
                   </div>
-                ) : posts.map(post => (
-                  <PostCard
+                ) : posts.slice(0, visiblePostsCount).map(post => (
+                  <ProfilePostListCard
                     key={post.id}
                     post={post}
+                    showActions={isMe}
                     onUpdated={updated => {
                       if (updated.status === 'archived') {
                         setPosts(prev => prev.filter(p => p.id !== updated.id))
@@ -781,6 +582,11 @@ export default function Profile({ viewUserId }: { viewUserId?: number } = {}) {
                     onEdit={id => setEditingPost(posts.find(p => p.id === id) ?? null)}
                   />
                 ))}
+                {posts.length > visiblePostsCount && (
+                  <div ref={postsLoaderRef} className="py-3 text-center text-xs text-gray-400">
+                    Cargando más publicaciones...
+                  </div>
+                )}
               </div>
             )}
 
@@ -788,6 +594,7 @@ export default function Profile({ viewUserId }: { viewUserId?: number } = {}) {
             {!loadingTab && activeTab === 'saved' && (
               <SavedPostsTab
                 posts={savedPosts}
+                currentUserId={currentUserId}
                 onUnsave={async (id: number) => {
                   try {
                     await unsavePost(id)
@@ -795,11 +602,18 @@ export default function Profile({ viewUserId }: { viewUserId?: number } = {}) {
                   } catch (e) { console.error(e) }
                 }}
                 onNavigate={(postId: number) => setSelectedPostId(postId)}
+                onEditPost={(post: PostItem) => setEditingPost(post)}
+                onUpdatedPost={(updated: PostItem) => {
+                  setSavedPosts(prev => prev.map(p => p.id === updated.id ? { ...p, ...updated } : p))
+                }}
+                onDeletedPost={(id: number) => {
+                  setSavedPosts(prev => prev.filter(p => p.id !== id))
+                }}
               />
             )}
 
             {/* ── Tab: Archivadas ─────────────────────── */}
-            {!loadingTab && activeTab === 'archived' && (
+            {!loadingTab && activeTab === 'archived' && canSeeArchivedTab && (
               <div className="space-y-3">
                 {archivedPosts.length === 0 ? (
                   <div className="py-10 text-center">
@@ -1062,24 +876,38 @@ function deadlineLabel(d?: string): string | null {
 }
 
 function SavedPostsTab({
-  posts, onUnsave, onNavigate,
+  posts, currentUserId, onUnsave, onNavigate, onEditPost, onUpdatedPost, onDeletedPost,
 }: {
   posts: PostItem[]
+  currentUserId: number | null
   onUnsave: (id: number) => void
   onNavigate: (postId: number) => void
+  onEditPost: (post: PostItem) => void
+  onUpdatedPost: (post: PostItem) => void
+  onDeletedPost: (id: number) => void
 }) {
   const [filter, setFilter] = useState('all')
+  const [timeFilter, setTimeFilter] = useState<'all' | 'active' | 'expired'>('all')
 
   const filtered = filter === 'all' ? posts : posts.filter(p => p.post_type === filter)
 
-  // Split: active (in_time / no_deadline) vs expired (out_of_time)
-  const active  = filtered.filter(p => p.time_status !== 'out_of_time')
-  const expired = filtered.filter(p => p.time_status === 'out_of_time')
+  // Filtro de vencidas dentro de guardadas (sin “sección aparte”)
+  const byTime =
+    timeFilter === 'all'
+      ? filtered
+      : timeFilter === 'expired'
+        ? filtered.filter(p => p.time_status === 'out_of_time')
+        : filtered.filter(p => p.time_status !== 'out_of_time')
 
-  // Sort active: soonest deadline first, no-deadline last
-  const sortedActive = [...active].sort((a, b) => deadlineUrgency(a.deadline_at) - deadlineUrgency(b.deadline_at))
-  // Sort expired: most recently expired first (closest to today)
-  const sortedExpired = [...expired].sort((a, b) => deadlineUrgency(b.deadline_at) - deadlineUrgency(a.deadline_at))
+  // Orden: urgentes primero (deadline más cercana). Vencidas: las más recientes arriba.
+  const sorted = [...byTime].sort((a, b) => {
+    const aExpired = a.time_status === 'out_of_time'
+    const bExpired = b.time_status === 'out_of_time'
+    if (aExpired && !bExpired) return 1
+    if (!aExpired && bExpired) return -1
+    if (aExpired && bExpired) return deadlineUrgency(b.deadline_at) - deadlineUrgency(a.deadline_at)
+    return deadlineUrgency(a.deadline_at) - deadlineUrgency(b.deadline_at)
+  })
 
   if (posts.length === 0) {
     return (
@@ -1094,93 +922,82 @@ function SavedPostsTab({
   const renderCard = (post: PostItem) => {
     const urgency = deadlineLabel(post.deadline_at)
     const isExpired = post.time_status === 'out_of_time'
+    const isOwnPost = currentUserId !== null && post.user_id === currentUserId
     return (
-      <div
-        key={post.id}
-        className={`bg-white border rounded-xl p-4 cursor-pointer hover:shadow-md transition-shadow ${isExpired ? 'opacity-60' : ''}`}
-        onClick={() => onNavigate(post.id)}
-      >
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap mb-1">
-              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                {POST_TYPE_ICONS[post.post_type as keyof typeof POST_TYPE_ICONS]} {POST_TYPE_LABELS[post.post_type as keyof typeof POST_TYPE_LABELS]}
-              </span>
-              {post.subtype && (
-                <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
-                  {SUBTYPE_LABELS[post.subtype as keyof typeof SUBTYPE_LABELS]}
-                </span>
-              )}
-              {urgency && (
-                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                  isExpired ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-700'
-                }`}>
-                  {urgency}
-                </span>
-              )}
-            </div>
-            {post.title && <p className="font-semibold text-gray-900 text-sm">{post.title}</p>}
-            <p className="text-gray-600 text-sm line-clamp-2">{post.description}</p>
-            {post.deadline_at && (
-              <p className="text-xs text-gray-400 mt-1">
-                Fecha límite: {new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(post.deadline_at))}
-              </p>
-            )}
-          </div>
-          <button
-            onClick={e => { e.stopPropagation(); onUnsave(post.id) }}
-            className="shrink-0 p-2 rounded-lg text-[#4F46E5] hover:bg-indigo-50 transition-colors"
-            title="Quitar de guardados"
-          >
-            <Bookmark className="w-4 h-4 fill-current" />
-          </button>
-        </div>
+      <div key={post.id}>
+        <ProfilePostListCard
+          post={post}
+          showActions={isOwnPost}
+          onUpdated={onUpdatedPost}
+          onDeleted={onDeletedPost}
+          onEdit={() => onEditPost(post)}
+          onCardClick={() => onNavigate(post.id)}
+          timeBadge={urgency ? { label: urgency, tone: isExpired ? 'expired' : 'warning' } : undefined}
+          extraActions={(
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onUnsave(post.id) }}
+              className="p-1.5 rounded-lg text-[#4F46E5] hover:bg-indigo-50 transition-colors"
+              title="Quitar de guardados"
+            >
+              <Bookmark className="w-4 h-4 fill-current" />
+            </button>
+          )}
+        />
       </div>
     )
   }
 
   return (
     <div className="space-y-4">
-      {/* Filtros */}
-      <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
-        {SAVED_FILTERS.map(f => (
-          <button
-            key={f.key}
-            onClick={() => setFilter(f.key)}
-            className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-              filter === f.key
-                ? 'bg-[#4F46E5] text-white border-[#4F46E5]'
-                : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-            }`}
-          >
-            {f.label}
-          </button>
-        ))}
+      {/* Filtros: tipo + vencidas (dentro del mismo listado) */}
+      <div className="space-y-2">
+        <div className="flex flex-wrap gap-1.5">
+          {SAVED_FILTERS.map(f => (
+            <button
+              key={f.key}
+              type="button"
+              onClick={() => setFilter(f.key)}
+              className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                filter === f.key
+                  ? 'bg-gradient-to-r from-blue-600 to-[#7C3AED] text-white border-transparent shadow-sm'
+                  : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {(
+            [
+              { key: 'all' as const, label: 'Todas' },
+              { key: 'active' as const, label: 'Vigentes' },
+              { key: 'expired' as const, label: 'Vencidas' },
+            ] as const
+          ).map(opt => (
+            <button
+              key={opt.key}
+              type="button"
+              onClick={() => setTimeFilter(opt.key)}
+              className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                timeFilter === opt.key
+                  ? 'bg-gradient-to-r from-blue-600 to-[#7C3AED] text-white border-transparent shadow-sm'
+                  : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {filtered.length === 0 ? (
+      {byTime.length === 0 ? (
         <p className="text-center text-gray-400 text-sm py-6">Sin resultados para este filtro</p>
       ) : (
-        <>
-          {/* Sección activa */}
-          {sortedActive.length > 0 && (
-            <div className="space-y-2">
-              {sortedActive.map(renderCard)}
-            </div>
-          )}
-
-          {/* Sección vencidas */}
-          {sortedExpired.length > 0 && (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 pt-2 pb-1">
-                <div className="flex-1 h-px bg-gray-200" />
-                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Guardadas vencidas</span>
-                <div className="flex-1 h-px bg-gray-200" />
-              </div>
-              {sortedExpired.map(renderCard)}
-            </div>
-          )}
-        </>
+        <div className="space-y-4">
+          {sorted.map(renderCard)}
+        </div>
       )}
     </div>
   )
@@ -1229,7 +1046,7 @@ function ArchivedPostCard({
         />
       )}
 
-      <div className="bg-white border rounded-xl p-4 space-y-3 opacity-70">
+      <div className="bg-white border rounded-2xl p-4 space-y-3 shadow-sm overflow-hidden transition-all hover:shadow-md opacity-70">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -1242,10 +1059,10 @@ function ArchivedPostCard({
             <p className="text-gray-600 text-sm line-clamp-2">{post.description}</p>
           </div>
           <div className="flex items-center gap-1 shrink-0">
-            <button onClick={() => setConfirm('unarchive')} className="p-1.5 rounded-lg text-gray-400 hover:bg-green-50 hover:text-green-600 transition-colors" title="Desarchivar">
+            <button onClick={(e) => { e.stopPropagation(); setConfirm('unarchive') }} className="p-1.5 rounded-lg text-gray-400 hover:bg-green-50 hover:text-green-600 transition-colors" title="Desarchivar">
               <ArchiveRestore className="w-4 h-4" />
             </button>
-            <button onClick={() => setConfirm('delete')} className="p-1.5 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors" title="Eliminar">
+            <button onClick={(e) => { e.stopPropagation(); setConfirm('delete') }} className="p-1.5 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors" title="Eliminar">
               <Trash2 className="w-4 h-4" />
             </button>
           </div>

@@ -480,3 +480,6 @@ Al desactivar el pin, la publicación regresa al flujo normal del feed sin neces
 Desarrollado para la comunidad **UTEC** · versión **v1.1.0**
 
 </div>
+
+
+

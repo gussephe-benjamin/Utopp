@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import ReactDOM from 'react-dom'
 import { X, Bookmark, ChevronLeft, ChevronRight, Calendar, ExternalLink } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { getPost } from '../api/posts.api'
 import { unsavePost } from '../api/saved-posts.api'
 import { POST_TYPE_LABELS, POST_TYPE_ICONS, SUBTYPE_LABELS } from '../types/post.types'
@@ -72,6 +73,7 @@ const timeAgo = (iso?: string) => {
 const MAX_DESC_CHARS = 1000
 
 export default function PostDetailModal({ postId, onClose, onUnsaved }: PostDetailModalProps) {
+  const navigate = useNavigate()
   const [post, setPost]             = useState<PostDetail | null>(null)
   const [loading, setLoading]       = useState(false)
   const [imgIdx, setImgIdx]         = useState(0)
@@ -191,21 +193,32 @@ export default function PostDetailModal({ postId, onClose, onUnsaved }: PostDeta
             <div className="space-y-0">
               {/* Author row */}
               <div className="px-5 pt-4 pb-3 flex items-center gap-3">
-                {post.user?.profile_image_url ? (
-                  <img
-                    src={post.user.profile_image_url}
-                    alt={userName}
-                    className="w-9 h-9 rounded-full object-cover shrink-0 border border-gray-200"
-                  />
-                ) : (
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-sm font-semibold shrink-0">
-                    {userName.charAt(0).toUpperCase()}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const target = post.user_id
+                    navigate(target ? `/app/perfil/${target}` : '/app/perfil')
+                    onClose()
+                  }}
+                  className="flex items-center gap-3 min-w-0 text-left hover:opacity-90 transition-opacity"
+                  title="Ver perfil del autor"
+                >
+                  {post.user?.profile_image_url ? (
+                    <img
+                      src={post.user.profile_image_url}
+                      alt={userName}
+                      className="w-9 h-9 rounded-full object-cover shrink-0 border border-gray-200"
+                    />
+                  ) : (
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-sm font-semibold shrink-0">
+                      {userName.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 truncate">{userName}</p>
+                    <p className="text-xs text-gray-400">{timeAgo(post.created_at)}</p>
                   </div>
-                )}
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 truncate">{userName}</p>
-                  <p className="text-xs text-gray-400">{timeAgo(post.created_at)}</p>
-                </div>
+                </button>
               </div>
 
               {/* Image carousel (slide CSS) */}
