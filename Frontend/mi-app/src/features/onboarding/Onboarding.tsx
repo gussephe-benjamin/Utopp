@@ -75,76 +75,100 @@ export default function Onboarding(): JSX.Element {
     }
   };
 
-  return (
+  const footerDescription = (): JSX.Element | null => {
+    if (step === 1 && data.career) {
+      return (
+        <p className="text-center text-xs text-violet-100/85 pt-3 px-4 animate-in fade-in duration-300">
+          Seleccionaste: <span className="font-semibold text-white">{data.career}</span>
+        </p>
+      );
+    }
 
-    <div
-      className="px-4"
-      style={{ maxWidth: step === 1 ? 400 : 400, margin: "40px auto", transition: "max-width 0.4s ease" }}
-    >
-
-      <StepBar step={step}/>
-    
-      {/* CONTENIDO */}
-      <div
-        className="pb-28"
-        style={{
-          transition: "all 0.8s",
-          opacity: 1,
-        }}
-      >
-        
-        {step === 1 && <StepCareer data={data} setData={setData} />}
-        {step === 2 && <CycleStep data={data} setData={setData} />}
-        {step === 3 && <StepInterests data={data} setData={setData} />}
-        {step === 4 && <StepAvailability data={data} setData={setData} />}
-
-      </div>
-
-      {/* BOTONES */}
-      <div className="sticky bottom-0 z-20 border-t border-gray-200 bg-white/95 backdrop-blur">
-        {step === 1 && data.career && (
-          <p className="text-center text-xs text-gray-400 pt-3 px-4 animate-in fade-in duration-300">
-            Seleccionaste: <span className="font-semibold text-gray-600">{data.career}</span>
-          </p>
-        )}
-        <div className="flex justify-between gap-4 py-4 px-0">
-        
-        {/* BOTÓN ATRÁS */}
-        {step > 1 && (
-          <button
-            onClick={back}
-            className="px-6 py-3 rounded-2xl border-2 border-black bg-neutral-900 text-white font-semibold text-sm transition-all duration-300 hover:text-black hover:bg-white/20 hover:border-black active:scale-95"
-          >
-            ← Atrás
-          </button>
-        )}
-
-        {/* Botón Siguiente / Finalizar */}
-        <button
-          disabled={!canContinue()}
-          onClick={step < 4 ? next : finishOnboarding}
-          className={`flex-1 py-3 rounded-2xl font-semibold transition-all duration-300 transform active:scale-[0.98] flex items-center justify-center
-            ${
-              canContinue()
-                ? 'bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white shadow-lg shadow-violet-500/30 hover:brightness-105'
-                : 'bg-white/10 text-white/50 cursor-not-allowed'
-            }`}
-        >
-          {step < 4 ? (
-            showCareerInNext ? (
-              <span className="flex flex-col leading-tight text-center">
-                <span>Siguiente</span>
-              </span>
-            ) : (
-              'Siguiente'
-            )
-          ) : (
-            'Finalizar'
-          )}
-        </button>
+    if (step === 3) {
+      const selectedCount = data.interests.length;
+      return (
+        <div className="text-center pt-3 px-4 animate-in fade-in duration-300">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/15 backdrop-blur-sm">
+            <span className="text-violet-50 font-medium text-sm">
+              {selectedCount} {selectedCount === 1 ? "interés seleccionado" : "intereses seleccionados"}
+            </span>
+            {selectedCount >= 3 && <span className="text-fuchsia-300 font-semibold">✓</span>}
+          </div>
         </div>
-      </div>
+      );
+    }
 
+    if (step === 4) {
+      return (
+        <p className="text-center text-xs text-violet-100/85 pt-3 px-4 animate-in fade-in duration-300">
+          Esto nos ayuda a recomendarte la cantidad ideal de eventos
+        </p>
+      );
+    }
+
+    return null;
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-[#2B0F56] via-[#220C49] to-[#120826] text-white">
+      <div className="mx-auto max-w-md h-screen relative overflow-hidden">
+        <header className="sticky top-0 z-30 px-4 pt-6 pb-4 bg-gradient-to-b from-[#2B0F56]/95 via-[#240D4E]/90 to-transparent backdrop-blur-sm">
+          <div className="flex items-center justify-between mb-4">
+            <button
+              type="button"
+              onClick={step > 1 ? back : undefined}
+              className={`text-sm font-semibold transition-colors ${
+                step > 1 ? "text-violet-100 hover:text-white" : "text-violet-100/40 cursor-default"
+              }`}
+            >
+              {step > 1 ? "←" : " "}
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("/app/inicio", { replace: true })}
+              className="text-sm font-semibold text-violet-100/70 hover:text-white transition-colors"
+            >
+              Saltar
+            </button>
+          </div>
+          <StepBar step={step} />
+        </header>
+
+        <main className="h-[calc(100vh-210px)] overflow-y-auto px-4 pb-8">
+          <div className="pb-8 transition-all duration-700 opacity-100">
+            {step === 1 && <StepCareer data={data} setData={setData} />}
+            {step === 2 && <CycleStep data={data} setData={setData} />}
+            {step === 3 && <StepInterests data={data} setData={setData} />}
+            {step === 4 && <StepAvailability data={data} setData={setData} />}
+          </div>
+        </main>
+
+        <footer className="sticky bottom-0 z-30 border-t border-white/10 bg-[#140A2D]/90 backdrop-blur-md px-4 pb-5">
+          {footerDescription()}
+          <div className="flex justify-between gap-4 py-4">
+            {step > 1 && (
+              <button
+                onClick={back}
+                className="px-6 py-3 rounded-2xl border border-white/25 bg-white/5 text-violet-50 font-semibold text-sm transition-all duration-300 hover:bg-white/10 active:scale-95"
+              >
+                ← Atrás
+              </button>
+            )}
+
+            <button
+              disabled={!canContinue()}
+              onClick={step < 4 ? next : finishOnboarding}
+              className={`flex-1 py-3 rounded-2xl font-semibold transition-all duration-300 transform active:scale-[0.98] flex items-center justify-center ${
+                canContinue()
+                  ? "bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white shadow-lg shadow-violet-500/30 hover:brightness-105"
+                  : "bg-white/10 text-white/50 cursor-not-allowed"
+              }`}
+            >
+              {step < 4 ? (showCareerInNext ? <span className="leading-tight text-center">Siguiente</span> : "Siguiente") : "Finalizar"}
+            </button>
+          </div>
+        </footer>
+      </div>
     </div>
   );
 }
