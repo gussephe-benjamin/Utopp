@@ -119,27 +119,17 @@ def list_participants(
 
 def get_participant_counts(db: Session, post_id: int) -> ParticipantCountOut:
     """Obtiene conteo de participantes por estado."""
-    interested = db.scalar(
-        select(func.count()).select_from(PostParticipant).where(
-            PostParticipant.post_id == post_id,
-            PostParticipant.status == PostParticipantStatus.interested
-        )
-    ) or 0
-    
-    going = db.scalar(
-        select(func.count()).select_from(PostParticipant).where(
-            PostParticipant.post_id == post_id,
-            PostParticipant.status == PostParticipantStatus.going
-        )
-    ) or 0
-    
-    attended = db.scalar(
-        select(func.count()).select_from(PostParticipant).where(
-            PostParticipant.post_id == post_id,
-            PostParticipant.status == PostParticipantStatus.attended
-        )
-    ) or 0
-    
+    counts = dict(
+        db.execute(
+            select(PostParticipant.status, func.count())
+            .where(PostParticipant.post_id == post_id)
+            .group_by(PostParticipant.status)
+        ).all()
+    )
+    interested = counts.get(PostParticipantStatus.interested, 0)
+    going = counts.get(PostParticipantStatus.going, 0)
+    attended = counts.get(PostParticipantStatus.attended, 0)
+
     return ParticipantCountOut(
         interested=interested,
         going=going,

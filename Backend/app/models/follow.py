@@ -2,13 +2,13 @@ from datetime import datetime
 from sqlalchemy import BigInteger, ForeignKey, DateTime, UniqueConstraint, Index, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.database.base import Base
+from app.database.base import Base, BIGINT_PK
 
 
 class Follow(Base):
     __tablename__ = "follows"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    id: Mapped[int] = mapped_column(BIGINT_PK, primary_key=True, autoincrement=True)
     
     follower_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), 
@@ -35,4 +35,5 @@ class Follow(Base):
     __table_args__ = (
         UniqueConstraint("follower_id", "following_id", name="uq_follows_follower_following"),
         Index("idx_follows_following_created", "following_id", "created_at"),
+        Index("idx_follows_follower_created", "follower_id", "created_at"),
     )

@@ -65,40 +65,27 @@ def list_saved_posts(
     offset: int = 0
 ) -> tuple[List[Post], int]:
     """Lista los posts guardados de un usuario."""
-    # Contar total
+    # Contar total de guardados del usuario
     total = db.scalar(
         select(func.count()).select_from(SavedPost).where(
             SavedPost.user_id == user_id
         )
     ) or 0
-    
-    # Obtener IDs de posts guardados
-    saved_post_ids = db.scalars(
-        select(SavedPost.post_id)
-        .where(SavedPost.user_id == user_id)
-        .order_by(SavedPost.saved_at.desc())
-        .offset(offset)
-        .limit(limit)
-    ).all()
-    
-    if not saved_post_ids:
-        return [], total
-    
-    # Obtener posts con relaciones
+
     posts = db.scalars(
         select(Post)
         .options(
             selectinload(Post.user),
             selectinload(Post.images),
         )
+        .join(SavedPost, SavedPost.post_id == Post.id)
         .where(
-            Post.id.in_(saved_post_ids),
+            SavedPost.user_id == user_id,
             Post.status == PostStatus.published
         )
+        .order_by(SavedPost.saved_at.desc())
+        .offset(offset)
+        .limit(limit)
     ).all()
-    
-    # Mantener el orden de saved_at
-    post_map = {p.id: p for p in posts}
-    ordered_posts = [post_map[pid] for pid in saved_post_ids if pid in post_map]
-    
-    return ordered_posts, total
+
+    return list(posts), total

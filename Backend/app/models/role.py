@@ -1,4 +1,4 @@
-from sqlalchemy import SmallInteger, String, Text
+from sqlalchemy import Integer, SmallInteger, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.base import Base
@@ -7,7 +7,7 @@ from app.database.base import Base
 class Role(Base):
     __tablename__ = "roles"
 
-    id: Mapped[int] = mapped_column(SmallInteger, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     
     identifier: Mapped[int] = mapped_column(SmallInteger, nullable=False, unique=True)
 

@@ -167,6 +167,20 @@ def assign_student_role(db: Session, user_id: int) -> None:
     replace_user_role(db, user_id, student_role)
 
 
+def seed_default_roles_if_empty(db: Session) -> bool:
+    """Si la tabla `roles` está vacía, crea el catálogo canónico.
+
+    No toca filas existentes (seguro en despliegues con datos o roles extra).
+    """
+    n = db.scalar(select(func.count()).select_from(Role)) or 0
+    if n > 0:
+        return False
+    for name, (description, identifier) in DEFAULT_ROLES.items():
+        db.add(Role(name=name, description=description, identifier=identifier))
+    db.commit()
+    return True
+
+
 def ensure_default_roles(db: Session) -> dict:
     """Sincroniza estrictamente el catálogo de roles base del sistema.
 

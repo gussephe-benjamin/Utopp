@@ -33,9 +33,9 @@ class UserResponse_total(BaseModel):
 
 class UserCreate(BaseModel):
     """Datos requeridos para registrar un usuario."""
-    email: EmailStr
-    password: str = Field(min_length=6)
-    full_name: str | None = None
+    email: EmailStr = Field(..., max_length=255)
+    password: str = Field(min_length=6, max_length=128)
+    full_name: str | None = Field(None, max_length=255)
 
 
 class UserBasicOut(BaseModel):

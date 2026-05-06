@@ -8,6 +8,7 @@ asyncpg
 pydantic_settings
 python-jose[cryptography]
 passlib
+bcrypt>=3.1.7,<4
 pyyaml
 email-validator
 google-auth
