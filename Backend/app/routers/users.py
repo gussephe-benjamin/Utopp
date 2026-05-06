@@ -25,8 +25,11 @@ router = APIRouter()
 # Auth: No requerida
 # ============================================================
 @router.get("/all-users", response_model=list[UserResponse_total])
-def list_users(db: Session = Depends(get_db)):
-    return get_all_users(db)
+def list_users(
+    pagination: PaginationParams = Depends(),
+    db: Session = Depends(get_db),
+):
+    return get_all_users(db, offset=pagination.offset, limit=pagination.size)
 
 
 # ============================================================
@@ -273,28 +276,28 @@ def get_followers(
     pagination: PaginationParams = Depends(),
     db: Session = Depends(get_db),
 ):
-    follows = db.scalars(
-        select(Follow)
+    rows = db.execute(
+        select(
+            User.id,
+            User.full_name,
+            User.email,
+            Follow.created_at.label("followed_at"),
+        )
+        .join(User, User.id == Follow.follower_id)
         .where(Follow.following_id == user_id)
         .order_by(Follow.created_at.desc())
         .offset(pagination.offset)
         .limit(pagination.size)
     ).all()
-
-    result = []
-    for f in follows:
-        follower = db.get(User, f.follower_id)
-        if follower:
-            result.append(
-                FollowerOut(
-                    user_id=follower.id,
-                    full_name=follower.full_name,
-                    email=follower.email,
-                    followed_at=f.created_at,
-                )
-            )
-
-    return result
+    return [
+        FollowerOut(
+            user_id=row.id,
+            full_name=row.full_name,
+            email=row.email,
+            followed_at=row.followed_at,
+        )
+        for row in rows
+    ]
 
 
 # ============================================================
@@ -308,28 +311,28 @@ def get_following(
     pagination: PaginationParams = Depends(),
     db: Session = Depends(get_db),
 ):
-    follows = db.scalars(
-        select(Follow)
+    rows = db.execute(
+        select(
+            User.id,
+            User.full_name,
+            User.email,
+            Follow.created_at.label("followed_at"),
+        )
+        .join(User, User.id == Follow.following_id)
         .where(Follow.follower_id == user_id)
         .order_by(Follow.created_at.desc())
         .offset(pagination.offset)
         .limit(pagination.size)
     ).all()
-
-    result = []
-    for f in follows:
-        following = db.get(User, f.following_id)
-        if following:
-            result.append(
-                FollowerOut(
-                    user_id=following.id,
-                    full_name=following.full_name,
-                    email=following.email,
-                    followed_at=f.created_at,
-                )
-            )
-
-    return result
+    return [
+        FollowerOut(
+            user_id=row.id,
+            full_name=row.full_name,
+            email=row.email,
+            followed_at=row.followed_at,
+        )
+        for row in rows
+    ]
 
 
 # ============================================================

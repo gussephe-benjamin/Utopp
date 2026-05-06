@@ -55,9 +55,9 @@ def authenticate_user(db: Session, email: str, password: str) -> User | None:
     return user
 
 
-def get_all_users(db: Session):
-    """Retorna todos los usuarios registrados."""
-    stmt = select(User)
+def get_all_users(db: Session, *, offset: int = 0, limit: int = 100):
+    """Retorna usuarios con límite para evitar lecturas masivas."""
+    stmt = select(User).offset(offset).limit(limit)
     return db.scalars(stmt).all()
 
 
@@ -68,8 +68,6 @@ def get_current_user(
     db: Session = Depends(get_db)
 ) -> User:
     """Decodifica el JWT y retorna el usuario autenticado."""
-
-    print("TOKEN RECIBIDO:", token)
     
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -77,34 +75,25 @@ def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        print("SECRET_KEY:", SECRET_KEY)
-        print("ALGORITHM:", ALGORITHM)
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        print("PAYLOAD:", payload)
 
         user_id: str = payload.get("sub")
         if user_id is None:
-            print("No user_id in payload")
             raise credentials_exception
     except JWTError as e:
-        print("JWT Error:", str(e))
         if "expired" in str(e).lower() or "signature has expired" in str(e).lower():
-            print("Token expirado - usuario debe iniciar sesión nuevamente")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token expirado. Por favor inicia sesión nuevamente.",
                 headers={"WWW-Authenticate": "Bearer"},
             )
         else:
-            print("Token inválido o malformado")
             raise credentials_exception
 
     user = db.query(User).filter(User.id == int(user_id)).first()
     if user is None:
-        print("User not found for id:", user_id)
         raise credentials_exception
-    
-    print("User authenticated:", user.email)
+
     return user
 
 

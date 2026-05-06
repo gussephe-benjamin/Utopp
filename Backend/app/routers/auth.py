@@ -35,8 +35,11 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
     
     dominio_permitido = "utec"
     
-    if (is_domUtec(user.email) != True):
-        raise ValueError(f"El correo {user.email} no pertenece a la organización {dominio_permitido}")
+    if is_domUtec(user.email) is not True:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"El correo {user.email} no pertenece a la organización {dominio_permitido}",
+        )
         
     token = create_access_token(subject=str(user.id))
     return TokenOut(access_token=token)
@@ -53,8 +56,11 @@ def register(payload: UserCreate, db: Session = Depends(get_db)):
     if get_user_by_email(db, payload.email):
         raise HTTPException(status_code=400, detail="Email ya registrado")
     org = "utec"
-    if (is_domUtec(payload.email) != True):
-        raise ValueError(f"El correo {payload.email} no pertenece a la organización {org}")
+    if is_domUtec(payload.email) is not True:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"El correo {payload.email} no pertenece a la organización {org}",
+        )
     user = create_user(db, payload.email, payload.password, payload.full_name)
     return user
 
@@ -72,7 +78,6 @@ def refresh_token(
     db: Session = Depends(get_db)
 ):
     """Genera un nuevo token para un usuario autenticado"""
-    print("🔄 Refresh token para usuario:", current_user.email)
     new_token = create_access_token(subject=str(current_user.id))
     return TokenOut(access_token=new_token)
 

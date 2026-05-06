@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlalchemy import BigInteger, Enum, ForeignKey, DateTime, UniqueConstraint, Index, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.database.base import Base
+from app.database.base import Base, BIGINT_PK
 
 
 class PostParticipantStatus(str, enum.Enum):
@@ -15,7 +15,7 @@ class PostParticipantStatus(str, enum.Enum):
 class PostParticipant(Base):
     __tablename__ = "post_participants"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    id: Mapped[int] = mapped_column(BIGINT_PK, primary_key=True, autoincrement=True)
     
     post_id: Mapped[int] = mapped_column(
         ForeignKey("posts.id", ondelete="CASCADE"), 

@@ -1,10 +1,9 @@
 import enum
 from datetime import datetime
-from sqlalchemy import BigInteger, Boolean, DateTime, Enum, ForeignKey, SmallInteger, String, Text, func, text
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import BigInteger, Boolean, DateTime, Enum, ForeignKey, Index, JSON, SmallInteger, String, Text, func, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.database.base import Base
+from app.database.base import Base, BIGINT_PK
 
 class PostType(str, enum.Enum):
     international_opportunity = "international_opportunity"
@@ -92,7 +91,7 @@ class TimeStatus(str, enum.Enum):
 class Post(Base):
     __tablename__ = "posts"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    id: Mapped[int] = mapped_column(BIGINT_PK, primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
@@ -148,12 +147,12 @@ class Post(Base):
     )
 
     specific_fields: Mapped[dict] = mapped_column(
-        JSONB,
-        nullable=False,
-        server_default=text("'{}'::jsonb"),
+        JSON,
+        server_default=text("'{}'"),
+        nullable=False
     )
     
-    tags: Mapped[list[str] | None] = mapped_column(JSONB, nullable=True)
+    tags: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
 
     legacy_source: Mapped[str | None] = mapped_column(String(50), nullable=True)
     
@@ -186,4 +185,22 @@ class Post(Base):
         back_populates="post",
         cascade="all, delete-orphan",
         order_by="PostLink.position",
+    )
+
+    __table_args__ = (
+        Index(
+            "idx_posts_feed_ranked",
+            "status",
+            "is_pinned",
+            "pin_priority",
+            "created_at",
+        ),
+        Index(
+            "idx_posts_feed_filtering",
+            "status",
+            "post_type",
+            "subtype",
+            "deadline_at",
+            "created_at",
+        ),
     )

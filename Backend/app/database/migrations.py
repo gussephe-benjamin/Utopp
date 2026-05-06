@@ -3,7 +3,9 @@ from sqlalchemy.engine import Engine
 
 
 def run_migrations(engine: Engine) -> None:
-    """Ejecuta migraciones manuales necesarias para la BD existente."""
+    """Ejecuta migraciones manuales necesarias para la BD existente (solo PostgreSQL)."""
+    if engine.dialect.name != "postgresql":
+        return
     with engine.connect() as conn:
         # 1. Agregar valor 'no_deadline' al enum time_status_enum si no existe
         conn.execute(text("""
@@ -45,6 +47,34 @@ def run_migrations(engine: Engine) -> None:
                     ALTER TYPE time_status_enum ADD VALUE 'out_of_time';
                 END IF;
             END$$;
+        """))
+
+        conn.commit()
+
+        # 13. Índices de rendimiento para feed y relaciones sociales
+        conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS idx_posts_feed_ranked
+            ON posts (status, is_pinned, pin_priority, created_at DESC);
+        """))
+        conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS idx_posts_feed_filtering
+            ON posts (status, post_type, subtype, deadline_at, created_at DESC);
+        """))
+        conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS idx_follows_follower_created
+            ON follows (follower_id, created_at DESC);
+        """))
+        conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS idx_saved_posts_user_saved
+            ON saved_posts (user_id, saved_at DESC);
+        """))
+        conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS idx_participants_post_status
+            ON post_participants (post_id, status);
+        """))
+        conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS idx_posts_tags_gin
+            ON posts USING GIN (tags);
         """))
 
         conn.commit()

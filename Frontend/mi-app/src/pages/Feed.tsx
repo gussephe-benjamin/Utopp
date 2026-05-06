@@ -166,6 +166,7 @@ const ScoreExplanation = ({ score }: { score?: number }) => {
  * Incluye carrusel de imágenes (carga lazy), botones de links, avatar real,
  * email + tiempo relativo, menú de guardar post.
  */
+
 const PostCard = ({ post, currentUserId, onEdited }: { post: FeedPostOut; currentUserId: number | null; onEdited: (updated: FeedPostOut) => void }) => {
   const navigate = useNavigate()
 
@@ -275,6 +276,8 @@ const PostCard = ({ post, currentUserId, onEdited }: { post: FeedPostOut; curren
 
   const prevImg = () => setImgIndexSaved(Math.max(0, imgIndex - 1))
   const nextImg = () => setImgIndexSaved(Math.min(totalImages - 1, imgIndex + 1))
+
+
 
   return (
     <>
@@ -452,6 +455,7 @@ const PostCard = ({ post, currentUserId, onEdited }: { post: FeedPostOut; curren
         </div>
       )}
 
+
       {/* ── Contenido: título, descripción, deadline, tags ─ */}
       <div className="px-4 pt-3 pb-2">
         {post.title && (
@@ -569,6 +573,8 @@ const PostCard = ({ post, currentUserId, onEdited }: { post: FeedPostOut; curren
     </>
   )
 }
+
+
 
 // ── Decoradores SVG del banner ─────────────────────────────
 
