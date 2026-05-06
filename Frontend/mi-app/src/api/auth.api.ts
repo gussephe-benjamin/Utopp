@@ -15,6 +15,13 @@
 
 import api from "./axios"
 
+export interface AuthMeResponse {
+  id: number
+  email: string
+  onboarding_completed: boolean
+  needs_terms?: boolean
+}
+
 // ─── Auth clásica ────────────────────────────────────────
 
 /**
@@ -58,8 +65,8 @@ export async function refreshToken() {
  * Devuelve { id, email, onboarding_completed } del usuario autenticado.
  * Auth: Requerida.
  */
-export async function getMe() {
-  const { data } = await api.get("/auth/me")
+export async function getMe(): Promise<AuthMeResponse> {
+  const { data } = await api.get<AuthMeResponse>("/auth/me")
   return data
 }
 

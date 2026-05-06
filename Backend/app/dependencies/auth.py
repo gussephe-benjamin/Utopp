@@ -8,9 +8,15 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.database.session import get_db
 from app.models.user import User
+from app.services import legal_service
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
+
+_TERMS_DETAIL = {
+    "code": "TERMS_RECONSENT_REQUIRED",
+    "message": "Debes aceptar los términos y condiciones vigentes para continuar.",
+}
 
 
 def get_current_user(
@@ -45,7 +51,20 @@ def get_current_user(
     user = db.query(User).filter(User.id == int(user_id)).first()
     if user is None:
         raise credentials_exception
-    
+
+    return user
+
+
+def require_terms_accepted(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> User:
+    """Bloquea acceso a la API de negocio hasta aceptar la versión activa de términos."""
+    if not legal_service.user_has_valid_terms(db, user.id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=_TERMS_DETAIL,
+        )
     return user
 
 
@@ -69,4 +88,9 @@ def get_optional_user(
     except JWTError:
         return None
 
-    return db.query(User).filter(User.id == int(user_id)).first()
+    user = db.query(User).filter(User.id == int(user_id)).first()
+    if user is None:
+        return None
+    if not legal_service.user_has_valid_terms(db, user.id):
+        return None
+    return user

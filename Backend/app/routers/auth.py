@@ -3,7 +3,8 @@ from app.schemas.user import LoginRequest, TokenOut
 from app.schemas.onboarding import UserOnboarding_Response, OnboardingStatusOut, UserOnboardingData
 from app.schemas.user import UserCreate, UserOut
 from app.models.user import User
-from app.services.users_service import authenticate_user, create_user, get_current_user, get_user_by_email, create_google_user, is_domUtec
+from app.dependencies.auth import get_current_user
+from app.services.users_service import authenticate_user, create_user, get_user_by_email, create_google_user, is_domUtec
 from app.core.security import create_access_token
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -91,10 +92,15 @@ def refresh_token(
 # ============================================================
 @router.get("/me")
 def get_current_user_endpoint(
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
+    from app.services import legal_service
+
+    needs_terms = not legal_service.user_has_valid_terms(db, current_user.id)
     return {
         "id": current_user.id,
         "email": current_user.email,
-        "onboarding_completed": current_user.is_onboarding_completed
+        "onboarding_completed": current_user.is_onboarding_completed,
+        "needs_terms": needs_terms,
     }

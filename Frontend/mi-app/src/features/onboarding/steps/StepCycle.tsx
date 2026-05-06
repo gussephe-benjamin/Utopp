@@ -11,14 +11,6 @@ const cycles = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 export default function StepCycle({ data, setData }: StepCycleProps) {
   return (
     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <h2 className="text-lg font-semibold text-violet-50">
-        ¿En qué ciclo te encuentras?
-      </h2>
-
-      <p className="text-violet-100/80 text-sm">
-        Esto nos ayudará a recomendarte contenidos adecuados a tu nivel.
-      </p>
-
       <div className="flex flex-wrap gap-3">
         {cycles.map((cycle) => {
           const isSelected = data.cycle === cycle;

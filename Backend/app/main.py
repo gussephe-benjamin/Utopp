@@ -10,6 +10,7 @@ from app.database.session import engine, SessionLocal
 from app.database.base import Base
 from app.database.migrations import run_migrations
 from app.services import role_service
+from app.models import legal as _legal_models  # noqa: F401 — registra tablas legales en metadata
 logger = logging.getLogger("utopp.api")
 _slow_request_ms = int(os.getenv("SLOW_REQUEST_MS", "1000"))
 
@@ -18,6 +19,7 @@ from app.routers import (
     health,
     auth,
     googleAuth,
+    legal,
     setup,
     onboardings,
     users,
@@ -40,6 +42,9 @@ async def lifespan(app: FastAPI):
     db = SessionLocal()
     try:
         role_service.seed_default_roles_if_empty(db)
+        from app.services import legal_service
+
+        legal_service.seed_initial_terms_if_absent(db)
     finally:
         db.close()
 
@@ -103,6 +108,7 @@ def root_check():
 app.include_router(health.router)
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(googleAuth.router, prefix="/google", tags=["google-auth"])
+app.include_router(legal.router, prefix="/legal", tags=["legal"])
 app.include_router(setup.router, prefix="/setup", tags=["setup"])
 
 # ═══════════════════════════════════════════════════════════

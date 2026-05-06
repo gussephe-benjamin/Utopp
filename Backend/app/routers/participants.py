@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, status, Query
 from sqlalchemy.orm import Session
 
 from app.database.session import get_db
-from app.dependencies.auth import get_current_user
+from app.dependencies.auth import require_terms_accepted
 from app.dependencies.pagination import PaginationParams
 from app.models.user import User
 from app.models.event_participant import PostParticipantStatus
@@ -30,7 +30,7 @@ def create_participation(
     post_id: int,
     data: ParticipantCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_terms_accepted),
 ):
     return participant_service.create_participation(
         db,
@@ -50,7 +50,7 @@ def update_participation(
     post_id: int,
     data: ParticipantUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_terms_accepted),
 ):
     return participant_service.update_participation(
         db,
@@ -69,7 +69,7 @@ def update_participation(
 def delete_participation(
     post_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_terms_accepted),
 ):
     participant_service.delete_participation(
         db,

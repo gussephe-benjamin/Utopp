@@ -7,6 +7,11 @@ export const checkOnboardingCompleted = async (
   try {
     const user = await getMe()
 
+    if (user.needs_terms) {
+      navigate("/app/terms", { replace: true })
+      return
+    }
+
     if (user.onboarding_completed) {
       navigate("/app/inicio", { replace: true })
     }

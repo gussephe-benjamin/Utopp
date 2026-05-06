@@ -272,3 +272,72 @@ def run_migrations(engine: Engine) -> None:
         """))
 
         conn.commit()
+
+        # 14. Términos y condiciones versionados + aceptaciones (evidencia)
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS legal_documents (
+                id BIGSERIAL PRIMARY KEY,
+                slug VARCHAR(64) NOT NULL,
+                version VARCHAR(32) NOT NULL,
+                title VARCHAR(255),
+                content TEXT NOT NULL,
+                content_sha256 VARCHAR(64),
+                effective_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                published_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                is_active BOOLEAN NOT NULL DEFAULT FALSE,
+                superseded_by_id BIGINT REFERENCES legal_documents(id),
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            );
+        """))
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS terms_acceptances (
+                id BIGSERIAL PRIMARY KEY,
+                user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                legal_document_id BIGINT NOT NULL REFERENCES legal_documents(id),
+                accepted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                ip_address VARCHAR(64),
+                user_agent VARCHAR(512),
+                auth_method VARCHAR(32) NOT NULL DEFAULT 'google_oauth',
+                document_hash VARCHAR(64),
+                idempotency_key VARCHAR(64) UNIQUE
+            );
+        """))
+        conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS idx_terms_acceptances_user
+            ON terms_acceptances (user_id);
+        """))
+        conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS idx_terms_acceptances_user_accepted
+            ON terms_acceptances (user_id, accepted_at DESC);
+        """))
+        conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS idx_terms_acceptances_user_document
+            ON terms_acceptances (user_id, legal_document_id);
+        """))
+        conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS idx_legal_documents_slug
+            ON legal_documents (slug);
+        """))
+        conn.execute(text("""
+            CREATE UNIQUE INDEX IF NOT EXISTS uq_legal_one_active_per_slug
+            ON legal_documents (slug) WHERE is_active;
+        """))
+        conn.execute(text("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name = 'users' AND column_name = 'last_accepted_legal_document_id'
+                ) THEN
+                    ALTER TABLE users
+                    ADD COLUMN last_accepted_legal_document_id BIGINT
+                    REFERENCES legal_documents(id);
+                END IF;
+            END$$;
+        """))
+        conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS idx_users_last_accepted_legal
+            ON users (last_accepted_legal_document_id);
+        """))
+
+        conn.commit()

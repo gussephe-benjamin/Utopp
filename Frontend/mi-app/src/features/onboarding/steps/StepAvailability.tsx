@@ -27,14 +27,6 @@ export default function AvailabilityStep({ data, setData }: AvailabilityStepProp
 
   return (
     <div className="space-y-7">
-      {/* Título */}
-      <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <h1 className="text-3xl font-bold text-white mb-2">
-          ¿Cuántas horas <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-fuchsia-400">libres</span> tienes?
-        </h1>
-        <p className="text-violet-100/80 text-base">A la semana, aproximadamente</p>
-      </div>
-
       {/* Ilustración
       <div className="flex justify-center py-4 animate-in fade-in zoom-in duration-700">
         <div className="relative">
