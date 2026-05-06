@@ -1,8 +1,8 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../auth/useAuth";
-import { login as apiLogin, getMe } from "../../api/auth.api";
-import { isComplete } from "../../api/onboarding.api";
+import { login as apiLogin } from "../../api/auth.api";
+import { redirectAfterAuthSession } from "../../auth/postAuthRedirect";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle2 } from "lucide-react";
@@ -33,15 +33,7 @@ export default function Login() {
       const data = await apiLogin(email, password);
       const token = data.access_token;
       login(token);
-
-      const user = await getMe();
-
-      const response = await isComplete(user.id);
-      if (!response.onboarding_completed) {
-        navigate("/onboarding");
-      } else {
-        navigate("/app/inicio");
-      }
+      await redirectAfterAuthSession(navigate, { replace: false });
     } catch (err) {
       setError(parseAuthApiError(err));
     } finally {

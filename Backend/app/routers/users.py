@@ -5,7 +5,7 @@ from sqlalchemy import select, func
 from sqlalchemy.orm import Session, selectinload
 
 from app.database.session import get_db
-from app.dependencies.auth import get_current_user
+from app.dependencies.auth import require_terms_accepted
 from app.dependencies.pagination import PaginationParams
 from app.models.user import User
 from app.models.follow import Follow
@@ -40,7 +40,7 @@ def list_users(
 @router.get("/me", response_model=UserOut)
 def get_current_user_profile(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_terms_accepted),
 ):
     uid = current_user.id
     followers_count = db.scalar(
@@ -85,7 +85,7 @@ def get_current_user_profile(
 def update_current_user(
     data: UserUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_terms_accepted),
 ):
     update_data = data.model_dump(exclude_unset=True)
 
@@ -107,7 +107,7 @@ def update_current_user(
 def update_interests(
     payload: dict,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_terms_accepted),
 ):
     interests = payload.get("interests", [])
     svc_update_interests(db, user_id=current_user.id, interests=interests)
@@ -231,7 +231,7 @@ def get_user_posts(
 def follow_user(
     user_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_terms_accepted),
 ):
     if user_id == current_user.id:
         raise HTTPException(
@@ -259,7 +259,7 @@ def follow_user(
 def unfollow_user(
     user_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_terms_accepted),
 ):
     svc_unfollow(db, follower_id=current_user.id, following_id=user_id)
     return {"status": "unfollowed"}
@@ -345,7 +345,7 @@ def get_following(
 def remove_follower(
     follower_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_terms_accepted),
 ):
     follow = db.scalars(
         select(Follow).where(

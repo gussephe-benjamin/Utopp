@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import String, DateTime, func, Column, Boolean, JSON, Integer
+from sqlalchemy import String, DateTime, func, Boolean, JSON, Integer, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.base import Base
@@ -19,6 +19,9 @@ class User(Base):
     
     cycle: Mapped[int | None] = mapped_column(Integer, nullable= True)
     
-    google_id: Mapped[String|None] = mapped_column(String, unique= True, nullable= True)
+    google_id: Mapped[str | None] = mapped_column(String, unique=True, nullable=True)
+    last_accepted_legal_document_id: Mapped[int | None] = mapped_column(
+        ForeignKey("legal_documents.id"), nullable=True, index=True
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 

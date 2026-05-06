@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database.session import get_db
-from app.dependencies.auth import get_current_user
+from app.dependencies.auth import require_terms_accepted
 from app.models.user import User
 from app.models.user_profile_image import UserProfileImage
 
@@ -40,7 +40,7 @@ class ProfileImageOut(BaseModel):
 def set_profile_image(
     data: ProfileImageIn,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_terms_accepted),
 ):
     # Desactivar todas las imágenes activas del usuario
     existing = db.scalars(

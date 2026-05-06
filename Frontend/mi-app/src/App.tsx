@@ -7,6 +7,8 @@ import DashboardLayout from "./pages/Dashboard"
 import Onboarding from "./features/onboarding/Onboarding"
 import RegisterOG from "./pages/auth/RegisterOG"
 import Schedule from "./pages/Schedule"
+import TermsAcceptance from "./pages/TermsAcceptance"
+import TermsPublic from "./pages/TermsPublic"
 
 function App() {
   return (
@@ -18,6 +20,17 @@ function App() {
 
           {/* Ruta direccionamiento al Login */}
           <Route path="/login" element={<Login />} />
+
+          <Route path="/terms" element={<TermsPublic />} />
+
+          <Route
+            path="/app/terms"
+            element={
+              <ProtectedRoute>
+                <TermsAcceptance />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Rutas del dashboard con navegación compartida */}
           <Route

@@ -3,43 +3,57 @@ import { useAuth } from "./useAuth"
 import { useEffect, useState } from "react"
 import { getMe } from "../api/auth.api"
 
-
+type GateState =
+  | { status: "loading" }
+  | { status: "terms" }
+  | { status: "onboarding" }
+  | { status: "app" }
 
 export default function AppRoute() {
-  const [isLoading, setIsLoading] = useState(true)
-  const [isOnboardingCompleted, setIsOnboardingCompleted] = useState(false)
+  const [gate, setGate] = useState<GateState>({ status: "loading" })
   const { token, logout } = useAuth()
 
   useEffect(() => {
-    const checkOnboarding = async () => {
+    const run = async () => {
       if (!token) {
-        setIsLoading(false)
+        setGate({ status: "loading" })
         return
       }
 
       try {
         const user = await getMe()
-        setIsOnboardingCompleted(user.onboarding_completed)
+        if (user.needs_terms) {
+          setGate({ status: "terms" })
+          return
+        }
+        if (!user.onboarding_completed) {
+          setGate({ status: "onboarding" })
+          return
+        }
+        setGate({ status: "app" })
       } catch (error) {
-        console.error("Error verificando onboarding", error)
-        logout() // 👈 IMPORTANTE
-      } finally {
-        setIsLoading(false)
+        console.error("Error verificando sesión", error)
+        logout()
+        setGate({ status: "loading" })
       }
     }
 
-    checkOnboarding()
+    void run()
   }, [token, logout])
-
-  if (isLoading) {
-    return <div className="flex items-center justify-center min-h-screen">Cargando...</div>
-  }
 
   if (!token) {
     return <Navigate to="/login" replace />
   }
 
-  if (!isOnboardingCompleted) {
+  if (gate.status === "loading") {
+    return <div className="flex items-center justify-center min-h-screen">Cargando...</div>
+  }
+
+  if (gate.status === "terms") {
+    return <Navigate to="/app/terms" replace />
+  }
+
+  if (gate.status === "onboarding") {
     return <Navigate to="/onboarding" replace />
   }
 

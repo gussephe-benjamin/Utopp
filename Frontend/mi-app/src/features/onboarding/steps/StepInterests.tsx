@@ -6,13 +6,11 @@ import { INTERESTS } from "../../../constants/interests";
 interface InterestsStepProps {
   data: OnboardingData;
   setData: React.Dispatch<React.SetStateAction<OnboardingData>>;
-  minSelected?: number; // mínimo de intereses a seleccionar
 }
 
 export default function InterestsStep({
   data,
   setData,
-  minSelected = 3,
 }: InterestsStepProps) {
   const toggleInterest = (id: string) => {
     const current = data.interests || [];
@@ -23,29 +21,11 @@ export default function InterestsStep({
     setData({ ...data, interests: updated });
   };
 
-  const selectedCount = data.interests?.length || 0;
-  const remaining = Math.max(0, minSelected - selectedCount);
-
   return (
     <div className="space-y-10 ">
-      {/* Title section */}
-      <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-        <h1 className="text-3xl font-bold text-white mb-2">
-          Elige{" "}
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-fuchsia-400">
-            {remaining > 0 ? `${remaining} o más` : "tus"}
-          </span>{" "}
-          intereses
-        </h1>
-        <h2 className="text-2xl font-bold text-violet-50 mb-3">favoritos</h2>
-        <p className="text-violet-100/80 text-base">
-          Personalizaremos tu experiencia de eventos
-        </p>
-      </div>
-
       {/* Interests grid */}
       <div
-        className="grid grid-cols-3 gap-3 animate-in fade-in slide-in-from-bottom-6 duration-700"
+        className="grid grid-cols-3 gap-4 animate-in fade-in slide-in-from-bottom-6 duration-700"
         style={{ animationDelay: "100ms" }}
       >
         {INTERESTS.map((interest, index) => {
@@ -54,8 +34,10 @@ export default function InterestsStep({
             <button
               key={interest.id}
               onClick={() => toggleInterest(interest.id)}
-              className={`relative aspect-square rounded-3xl transition-all duration-300 transform active:scale-95 overflow-hidden ${
-                isSelected ? "ring-4 ring-white/40 scale-105" : "hover:scale-102"
+              className={`relative aspect-square rounded-3xl transition-all duration-300 active:scale-[0.98] overflow-hidden ${
+                isSelected
+                  ? "shadow-[0_0_0_2px_rgba(255,255,255,0.55),0_8px_24px_-4px_rgba(0,0,0,0.45)] z-[1]"
+                  : "ring-1 ring-white/10 hover:ring-white/20 hover:brightness-110"
               }`}
               style={{ animationDelay: `${index * 30}ms` }}
             >
@@ -74,10 +56,10 @@ export default function InterestsStep({
               />
 
               {/* Content */}
-              <div className="relative h-full flex flex-col items-center justify-center gap-2">
-                <span className="text-4xl">{interest.icon}</span>
+              <div className="relative flex h-full flex-col items-center justify-center gap-1 px-1 py-2">
+                <span className="text-3xl leading-none sm:text-[2rem]">{interest.icon}</span>
                 <span
-                  className={`font-medium text-sm ${
+                  className={`text-center font-medium text-xs leading-tight sm:text-sm ${
                     isSelected ? "text-white" : "text-white/70"
                   }`}
                 >

@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.database.session import get_db
-from app.dependencies.auth import get_current_user
+from app.dependencies.auth import require_terms_accepted
 from app.dependencies.pagination import PaginationParams
 from app.models.user import User
 from app.schemas.post import PostOut
@@ -23,7 +23,7 @@ router = APIRouter()
 def save_post(
     post_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_terms_accepted),
 ):
     saved_post_service.save_post(db, user_id=current_user.id, post_id=post_id)
     return {"status": "saved"}
@@ -39,7 +39,7 @@ def save_post(
 def unsave_post(
     post_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_terms_accepted),
 ):
     saved_post_service.unsave_post(db, user_id=current_user.id, post_id=post_id)
     return {"status": "unsaved"}
@@ -56,7 +56,7 @@ def unsave_post(
 def get_saved_posts(
     pagination: PaginationParams = Depends(),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_terms_accepted),
 ):
     posts, _ = saved_post_service.list_saved_posts(
         db,

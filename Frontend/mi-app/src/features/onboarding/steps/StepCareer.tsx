@@ -63,15 +63,6 @@ export default function CareerStep({ data, setData }: CareerStepProps) {
 
   return (
     <div className="space-y-6">
-      {/* Title section */}
-      <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 ">
-        <h1 className="text-3xl font-bold text-white mb-2">
-          Hola <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-fuchsia-400">estudiante</span>,
-        </h1>
-        <h2 className="text-2xl font-bold text-violet-50 mb-3">¡cuéntanos de ti!</h2>
-        <p className="text-violet-100/80 text-base">¿Qué carrera estudias actualmente?</p>
-      </div>
-
       {/* Faculties in vertical layout */}
       <div className="grid grid-cols-1 gap-4 animate-in fade-in slide-in-from-bottom-6 duration-700">
         {faculties.map((faculty) => (
@@ -79,7 +70,7 @@ export default function CareerStep({ data, setData }: CareerStepProps) {
 
             {/* Faculty header */}
             <div className={`text-center py-2 px-3 rounded-xl bg-gradient-to-r ${faculty.accent} mb-1`}>
-              <span className="text-white text-xs font-bold leading-tight block">{faculty.label}</span>
+              <span className="block text-sm font-bold leading-tight text-white">{faculty.label}</span>
             </div>
 
             {/* Career cards — vertical stack */}
@@ -99,7 +90,7 @@ export default function CareerStep({ data, setData }: CareerStepProps) {
                   style={{ animationDelay: `${index * 40}ms` }}
                 >
                   <span className="text-lg leading-none mt-0.5 shrink-0">{career.icon}</span>
-                  <span className={`text-xs font-medium leading-snug flex-1 ${isSelected ? 'text-violet-50' : 'text-violet-100/80'}`}>
+                  <span className={`text-sm font-medium leading-snug flex-1 ${isSelected ? 'text-violet-50' : 'text-violet-100/80'}`}>
                     {career.label}
                   </span>
                   {isSelected && (

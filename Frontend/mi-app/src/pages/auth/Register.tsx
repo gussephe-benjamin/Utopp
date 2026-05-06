@@ -1,5 +1,5 @@
-import { useState, useMemo, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { register } from "../../api/auth.api";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
@@ -8,6 +8,7 @@ import GoogleRegister from "../../auth/GoogleRegister";
 import { checkUsername, checkEmail } from "../../api/users.api";
 import { AuthScreenLayout } from "../../shared/layout/AuthScreenLayout";
 import { parseRegisterApiError } from "../../shared/lib/apiErrors";
+import { getCurrentTerms, type TermsCurrent } from "../../api/legal.api";
 
 /** Registro completo por email/contraseña. No está montado en App; la ruta `/register` usa RegisterOG. */
 
@@ -42,6 +43,27 @@ export default function Register() {
   const [emailStatus, setEmailStatus]       = useState<"idle" | "checking" | "available" | "taken">("idle");
   const debounceRef      = useRef<ReturnType<typeof setTimeout> | null>(null);
   const emailDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const [termsDoc, setTermsDoc] = useState<TermsCurrent | null>(null);
+  const [termsLoadError, setTermsLoadError] = useState<string | null>(null);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const t = await getCurrentTerms();
+        if (!cancelled) setTermsDoc(t);
+      } catch {
+        if (!cancelled) setTermsLoadError("No se pudieron cargar los términos.");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const termsReady = !!termsDoc && !termsLoadError;
 
   const evaluatePassword = useCallback(async (pwd: string) => {
     if (!pwd) { setZxcvbnScore(0); setZxcvbnFeedback(""); return; }
@@ -142,6 +164,8 @@ export default function Register() {
     if (!/[0-9]/.test(form.password))                    return "La contraseña debe contener al menos un número";
     if (!/[^A-Za-z0-9]/.test(form.password))             return "La contraseña debe contener al menos un carácter especial";
     if (form.password !== form.confirmPassword)          return "Las contraseñas no coinciden";
+    if (!termsReady)                                     return "Espera a que carguen los términos o recarga la página.";
+    if (!termsAccepted)                                  return "Debes aceptar los términos y condiciones para registrarte.";
     return null;
   };
 
@@ -331,9 +355,33 @@ export default function Register() {
               </div>
             )}
 
+            {termsLoadError && (
+              <p className="text-red-600 text-sm">{termsLoadError}</p>
+            )}
+
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                className="mt-0.5 size-4 rounded border-gray-300 text-[#4F46E5] focus:ring-[#4F46E5]"
+                checked={termsAccepted}
+                onChange={(e) => setTermsAccepted(e.target.checked)}
+                disabled={!termsReady}
+              />
+              <span className="text-sm text-gray-700">
+                He leído y acepto los{" "}
+                <Link
+                  to="/terms"
+                  className="font-semibold text-[#4F46E5] underline underline-offset-2 hover:text-[#4338CA]"
+                >
+                  términos y condiciones
+                </Link>
+                .
+              </span>
+            </label>
+
             <Button
               type="submit"
-              disabled={loading}
+              disabled={loading || !termsReady || !termsAccepted}
               className="w-full h-14 bg-gradient-to-r from-[#4F46E5] to-[#6366F1] hover:from-[#4338CA] hover:to-[#5B21B6] text-white font-semibold rounded-2xl shadow-lg shadow-indigo-500/30 transition-all duration-300 hover:shadow-xl active:scale-[0.98]"
             >
               {loading ? (
@@ -353,7 +401,11 @@ export default function Register() {
               </div>
             </div>
 
-            <GoogleRegister />
+            <GoogleRegister
+              termsDocumentId={termsDoc?.id ?? null}
+              termsAccepted={termsAccepted}
+              termsReady={termsReady}
+            />
           </form>
 
           <p className="text-center mt-6 text-gray-500 text-sm">

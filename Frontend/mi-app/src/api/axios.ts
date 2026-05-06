@@ -35,6 +35,19 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config
+    if (error.response?.status === 403) {
+      const detail = error.response?.data?.detail
+      const code =
+        typeof detail === "object" && detail !== null && "code" in detail
+          ? String((detail as { code: string }).code)
+          : null
+      if (code === "TERMS_RECONSENT_REQUIRED") {
+        if (window.location.pathname !== "/app/terms") {
+          window.location.assign("/app/terms")
+        }
+        return Promise.reject(error)
+      }
+    }
     if (error.response?.status === 401 && !originalRequest._retried) {
       originalRequest._retried = true
       try {

@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.database.session import get_db
 from app.models.user_profile_image import UserProfileImage
-from app.dependencies.auth import get_current_user
+from app.dependencies.auth import require_terms_accepted
 from app.dependencies.permissions import require_owner_or_admin, require_owner_or_admin_archived, require_post_owner
 from app.dependencies.pagination import PaginationParams
 from app.models.user import User
@@ -31,7 +31,7 @@ router = APIRouter()
 def create_post(
     data: PostCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_terms_accepted),
 ):
     post = post_service.create_post(db, user_id=current_user.id, data=data)
     return post_service.get_post(db, post.id)
@@ -48,7 +48,7 @@ def create_post(
 def create_academic_project(
     data: AcademicProjectCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_terms_accepted),
 ):
     post = post_service.create_academic_project(db, user_id=current_user.id, data=data)
     return post_service.get_post(db, post.id)
@@ -63,7 +63,7 @@ def create_academic_project(
 def create_simple_post(
     data: SimplePostCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_terms_accepted),
 ):
     post = post_service.create_simple_post(db, user_id=current_user.id, data=data)
     return post_service.get_post(db, post.id)
@@ -78,7 +78,7 @@ def create_simple_post(
 def create_announcement(
     data: AnnouncementCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_terms_accepted),
 ):
     post = post_service.create_announcement(db, user_id=current_user.id, data=data)
     return post_service.get_post(db, post.id)
@@ -120,7 +120,7 @@ def update_post(
     data: PostUpdate,
     post: Post = Depends(require_owner_or_admin),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_terms_accepted),
 ):
     updated = post_service.update_post(db, post, data, user_id=current_user.id)
     return post_service.get_post(db, updated.id)

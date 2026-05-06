@@ -2,6 +2,7 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import PublicationWizard from '../components/PublicationWizard'
 import { useAuth } from '../auth/useAuth'
+import { getMe } from '../api/auth.api'
 import { getMyProfile } from '../api/users.api'
 import { useRole } from '../hooks/useRole'
 import Feed from '../pages/Feed'
@@ -19,6 +20,14 @@ export default function DashboardLayout() {
   const { logout } = useAuth()
 
   const { canCreate, allowedTypes } = useRole()
+
+  useEffect(() => {
+    getMe()
+      .then((u) => {
+        if (u.needs_terms) navigate('/app/terms', { replace: true })
+      })
+      .catch(() => {})
+  }, [navigate])
 
   const [showWizard, setShowWizard]           = useState(false)
   const [showOptionsModal, setShowOptionsModal] = useState(false)

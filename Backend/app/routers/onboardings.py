@@ -2,7 +2,8 @@ from app.database.session import get_db
 from app.schemas.user import LoginRequest, TokenOut
 from app.schemas.onboarding import UserOnboarding_Response, OnboardingStatusOut, UserOnboardingData, OnboardingID
 from app.models.user import User
-from app.services.users_service import authenticate_user, create_user, get_current_user, get_user_by_email, create_google_user, is_domUtec
+from app.dependencies.auth import require_terms_accepted
+from app.services.users_service import authenticate_user, create_user, get_user_by_email, create_google_user, is_domUtec
 from app.core.security import create_access_token
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -41,7 +42,7 @@ def login(payload: OnboardingID, db: Session = Depends(get_db)):
 # ============================================================
 @router.get("/me")
 def get_current_user_endpoint(
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_terms_accepted),
 ):
     return {
         "id": current_user.id,
@@ -59,7 +60,7 @@ def get_current_user_endpoint(
 @router.post("/update")
 def complete_onboarding(
     data: UserOnboardingData,
-    user: User = Depends(get_current_user),
+    user: User = Depends(require_terms_accepted),
     db: Session = Depends(get_db)
 ):
     

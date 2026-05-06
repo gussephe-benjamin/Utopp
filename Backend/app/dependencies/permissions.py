@@ -4,7 +4,7 @@ from fastapi import Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database.session import get_db
-from app.dependencies.auth import get_current_user
+from app.dependencies.auth import require_terms_accepted
 from app.models.user import User
 from app.models.post import Post, PostStatus
 from app.models.user_role import UserRole
@@ -41,7 +41,7 @@ def get_user_roles(user: User, db: Session) -> List[str]:
 
 
 def require_admin(
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_terms_accepted),
     db: Session = Depends(get_db)
 ) -> User:
     """Requiere que el usuario sea administrador."""
@@ -62,7 +62,7 @@ class PostPermissionChecker:
     def __call__(
         self,
         post_id: int,
-        current_user: User = Depends(get_current_user),
+        current_user: User = Depends(require_terms_accepted),
         db: Session = Depends(get_db)
     ) -> Post:
         post = db.query(Post).filter(Post.id == post_id).first()
@@ -97,7 +97,7 @@ require_owner_or_admin_archived = PostPermissionChecker(allow_archived=True)
 
 def require_post_owner(
     post_id: int,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_terms_accepted),
     db: Session = Depends(get_db)
 ) -> Post:
     """Requiere que el usuario sea el dueño del post (no admin)."""

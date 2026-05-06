@@ -2,8 +2,8 @@ import { GoogleLogin as GoogleLoginButton } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "./useAuth";
 import { useState } from "react";
-import { googleLogin, getMe } from "../api/auth.api";
-import { isComplete } from "../api/onboarding.api";
+import { googleLogin } from "../api/auth.api";
+import { redirectAfterAuthSession } from "./postAuthRedirect";
 
 export default function GoogleLogin() {
   const { login } = useAuth();
@@ -20,15 +20,7 @@ export default function GoogleLogin() {
       // Usa el interceptor de axios (base URL, headers, refresh automático)
       const data = await googleLogin(credentialResponse.credential);
       login(data.access_token);
-
-      const user = await getMe();
-      const response = await isComplete(user.id);
-
-      if (!response.onboarding_completed) {
-        navigate("/onboarding", { replace: true });
-      } else {
-        navigate("/app/inicio", { replace: true });
-      }
+      await redirectAfterAuthSession(navigate);
     } catch (err) {
       console.error("Error en Google login:", err);
       setError("No se pudo iniciar sesión con Google. Intenta de nuevo.");

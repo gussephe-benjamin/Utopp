@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.database.session import get_db
-from app.dependencies.auth import get_current_user
+from app.dependencies.auth import require_terms_accepted
 from app.models.user import User
 from app.schemas.role import RoleCreate, RoleOut, RoleWithUserOut, UserRoleOut
 from app.services import role_service
@@ -23,7 +23,7 @@ router = APIRouter()
 @router.get("/me", response_model=List[RoleWithUserOut])
 def get_my_roles(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_terms_accepted),
 ):
     roles = role_service.get_user_roles(db, current_user.id)
     return [
@@ -48,7 +48,7 @@ def get_my_roles(
 def get_roles_by_email(
     email: str = Query(..., description="Correo electrónico del usuario a consultar"),
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _: User = Depends(require_terms_accepted),
 ):
     user = get_user_by_email(db, email)
     if not user:
@@ -78,7 +78,7 @@ def get_roles_by_email(
 @router.get("/", response_model=List[RoleOut])
 def list_roles(
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _: User = Depends(require_terms_accepted),
 ):
     return role_service.list_roles(db)
 
@@ -93,7 +93,7 @@ def list_roles(
 def create_role(
     data: RoleCreate,
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _: User = Depends(require_terms_accepted),
 ):
     return role_service.create_role(db, data)
 
@@ -113,7 +113,7 @@ def assign_role_to_user(
     user_id: int,
     role_identifier: int,
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _: User = Depends(require_terms_accepted),
 ):
     user = get_user_by_id(db, user_id)
     if not user:
@@ -146,7 +146,7 @@ def remove_role_from_user(
     user_id: int,
     role_identifier: int,
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _: User = Depends(require_terms_accepted),
 ):
     user = get_user_by_id(db, user_id)
     if not user:
@@ -169,7 +169,7 @@ def remove_role_from_user(
 def get_user_roles(
     user_id: int,
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _: User = Depends(require_terms_accepted),
 ):
     user = get_user_by_id(db, user_id)
     if not user:

@@ -1,0 +1,160 @@
+openapi: 3.0.3
+info:
+  title: Utopp — Legal / Terms API (fragment)
+  version: 1.0.0
+  description: >
+    Contrato para aceptación versionada de Términos y Condiciones.
+    Integrar estos paths bajo el mismo servidor FastAPI (p. ej. prefijo /legal).
+
+paths:
+  /legal/terms/current:
+    get:
+      operationId: getCurrentTerms
+      summary: Documento de términos vigente
+      description: >
+        Devuelve la versión marcada como activa para el slug `terms`.
+        Público (sin Bearer) para que el frontend renderice el texto mostrado al usuario.
+      tags: [legal]
+      responses:
+        "200":
+          description: Versión activa encontrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TermsCurrentOut"
+        "404":
+          description: No hay versión activa publicada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOut"
+
+  /legal/accept:
+    post:
+      operationId: acceptTerms
+      summary: Registrar aceptación del usuario
+      description: >
+        Requiere JWT válido. El `document_id` debe coincidir exactamente con el documento
+        activo actual; si no, 400. Idempotente opcional vía header `Idempotency-Key`.
+      tags: [legal]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: false
+          schema:
+            type: string
+            maxLength: 64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AcceptTermsIn"
+      responses:
+        "200":
+          description: Aceptación registrada (o ya existía con misma clave de idempotencia)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AcceptTermsOut"
+        "400":
+          description: document_id no coincide con la versión activa o cuerpo inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorOut"
+        "401":
+          description: No autenticado
+        "409":
+          description: Conflicto de idempotencia (opcional, si se implementa estricto)
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    TermsCurrentOut:
+      type: object
+      required:
+        - id
+        - slug
+        - version
+        - effective_at
+        - published_at
+        - content
+      properties:
+        id:
+          type: integer
+          format: int64
+        slug:
+          type: string
+          example: terms
+        version:
+          type: string
+          example: "1"
+        title:
+          type: string
+          nullable: true
+        effective_at:
+          type: string
+          format: date-time
+        published_at:
+          type: string
+          format: date-time
+        content:
+          type: string
+          description: Texto legal completo (fuente de verdad servidor)
+        content_sha256:
+          type: string
+          nullable: true
+          description: Hash SHA-256 del contenido al publicar
+
+    AcceptTermsIn:
+      type: object
+      required:
+        - document_id
+      properties:
+        document_id:
+          type: integer
+          format: int64
+          description: Debe ser el id devuelto por GET /legal/terms/current
+
+    AcceptTermsOut:
+      type: object
+      required:
+        - ok
+        - legal_document_id
+        - accepted_at
+      properties:
+        ok:
+          type: boolean
+        legal_document_id:
+          type: integer
+          format: int64
+        accepted_at:
+          type: string
+          format: date-time
+
+    ErrorOut:
+      type: object
+      properties:
+        detail:
+          oneOf:
+            - type: string
+            - type: object
+              description: Objeto con code/message para errores de negocio
+
+  # Códigos HTTP reutilizables en rutas protegidas (guards)
+  # 403 — aplicación de negocio (JWT válido pero sin aceptación vigente)
+  examples:
+    TermsReconsentRequired:
+      summary: Requiere aceptar términos o re-consent
+      value:
+        detail:
+          code: TERMS_RECONSENT_REQUIRED
+          message: Debes aceptar los términos y condiciones vigentes para continuar.
