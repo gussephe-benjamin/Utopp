@@ -24,11 +24,23 @@ export function AccountOptionsSheet({
   onNavigateProfile,
   onLogout,
 }: AccountOptionsSheetProps) {
-  const panelStyle = {
-    top: anchor.top,
-    right: anchor.right,
-    minWidth: Math.max(anchor.minWidth, 288),
-  } as const
+  const isAbove = anchor.placement === 'above'
+  const panelStyle = isAbove
+    ? ({
+        bottom: anchor.bottom,
+        top: 'auto' as const,
+        right: anchor.right,
+        minWidth: Math.max(anchor.minWidth, 288),
+        maxHeight:
+          anchor.maxHeightPx != null
+            ? `min(640px, ${anchor.maxHeightPx}px)`
+            : `min(640px, calc(100vh - ${anchor.bottom ?? 0}px - 12px))`,
+      } as const)
+    : ({
+        top: anchor.top,
+        right: anchor.right,
+        minWidth: Math.max(anchor.minWidth, 288),
+      } as const)
 
   const menuRow =
     'w-full flex items-center gap-2.5 rounded-md pl-2.5 pr-2 py-1.5 text-left text-sm text-gray-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C026D3]/25 hover:bg-fuchsia-50 hover:text-[#9333EA]'
@@ -46,7 +58,9 @@ export function AccountOptionsSheet({
         aria-hidden
       />
       <div
-        className="fixed z-[70] w-max max-w-[min(26rem,calc(100vw-1rem))] rounded-xl border border-gray-200/90 bg-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-150 overflow-hidden"
+        className={`fixed z-[70] w-max max-w-[min(26rem,calc(100vw-1rem))] rounded-xl border border-gray-200/90 bg-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] animate-in fade-in zoom-in-95 duration-150 overflow-hidden ${
+          isAbove ? 'slide-in-from-bottom-1' : 'slide-in-from-top-1'
+        }`}
         style={panelStyle}
         role="dialog"
         aria-modal="true"

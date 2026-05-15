@@ -9,9 +9,23 @@ import Feed from '../pages/Feed'
 import Profile from '../pages/Profile'
 import { AppTopBar } from '../features/dashboard/components/AppTopBar'
 import { AccountOptionsSheet } from '../features/dashboard/components/AccountOptionsSheet'
+import { FeedBottomBar } from '../features/feed/components/FeedBottomBar'
 import { measureMenuAnchor, type MenuPopoverAnchor } from '../features/dashboard/popoverAnchor'
 
-const FALLBACK_MENU_ANCHOR: MenuPopoverAnchor = { top: 64, right: 12, minWidth: 40 }
+const FALLBACK_MENU_ANCHOR: MenuPopoverAnchor = {
+  placement: 'below',
+  top: 64,
+  right: 12,
+  minWidth: 40,
+}
+
+const FALLBACK_MENU_ANCHOR_ABOVE: MenuPopoverAnchor = {
+  placement: 'above',
+  bottom: 72,
+  right: 12,
+  minWidth: 40,
+  maxHeightPx: 480,
+}
 
 /**
  * Layout principal tras el login.
@@ -39,6 +53,18 @@ export default function DashboardLayout() {
 
   const accountMenuTriggerRef = useRef<HTMLButtonElement>(null)
   const feedFiltersTriggerRef = useRef<HTMLButtonElement>(null)
+  const accountMenuTriggerRefMobile = useRef<HTMLButtonElement>(null)
+  const feedFiltersTriggerRefMobile = useRef<HTMLButtonElement>(null)
+
+  const getAccountTriggerEl = () =>
+    window.matchMedia('(min-width: 640px)').matches
+      ? accountMenuTriggerRef.current
+      : accountMenuTriggerRefMobile.current
+
+  const getFeedFiltersTriggerEl = () =>
+    window.matchMedia('(min-width: 640px)').matches
+      ? feedFiltersTriggerRef.current
+      : feedFiltersTriggerRefMobile.current
   const [accountMenuAnchor, setAccountMenuAnchor] = useState<MenuPopoverAnchor | null>(null)
   const [filterPopoverAnchor, setFilterPopoverAnchor] = useState<MenuPopoverAnchor | null>(null)
 
@@ -119,6 +145,7 @@ export default function DashboardLayout() {
 
   const isFeedActive    = location.pathname === '/app/inicio'
   const isProfileActive = location.pathname.startsWith('/app/perfil')
+  const useMobileBottomNav = isFeedActive || isProfileActive
   const profileViewIdMatch = location.pathname.match(/^\/app\/perfil\/(\d+)$/)
   const profileViewId = profileViewIdMatch ? Number(profileViewIdMatch[1]) : undefined
 
@@ -129,15 +156,24 @@ export default function DashboardLayout() {
     }
   }, [isFeedActive])
 
+  const getMobileNavPopoverPlacement = useCallback((): 'below' | 'above' => {
+    if (!useMobileBottomNav) return 'below'
+    return window.matchMedia('(min-width: 640px)').matches ? 'below' : 'above'
+  }, [useMobileBottomNav])
+
   const syncAccountMenuAnchor = useCallback(() => {
-    const m = measureMenuAnchor(accountMenuTriggerRef.current)
+    const m = measureMenuAnchor(getAccountTriggerEl(), {
+      placement: getMobileNavPopoverPlacement(),
+    })
     if (m) setAccountMenuAnchor(m)
-  }, [])
+  }, [getMobileNavPopoverPlacement])
 
   const syncFilterMenuAnchor = useCallback(() => {
-    const m = measureMenuAnchor(feedFiltersTriggerRef.current)
+    const m = measureMenuAnchor(getFeedFiltersTriggerEl(), {
+      placement: getMobileNavPopoverPlacement(),
+    })
     if (m) setFilterPopoverAnchor(m)
-  }, [])
+  }, [getMobileNavPopoverPlacement])
 
   useLayoutEffect(() => {
     if (!showOptionsModal) return
@@ -172,6 +208,7 @@ export default function DashboardLayout() {
   return (
     <div className={`min-h-screen flex flex-col bg-gray-50 ${showWizard ? 'overflow-hidden' : ''}`}>
       <AppTopBar
+        hideOnMobileBottomNav={useMobileBottomNav}
         onBrandClick={() => {
           if (isFeedActive) {
             window.location.assign(`${window.location.origin}/app/inicio`)
@@ -183,7 +220,12 @@ export default function DashboardLayout() {
           setShowFeedFiltersSheet(false)
           setFilterPopoverAnchor(null)
           setAccountMenuAnchor(
-            measureMenuAnchor(accountMenuTriggerRef.current) ?? FALLBACK_MENU_ANCHOR,
+            measureMenuAnchor(getAccountTriggerEl(), {
+              placement: getMobileNavPopoverPlacement(),
+            }) ??
+              (getMobileNavPopoverPlacement() === 'above'
+                ? FALLBACK_MENU_ANCHOR_ABOVE
+                : FALLBACK_MENU_ANCHOR),
           )
           setShowOptionsModal(true)
         }}
@@ -192,7 +234,9 @@ export default function DashboardLayout() {
             ? () => {
                 setShowOptionsModal(false)
                 setFilterPopoverAnchor(
-                  measureMenuAnchor(feedFiltersTriggerRef.current) ?? FALLBACK_MENU_ANCHOR,
+                  measureMenuAnchor(getFeedFiltersTriggerEl(), {
+                    placement: 'below',
+                  }) ?? FALLBACK_MENU_ANCHOR,
                 )
                 setShowFeedFiltersSheet(true)
               }
@@ -209,8 +253,60 @@ export default function DashboardLayout() {
         feedFiltersTriggerRef={feedFiltersTriggerRef}
       />
 
-      <main className="flex-1 relative overflow-hidden pt-14">
-        <div className={`absolute inset-0 overflow-y-auto pb-6 bg-gray-50${isFeedActive ? '' : ' hidden'}`}>
+      {useMobileBottomNav && (
+        <FeedBottomBar
+          onBrandClick={() => {
+            if (isFeedActive) {
+              window.location.assign(`${window.location.origin}/app/inicio`)
+              return
+            }
+            navigate('/app/inicio')
+          }}
+          onOpenAccountMenu={() => {
+            setShowFeedFiltersSheet(false)
+            setFilterPopoverAnchor(null)
+            setAccountMenuAnchor(
+              measureMenuAnchor(accountMenuTriggerRefMobile.current, { placement: 'above' }) ??
+                FALLBACK_MENU_ANCHOR_ABOVE,
+            )
+            setShowOptionsModal(true)
+          }}
+          onOpenFeedFilters={
+            isFeedActive
+              ? () => {
+                  setShowOptionsModal(false)
+                  setFilterPopoverAnchor(
+                    measureMenuAnchor(feedFiltersTriggerRefMobile.current, { placement: 'above' }) ??
+                      FALLBACK_MENU_ANCHOR_ABOVE,
+                  )
+                  setShowFeedFiltersSheet(true)
+                }
+              : undefined
+          }
+          feedCategoryFiltersActive={isFeedActive && feedCategoryFiltersActive}
+          onOpenCreate={() => setShowWizard(true)}
+          canCreate={canCreate}
+          avatarUrl={avatarUrl}
+          avatarInitial={initial}
+          displayName={displayName}
+          isProfileRoute={isProfileActive}
+          accountMenuTriggerRef={accountMenuTriggerRefMobile}
+          feedFiltersTriggerRef={feedFiltersTriggerRefMobile}
+        />
+      )}
+
+      <main
+        className={`flex-1 relative overflow-hidden ${
+          useMobileBottomNav ? 'pt-0 sm:pt-14' : 'pt-14'
+        }`}
+      >
+        <div
+          className={`absolute inset-0 overflow-y-auto bg-gray-50${
+            isFeedActive
+              ? ' pb-[calc(3.5rem+env(safe-area-inset-bottom))] sm:pb-6'
+              : ' pb-6'
+          }${isFeedActive ? '' : ' hidden'}`}
+        >
           <Feed
             filtersSheetOpen={showFeedFiltersSheet}
             onCloseFiltersSheet={() => {
@@ -221,7 +317,13 @@ export default function DashboardLayout() {
             onCategoryFiltersActiveChange={onCategoryFiltersActiveChange}
           />
         </div>
-        <div className={`absolute inset-0 overflow-y-auto pb-6 bg-gray-50${isProfileActive ? '' : ' hidden'}`}>
+        <div
+          className={`absolute inset-0 overflow-y-auto bg-gray-50${
+            isProfileActive
+              ? ' pb-[calc(3.5rem+env(safe-area-inset-bottom))] sm:pb-6'
+              : ' pb-6'
+          }${isProfileActive ? '' : ' hidden'}`}
+        >
           <Profile viewUserId={profileViewId} />
         </div>
         {!isFeedActive && !isProfileActive && (
@@ -239,7 +341,12 @@ export default function DashboardLayout() {
           userEmail={userEmail}
           avatarUrl={avatarUrl}
           initial={initial}
-          anchor={accountMenuAnchor ?? FALLBACK_MENU_ANCHOR}
+          anchor={
+            accountMenuAnchor ??
+            (useMobileBottomNav && getMobileNavPopoverPlacement() === 'above'
+              ? FALLBACK_MENU_ANCHOR_ABOVE
+              : FALLBACK_MENU_ANCHOR)
+          }
           onClose={() => {
             setShowOptionsModal(false)
             setAccountMenuAnchor(null)

@@ -11,7 +11,20 @@ import {
 } from "../features/dashboard/popoverAnchor";
 import type { FeedPostOut, FeedResponse } from "../types/post.types";
 
-const FILTER_POPOVER_FALLBACK: MenuPopoverAnchor = { top: 64, right: 12, minWidth: 40 };
+const FILTER_POPOVER_FALLBACK: MenuPopoverAnchor = {
+  placement: "above",
+  bottom: 72,
+  right: 12,
+  minWidth: 40,
+  maxHeightPx: 480,
+};
+
+const FILTER_POPOVER_FALLBACK_DESKTOP: MenuPopoverAnchor = {
+  placement: "below",
+  top: 64,
+  right: 12,
+  minWidth: 40,
+};
 
 export type FeedProps = {
   filtersSheetOpen?: boolean;
@@ -262,7 +275,7 @@ export default function Feed({
   return (
     <div className="min-h-screen bg-gray-50" style={{ overflowAnchor: "none" }}>
       <div className="w-full max-w-[550px] mx-auto p-4 space-y-4">
-        <div className="pt-14 sm:pt-12">
+        <div className="pt-4 sm:pt-12">
           {(() => {
             const lastPinnedIdx = posts.reduce((acc, p, i) => (p.is_pinned ? i : acc), -1);
             return posts.map((post, i) => (
@@ -310,11 +323,18 @@ export default function Feed({
             aria-hidden
           />
           <div
-            className="fixed z-[66] flex min-w-0 flex-col overflow-hidden rounded-xl border border-gray-200/90 bg-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-150"
-            style={getClampedRightPopoverStyle(filterPopoverAnchor ?? FILTER_POPOVER_FALLBACK, {
-              maxWidth: 480,
-              margin: 8,
-            })}
+            className={`fixed z-[66] flex min-w-0 flex-col overflow-hidden rounded-xl border border-gray-200/90 bg-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] animate-in fade-in zoom-in-95 duration-150 ${
+              (filterPopoverAnchor ?? FILTER_POPOVER_FALLBACK).placement === "above"
+                ? "slide-in-from-bottom-1"
+                : "slide-in-from-top-1"
+            }`}
+            style={getClampedRightPopoverStyle(
+              filterPopoverAnchor ??
+                (typeof window !== "undefined" && window.matchMedia("(min-width: 640px)").matches
+                  ? FILTER_POPOVER_FALLBACK_DESKTOP
+                  : FILTER_POPOVER_FALLBACK),
+              { maxWidth: 480, margin: 8 },
+            )}
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
