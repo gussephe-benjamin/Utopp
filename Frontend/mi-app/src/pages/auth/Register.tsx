@@ -8,7 +8,14 @@ import GoogleRegister from "../../auth/GoogleRegister";
 import { checkUsername, checkEmail } from "../../api/users.api";
 import { AuthScreenLayout } from "../../shared/layout/AuthScreenLayout";
 import { parseRegisterApiError } from "../../shared/lib/apiErrors";
-import { getCurrentTerms, type TermsCurrent } from "../../api/legal.api";
+import {
+  TW_AUTH_CHECKBOX,
+  TW_AUTH_FOOTER_LINK,
+  TW_AUTH_HEADING,
+  TW_AUTH_LEGAL_LINK,
+  TW_UTOPP_GRADIENT_R,
+} from "../../shared/constants/brand";
+import { getCurrentPrivacy, getCurrentTerms, type TermsCurrent } from "../../api/legal.api";
 
 /** Registro completo por email/contraseña. No está montado en App; la ruta `/register` usa RegisterOG. */
 
@@ -45,17 +52,22 @@ export default function Register() {
   const emailDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [termsDoc, setTermsDoc] = useState<TermsCurrent | null>(null);
+  const [privacyDoc, setPrivacyDoc] = useState<TermsCurrent | null>(null);
   const [termsLoadError, setTermsLoadError] = useState<string | null>(null);
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const t = await getCurrentTerms();
-        if (!cancelled) setTermsDoc(t);
+        const [t, p] = await Promise.all([getCurrentTerms(), getCurrentPrivacy()]);
+        if (!cancelled) {
+          setTermsDoc(t);
+          setPrivacyDoc(p);
+        }
       } catch {
-        if (!cancelled) setTermsLoadError("No se pudieron cargar los términos.");
+        if (!cancelled) setTermsLoadError("No se pudieron cargar los textos legales.");
       }
     })();
     return () => {
@@ -63,7 +75,7 @@ export default function Register() {
     };
   }, []);
 
-  const termsReady = !!termsDoc && !termsLoadError;
+  const legalReady = !!termsDoc && !!privacyDoc && !termsLoadError;
 
   const evaluatePassword = useCallback(async (pwd: string) => {
     if (!pwd) { setZxcvbnScore(0); setZxcvbnFeedback(""); return; }
@@ -164,8 +176,9 @@ export default function Register() {
     if (!/[0-9]/.test(form.password))                    return "La contraseña debe contener al menos un número";
     if (!/[^A-Za-z0-9]/.test(form.password))             return "La contraseña debe contener al menos un carácter especial";
     if (form.password !== form.confirmPassword)          return "Las contraseñas no coinciden";
-    if (!termsReady)                                     return "Espera a que carguen los términos o recarga la página.";
+    if (!legalReady)                                     return "Espera a que carguen los textos legales o recarga la página.";
     if (!termsAccepted)                                  return "Debes aceptar los términos y condiciones para registrarte.";
+    if (!privacyAccepted)                                return "Debes aceptar la política de datos y privacidad para registrarte.";
     return null;
   };
 
@@ -177,7 +190,13 @@ export default function Register() {
     setLoading(true);
     setError(null);
     try {
-      await register(form.email, form.password, form.full_name || undefined);
+      await register(
+        form.email,
+        form.password,
+        form.full_name || undefined,
+        termsDoc!.id,
+        privacyDoc!.id
+      );
       // Redirige al Login con el email prefillado y un mensaje de éxito
       navigate("/login", { state: { registeredEmail: form.email } });
     } catch (err) {
@@ -191,7 +210,7 @@ export default function Register() {
     <AuthScreenLayout contentClassName="animate-in fade-in slide-in-from-bottom-4 duration-700">
         <div className="bg-white rounded-3xl shadow-2xl p-8">
           <div className="text-center mb-6">
-            <h1 className="text-2xl font-bold text-[#4F46E5]">Crear cuenta</h1>
+            <h1 className={`text-2xl font-bold ${TW_AUTH_HEADING}`}>Crear cuenta</h1>
             <p className="text-gray-500 text-sm">Únete a la comunidad Utopp</p>
           </div>
 
@@ -362,16 +381,18 @@ export default function Register() {
             <label className="flex items-start gap-3 cursor-pointer">
               <input
                 type="checkbox"
-                className="mt-0.5 size-4 rounded border-gray-300 text-[#4F46E5] focus:ring-[#4F46E5]"
+                className={`mt-0.5 size-4 rounded border-gray-300 ${TW_AUTH_CHECKBOX}`}
                 checked={termsAccepted}
                 onChange={(e) => setTermsAccepted(e.target.checked)}
-                disabled={!termsReady}
+                disabled={!legalReady}
               />
               <span className="text-sm text-gray-700">
                 He leído y acepto los{" "}
                 <Link
                   to="/terms"
-                  className="font-semibold text-[#4F46E5] underline underline-offset-2 hover:text-[#4338CA]"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={TW_AUTH_LEGAL_LINK}
                 >
                   términos y condiciones
                 </Link>
@@ -379,10 +400,32 @@ export default function Register() {
               </span>
             </label>
 
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                className={`mt-0.5 size-4 rounded border-gray-300 ${TW_AUTH_CHECKBOX}`}
+                checked={privacyAccepted}
+                onChange={(e) => setPrivacyAccepted(e.target.checked)}
+                disabled={!legalReady}
+              />
+              <span className="text-sm text-gray-700">
+                He leído y acepto la{" "}
+                <Link
+                  to="/privacy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={TW_AUTH_LEGAL_LINK}
+                >
+                  política de datos y privacidad
+                </Link>
+                .
+              </span>
+            </label>
+
             <Button
               type="submit"
-              disabled={loading || !termsReady || !termsAccepted}
-              className="w-full h-14 bg-gradient-to-r from-[#4F46E5] to-[#6366F1] hover:from-[#4338CA] hover:to-[#5B21B6] text-white font-semibold rounded-2xl shadow-lg shadow-indigo-500/30 transition-all duration-300 hover:shadow-xl active:scale-[0.98]"
+              disabled={loading || !legalReady || !termsAccepted || !privacyAccepted}
+              className={`w-full h-14 ${TW_UTOPP_GRADIENT_R} hover:brightness-105 text-white font-semibold rounded-2xl shadow-lg shadow-[#9333EA]/25 transition-all duration-300 hover:shadow-xl active:scale-[0.98]`}
             >
               {loading ? (
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -402,9 +445,9 @@ export default function Register() {
             </div>
 
             <GoogleRegister
-              termsDocumentId={termsDoc?.id ?? null}
               termsAccepted={termsAccepted}
-              termsReady={termsReady}
+              privacyAccepted={privacyAccepted}
+              legalReady={legalReady}
             />
           </form>
 
@@ -413,7 +456,7 @@ export default function Register() {
             <button
               type="button"
               onClick={() => navigate("/login")}
-              className="text-[#4F46E5] font-semibold hover:underline transition-all"
+              className={TW_AUTH_FOOTER_LINK}
             >
               Inicia sesión
             </button>

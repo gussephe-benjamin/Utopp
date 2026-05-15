@@ -9,6 +9,7 @@ import RegisterOG from "./pages/auth/RegisterOG"
 import Schedule from "./pages/Schedule"
 import TermsAcceptance from "./pages/TermsAcceptance"
 import TermsPublic from "./pages/TermsPublic"
+import PrivacyPublic from "./pages/PrivacyPublic"
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
           <Route path="/login" element={<Login />} />
 
           <Route path="/terms" element={<TermsPublic />} />
+          <Route path="/privacy" element={<PrivacyPublic />} />
 
           <Route
             path="/app/terms"

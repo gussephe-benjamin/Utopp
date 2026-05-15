@@ -1,15 +1,16 @@
-import { X, User, Settings, LogOut } from 'lucide-react'
+import { X, Settings, LogOut, ChevronRight } from 'lucide-react'
+import type { MenuPopoverAnchor } from '../popoverAnchor'
+import { TW_UTOPP_GRADIENT_BR } from '../../../shared/constants/brand'
 
 type AccountOptionsSheetProps = {
   displayName: string
   userEmail: string | null
   avatarUrl: string | null
   initial: string
-  confirmLogout: boolean
+  anchor: MenuPopoverAnchor
   onClose: () => void
   onNavigateProfile: () => void
-  onRequestLogout: () => void
-  onCancelLogout: () => void
+  /** Cierra sesión sin paso de confirmación. */
   onLogout: () => void
 }
 
@@ -18,114 +19,99 @@ export function AccountOptionsSheet({
   userEmail,
   avatarUrl,
   initial,
-  confirmLogout,
+  anchor,
   onClose,
   onNavigateProfile,
-  onRequestLogout,
-  onCancelLogout,
   onLogout,
 }: AccountOptionsSheetProps) {
+  const panelStyle = {
+    top: anchor.top,
+    right: anchor.right,
+    minWidth: Math.max(anchor.minWidth, 288),
+  } as const
+
+  const menuRow =
+    'w-full flex items-center gap-2.5 rounded-md pl-2.5 pr-2 py-1.5 text-left text-sm text-gray-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C026D3]/25 hover:bg-fuchsia-50 hover:text-[#9333EA]'
+
+  const handleSalir = () => {
+    onClose()
+    onLogout()
+  }
+
   return (
-    <div
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[70] flex items-end justify-center"
-      onClick={() => { onClose(); onCancelLogout() }}
-      role="presentation"
-    >
+    <>
       <div
-        className="bg-white w-full max-w-md rounded-t-3xl shadow-2xl p-6 pb-10 animate-in slide-in-from-bottom-4 duration-300"
-        onClick={e => e.stopPropagation()}
+        className="fixed inset-0 z-[69] bg-black/10"
+        onClick={() => { onClose() }}
+        aria-hidden
+      />
+      <div
+        className="fixed z-[70] w-max max-w-[min(26rem,calc(100vw-1rem))] rounded-xl border border-gray-200/90 bg-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-150 overflow-hidden"
+        style={panelStyle}
         role="dialog"
         aria-modal="true"
+        onClick={e => e.stopPropagation()}
       >
-        <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-5" />
-
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            {avatarUrl ? (
-              <img src={avatarUrl} alt={displayName} className="w-12 h-12 rounded-xl object-cover shadow" />
-            ) : (
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#4F46E5] to-[#7C3AED] flex items-center justify-center text-white text-lg font-bold shadow">
-                {initial}
-              </div>
-            )}
-            <div>
-              <p className="font-semibold text-gray-900 leading-tight">{displayName}</p>
-              {userEmail && <p className="text-xs text-gray-400 mt-0.5">{userEmail}</p>}
-            </div>
-          </div>
+        <div className="relative flex flex-col items-stretch text-left">
           <button
             type="button"
-            onClick={() => { onClose(); onCancelLogout() }}
-            className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-colors"
+            onClick={() => { onClose() }}
+            className="absolute top-2 right-2 z-10 w-7 h-7 rounded-md flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+            aria-label="Cerrar"
           >
             <X className="w-4 h-4" />
           </button>
-        </div>
 
-        <div className="space-y-2 mb-4">
+          {/* Bloque identidad (sin borde propio; como cabecera del menú) */}
           <button
             type="button"
             onClick={() => { onNavigateProfile(); onClose() }}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors text-left"
+            aria-label={`Ir al perfil de ${displayName}`}
+            className="w-full text-left pl-2.5 pr-10 pt-2.5 pb-2 hover:bg-gray-50/80 transition-colors rounded-t-xl border-b border-gray-100"
           >
-            <div className="w-9 h-9 rounded-xl bg-indigo-100 flex items-center justify-center">
-              <User className="w-4 h-4 text-indigo-600" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-900">Mi perfil</p>
-              <p className="text-xs text-gray-400">Ver y editar tu perfil</p>
+            <div className="flex items-center justify-start gap-2.5 min-w-0">
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="" className="w-8 h-8 rounded-lg object-cover shrink-0" aria-hidden />
+              ) : (
+                <div className={`w-8 h-8 rounded-lg ${TW_UTOPP_GRADIENT_BR} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
+                  {initial}
+                </div>
+              )}
+              <div className="min-w-0 flex-1 py-0.5">
+                <p className="font-semibold text-gray-900 text-[13px] leading-tight truncate">{displayName}</p>
+                {userEmail && <p className="text-[11px] text-gray-500 mt-0.5 truncate">{userEmail}</p>}
+              </div>
+              <ChevronRight className="w-4 h-4 text-gray-300 shrink-0" aria-hidden />
             </div>
           </button>
 
-          <button
-            type="button"
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors text-left opacity-50 cursor-not-allowed"
-            disabled
-          >
-            <div className="w-9 h-9 rounded-xl bg-gray-200 flex items-center justify-center">
-              <Settings className="w-4 h-4 text-gray-500" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-900">Configuración</p>
-              <p className="text-xs text-gray-400">Próximamente</p>
-            </div>
-          </button>
-        </div>
-
-        <div className="border-t border-gray-100 pt-4">
-          {!confirmLogout ? (
+          <div className="pl-2.5 pr-2 py-1">
             <button
               type="button"
-              onClick={onRequestLogout}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-red-200 text-red-600 font-medium hover:bg-red-50 transition-colors"
+              title="Próximamente"
+              aria-label="Configuración, próximamente disponible"
+              className={`${menuRow} opacity-50 cursor-not-allowed hover:bg-transparent hover:text-gray-800`}
+              disabled
             >
-              <LogOut className="w-4 h-4" />
-              Cerrar sesión
+              <Settings className="w-4 h-4 text-gray-500 shrink-0" />
+              <span className="truncate">Configuración</span>
             </button>
-          ) : (
-            <div className="bg-red-50 rounded-xl p-4 space-y-3 border border-red-200">
-              <p className="text-sm text-red-700 text-center font-medium">¿Seguro que deseas cerrar sesión?</p>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={onCancelLogout}
-                  className="flex-1 py-2.5 rounded-xl bg-white border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  onClick={onLogout}
-                  className="flex-1 py-2.5 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors flex items-center justify-center gap-1.5"
-                >
-                  <LogOut className="w-4 h-4" />
-                  Salir
-                </button>
-              </div>
-            </div>
-          )}
+          </div>
+
+          <div className="h-px bg-gray-100 ml-2.5 mr-2" aria-hidden />
+
+          <div className="pl-2.5 pr-2 py-1 pb-1.5">
+            <button
+              type="button"
+              onClick={handleSalir}
+              className={`${menuRow} group text-gray-800`}
+            >
+              <LogOut className="w-4 h-4 shrink-0 text-gray-500 group-hover:text-[#C026D3]" />
+              <span className="font-medium truncate">Salir de la plataforma</span>
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }

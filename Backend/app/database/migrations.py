@@ -339,5 +339,22 @@ def run_migrations(engine: Engine) -> None:
             CREATE INDEX IF NOT EXISTS idx_users_last_accepted_legal
             ON users (last_accepted_legal_document_id);
         """))
+        conn.execute(text("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name = 'users' AND column_name = 'last_accepted_privacy_document_id'
+                ) THEN
+                    ALTER TABLE users
+                    ADD COLUMN last_accepted_privacy_document_id BIGINT
+                    REFERENCES legal_documents(id);
+                END IF;
+            END$$;
+        """))
+        conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS idx_users_last_accepted_privacy
+            ON users (last_accepted_privacy_document_id);
+        """))
 
         conn.commit()

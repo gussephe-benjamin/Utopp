@@ -53,7 +53,9 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
 # Auth: No requerida
 # ============================================================
 @router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
-def register(payload: UserCreate, db: Session = Depends(get_db)):
+def register(payload: UserCreate, request: Request, db: Session = Depends(get_db)):
+    from app.services import legal_service
+
     if get_user_by_email(db, payload.email):
         raise HTTPException(status_code=400, detail="Email ya registrado")
     org = "utec"
@@ -62,7 +64,28 @@ def register(payload: UserCreate, db: Session = Depends(get_db)):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"El correo {payload.email} no pertenece a la organización {org}",
         )
+    if not legal_service.register_legal_ids_match_active(
+        db, payload.terms_document_id, payload.privacy_document_id
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Los documentos legales indicados no coinciden con los vigentes. Recarga la página e inténtalo de nuevo.",
+        )
     user = create_user(db, payload.email, payload.password, payload.full_name)
+    fwd = request.headers.get("x-forwarded-for")
+    ip = (fwd.split(",")[0].strip() if fwd else None) or (
+        request.client.host if request.client else None
+    )
+    ua = request.headers.get("user-agent")
+    legal_service.record_acceptances_for_documents(
+        db,
+        user_id=user.id,
+        document_ids=[payload.terms_document_id, payload.privacy_document_id],
+        ip_address=ip,
+        user_agent=ua,
+        auth_method="email_password_register",
+        commit=True,
+    )
     return user
 
 
@@ -97,10 +120,14 @@ def get_current_user_endpoint(
 ):
     from app.services import legal_service
 
-    needs_terms = not legal_service.user_has_valid_terms(db, current_user.id)
+    needs_terms_consent = legal_service.needs_terms_consent(db, current_user.id)
+    needs_privacy_consent = legal_service.needs_privacy_consent(db, current_user.id)
+    needs_legal = needs_terms_consent or needs_privacy_consent
     return {
         "id": current_user.id,
         "email": current_user.email,
         "onboarding_completed": current_user.is_onboarding_completed,
-        "needs_terms": needs_terms,
+        "needs_terms": needs_legal,
+        "needs_terms_consent": needs_terms_consent,
+        "needs_privacy_consent": needs_privacy_consent,
     }

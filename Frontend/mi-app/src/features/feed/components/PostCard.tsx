@@ -22,6 +22,7 @@ import { POST_TYPE_LABELS, POST_TYPE_ICONS, SUBTYPE_LABELS } from "../../../type
 import { formatDate, isExpired, timeAgo, timeRemaining } from "../../../shared/lib/date";
 import { TYPE_GRADIENTS } from "../constants/typeGradients";
 import { getDisplayName } from "../lib/display";
+import { TW_UTOPP_GRADIENT_R } from "../../../shared/constants/brand";
 import { ScoreExplanation } from "./ScoreExplanation";
 import { UserAvatar } from "./UserAvatar";
 
@@ -238,7 +239,7 @@ export function PostCard({ post, currentUserId, onEdited }: PostCardProps) {
                   onClick={() =>
                     navigate(post.user_id === currentUserId ? "/app/perfil" : `/app/perfil/${post.user_id}`)
                   }
-                  className="font-semibold text-gray-900 hover:text-[#4F46E5] transition-colors text-sm leading-tight"
+                  className="font-semibold text-gray-900 hover:text-[#2563EB] transition-colors text-sm leading-tight"
                 >
                   {getDisplayName(post.user_name, post.user_id)}
                 </button>
@@ -282,7 +283,7 @@ export function PostCard({ post, currentUserId, onEdited }: PostCardProps) {
                   >
                     {isSaved ? (
                       <>
-                        <BookmarkCheck className="w-4 h-4 text-[#4F46E5]" /> Quitar de guardados
+                        <BookmarkCheck className="w-4 h-4 text-[#2563EB]" /> Quitar de guardados
                       </>
                     ) : (
                       <>
@@ -404,7 +405,7 @@ export function PostCard({ post, currentUserId, onEdited }: PostCardProps) {
                   <button
                     type="button"
                     onClick={() => setDescExpanded((v) => !v)}
-                    className="mt-1 text-xs font-medium text-[#4F46E5] hover:text-[#7C3AED] transition-colors"
+                    className="mt-1 text-xs font-medium text-[#2563EB] hover:text-[#C026D3] transition-colors"
                   >
                     {descExpanded ? "Ver menos" : "Ver más"}
                   </button>
@@ -458,7 +459,7 @@ export function PostCard({ post, currentUserId, onEdited }: PostCardProps) {
                 href={links[0].url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-1 text-center py-2.5 px-3 rounded-xl text-sm font-medium bg-gradient-to-r from-[#4F46E5] to-[#7C3AED] text-white shadow hover:shadow-md transition-all"
+                className={`flex-1 text-center py-2.5 px-3 rounded-xl text-sm font-medium ${TW_UTOPP_GRADIENT_R} text-white shadow hover:shadow-md transition-all`}
               >
                 {links[0].label}
               </a>

@@ -1,5 +1,5 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import PublicationWizard from '../components/PublicationWizard'
 import { useAuth } from '../auth/useAuth'
 import { getMe } from '../api/auth.api'
@@ -9,6 +9,9 @@ import Feed from '../pages/Feed'
 import Profile from '../pages/Profile'
 import { AppTopBar } from '../features/dashboard/components/AppTopBar'
 import { AccountOptionsSheet } from '../features/dashboard/components/AccountOptionsSheet'
+import { measureMenuAnchor, type MenuPopoverAnchor } from '../features/dashboard/popoverAnchor'
+
+const FALLBACK_MENU_ANCHOR: MenuPopoverAnchor = { top: 64, right: 12, minWidth: 40 }
 
 /**
  * Layout principal tras el login.
@@ -31,7 +34,17 @@ export default function DashboardLayout() {
 
   const [showWizard, setShowWizard]           = useState(false)
   const [showOptionsModal, setShowOptionsModal] = useState(false)
-  const [confirmLogout, setConfirmLogout]     = useState(false)
+  const [showFeedFiltersSheet, setShowFeedFiltersSheet] = useState(false)
+  const [feedCategoryFiltersActive, setFeedCategoryFiltersActive] = useState(false)
+
+  const accountMenuTriggerRef = useRef<HTMLButtonElement>(null)
+  const feedFiltersTriggerRef = useRef<HTMLButtonElement>(null)
+  const [accountMenuAnchor, setAccountMenuAnchor] = useState<MenuPopoverAnchor | null>(null)
+  const [filterPopoverAnchor, setFilterPopoverAnchor] = useState<MenuPopoverAnchor | null>(null)
+
+  const onCategoryFiltersActiveChange = useCallback((active: boolean) => {
+    setFeedCategoryFiltersActive(active)
+  }, [])
 
   const [currentUserId, setCurrentUserId] = useState<number | null>(null)
   const [userName, setUserName]   = useState<string | null>(null)
@@ -89,7 +102,7 @@ export default function DashboardLayout() {
   }, [currentUserId])
 
   useEffect(() => {
-    if (!showWizard && !showOptionsModal) return
+    if (!showWizard) return
 
     const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth
     const prevOverflow = document.body.style.overflow
@@ -102,12 +115,51 @@ export default function DashboardLayout() {
       document.body.style.overflow = prevOverflow
       document.body.style.paddingRight = prevPaddingRight
     }
-  }, [showWizard, showOptionsModal])
+  }, [showWizard])
 
   const isFeedActive    = location.pathname === '/app/inicio'
   const isProfileActive = location.pathname.startsWith('/app/perfil')
   const profileViewIdMatch = location.pathname.match(/^\/app\/perfil\/(\d+)$/)
   const profileViewId = profileViewIdMatch ? Number(profileViewIdMatch[1]) : undefined
+
+  useEffect(() => {
+    if (!isFeedActive) {
+      setShowFeedFiltersSheet(false)
+      setFilterPopoverAnchor(null)
+    }
+  }, [isFeedActive])
+
+  const syncAccountMenuAnchor = useCallback(() => {
+    const m = measureMenuAnchor(accountMenuTriggerRef.current)
+    if (m) setAccountMenuAnchor(m)
+  }, [])
+
+  const syncFilterMenuAnchor = useCallback(() => {
+    const m = measureMenuAnchor(feedFiltersTriggerRef.current)
+    if (m) setFilterPopoverAnchor(m)
+  }, [])
+
+  useLayoutEffect(() => {
+    if (!showOptionsModal) return
+    syncAccountMenuAnchor()
+    window.addEventListener('resize', syncAccountMenuAnchor)
+    window.addEventListener('scroll', syncAccountMenuAnchor, true)
+    return () => {
+      window.removeEventListener('resize', syncAccountMenuAnchor)
+      window.removeEventListener('scroll', syncAccountMenuAnchor, true)
+    }
+  }, [showOptionsModal, syncAccountMenuAnchor])
+
+  useLayoutEffect(() => {
+    if (!showFeedFiltersSheet) return
+    syncFilterMenuAnchor()
+    window.addEventListener('resize', syncFilterMenuAnchor)
+    window.addEventListener('scroll', syncFilterMenuAnchor, true)
+    return () => {
+      window.removeEventListener('resize', syncFilterMenuAnchor)
+      window.removeEventListener('scroll', syncFilterMenuAnchor, true)
+    }
+  }, [showFeedFiltersSheet, syncFilterMenuAnchor])
 
   const handleLogout = () => {
     logout()
@@ -118,22 +170,56 @@ export default function DashboardLayout() {
   const initial     = displayName.charAt(0).toUpperCase()
 
   return (
-    <div className={`min-h-screen flex flex-col bg-gray-50 ${showWizard || showOptionsModal ? 'overflow-hidden' : ''}`}>
+    <div className={`min-h-screen flex flex-col bg-gray-50 ${showWizard ? 'overflow-hidden' : ''}`}>
       <AppTopBar
-        onNavigateHome={() => navigate('/app/inicio')}
-        onNavigateProfile={() => navigate('/app/perfil')}
+        onBrandClick={() => {
+          if (isFeedActive) {
+            window.location.assign(`${window.location.origin}/app/inicio`)
+            return
+          }
+          navigate('/app/inicio')
+        }}
+        onOpenAccountMenu={() => {
+          setShowFeedFiltersSheet(false)
+          setFilterPopoverAnchor(null)
+          setAccountMenuAnchor(
+            measureMenuAnchor(accountMenuTriggerRef.current) ?? FALLBACK_MENU_ANCHOR,
+          )
+          setShowOptionsModal(true)
+        }}
+        onOpenFeedFilters={
+          isFeedActive
+            ? () => {
+                setShowOptionsModal(false)
+                setFilterPopoverAnchor(
+                  measureMenuAnchor(feedFiltersTriggerRef.current) ?? FALLBACK_MENU_ANCHOR,
+                )
+                setShowFeedFiltersSheet(true)
+              }
+            : undefined
+        }
+        feedCategoryFiltersActive={isFeedActive && feedCategoryFiltersActive}
         onOpenCreate={() => setShowWizard(true)}
-        onOpenAccountMenu={() => setShowOptionsModal(true)}
         canCreate={canCreate}
         avatarUrl={avatarUrl}
         avatarInitial={initial}
         displayName={displayName}
         isProfileRoute={isProfileActive}
+        accountMenuTriggerRef={accountMenuTriggerRef}
+        feedFiltersTriggerRef={feedFiltersTriggerRef}
       />
 
       <main className="flex-1 relative overflow-hidden pt-14">
         <div className={`absolute inset-0 overflow-y-auto pb-6 bg-gray-50${isFeedActive ? '' : ' hidden'}`}>
-          <Feed />
+          <Feed
+            filtersSheetOpen={showFeedFiltersSheet}
+            onCloseFiltersSheet={() => {
+              setShowFeedFiltersSheet(false)
+              setFilterPopoverAnchor(null)
+            }}
+            filterPopoverAnchor={filterPopoverAnchor}
+            onCategoryFiltersActiveChange={onCategoryFiltersActiveChange}
+          />
         </div>
         <div className={`absolute inset-0 overflow-y-auto pb-6 bg-gray-50${isProfileActive ? '' : ' hidden'}`}>
           <Profile viewUserId={profileViewId} />
@@ -153,11 +239,12 @@ export default function DashboardLayout() {
           userEmail={userEmail}
           avatarUrl={avatarUrl}
           initial={initial}
-          confirmLogout={confirmLogout}
-          onClose={() => { setShowOptionsModal(false); setConfirmLogout(false) }}
+          anchor={accountMenuAnchor ?? FALLBACK_MENU_ANCHOR}
+          onClose={() => {
+            setShowOptionsModal(false)
+            setAccountMenuAnchor(null)
+          }}
           onNavigateProfile={() => navigate('/app/perfil')}
-          onRequestLogout={() => setConfirmLogout(true)}
-          onCancelLogout={() => setConfirmLogout(false)}
           onLogout={handleLogout}
         />
       )}

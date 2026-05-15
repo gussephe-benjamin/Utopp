@@ -5,6 +5,7 @@ import httpx
 import pytest
 
 from config import API_BASE_URL
+from auth_helpers import with_legal_ids
 
 
 class TestOnboardingsAPI:
@@ -27,7 +28,10 @@ class TestOnboardingsAPI:
 
             register_response = client.post(
                 "/auth/register",
-                json={"email": email, "password": password, "full_name": full_name},
+                json=with_legal_ids(
+                    client,
+                    {"email": email, "password": password, "full_name": full_name},
+                ),
             )
             assert register_response.status_code == 201, register_response.text
 

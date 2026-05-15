@@ -15,7 +15,7 @@ oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error
 
 _TERMS_DETAIL = {
     "code": "TERMS_RECONSENT_REQUIRED",
-    "message": "Debes aceptar los términos y condiciones vigentes para continuar.",
+    "message": "Debes aceptar los términos y la política de privacidad vigentes para continuar.",
 }
 
 
@@ -60,7 +60,7 @@ def require_terms_accepted(
     db: Session = Depends(get_db),
 ) -> User:
     """Bloquea acceso a la API de negocio hasta aceptar la versión activa de términos."""
-    if not legal_service.user_has_valid_terms(db, user.id):
+    if not legal_service.user_has_required_legal_consent(db, user.id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=_TERMS_DETAIL,
@@ -91,6 +91,6 @@ def get_optional_user(
     user = db.query(User).filter(User.id == int(user_id)).first()
     if user is None:
         return None
-    if not legal_service.user_has_valid_terms(db, user.id):
+    if not legal_service.user_has_required_legal_consent(db, user.id):
         return None
     return user

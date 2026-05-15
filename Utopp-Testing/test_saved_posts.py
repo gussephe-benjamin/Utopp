@@ -5,6 +5,7 @@ import httpx
 import pytest
 
 from config import API_BASE_URL
+from auth_helpers import with_legal_ids
 
 
 class TestSavedPostsAPI:
@@ -24,7 +25,10 @@ class TestSavedPostsAPI:
 
             reg = client.post(
                 "/auth/register",
-                json={"email": email, "password": password, "full_name": "Saved Posts QA"},
+                json=with_legal_ids(
+                    client,
+                    {"email": email, "password": password, "full_name": "Saved Posts QA"},
+                ),
             )
             assert reg.status_code == 201, reg.text
 

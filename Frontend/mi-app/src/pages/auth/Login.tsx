@@ -9,6 +9,7 @@ import { Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle2 } from "lucide-react
 import GoogleLogin from "../../auth/GoogleLogin";
 import { AuthScreenLayout } from "../../shared/layout/AuthScreenLayout";
 import { parseAuthApiError } from "../../shared/lib/apiErrors";
+import { TW_AUTH_FOOTER_LINK, TW_AUTH_HEADING, TW_AUTH_INPUT_FOCUS, TW_UTOPP_GRADIENT_R } from "../../shared/constants/brand";
 
 export default function Login() {
   const { login } = useAuth();
@@ -24,8 +25,12 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const canSubmit = email.trim().length > 0 && password.length > 0;
+
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!canSubmit) return;
+
     setIsLoading(true);
     setError(null);
 
@@ -45,7 +50,7 @@ export default function Login() {
     <AuthScreenLayout contentClassName="animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="bg-white rounded-3xl shadow-2xl p-8 backdrop-blur-xl">
         <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-[#4F46E5] mb-2">¡Hola!</h1>
+          <h1 className={`text-2xl font-bold mb-2 ${TW_AUTH_HEADING}`}>¡Hola!</h1>
           <p className="text-gray-500 text-sm">Inicia sesión para continuar</p>
         </div>
 
@@ -66,6 +71,7 @@ export default function Login() {
             </div>
             <Input
               type="email"
+              required
               placeholder="Email institucional UTEC"
               autoComplete="username"
               value={email}
@@ -73,7 +79,7 @@ export default function Login() {
                 setEmail(e.target.value);
                 setError(null);
               }}
-              className="w-full h-14 pl-12 pr-4 rounded-2xl border-gray-200 bg-gray-50/50 focus:bg-white focus:border-[#4F46E5] focus:ring-[#4F46E5]/20 transition-all duration-200"
+              className={`w-full h-14 pl-12 pr-4 rounded-2xl border-gray-200 bg-gray-50/50 focus:bg-white ${TW_AUTH_INPUT_FOCUS} transition-all duration-200`}
             />
           </div>
 
@@ -83,6 +89,7 @@ export default function Login() {
             </div>
             <Input
               type={showPassword ? "text" : "password"}
+              required
               placeholder="Contraseña"
               autoComplete="current-password"
               value={password}
@@ -90,7 +97,7 @@ export default function Login() {
                 setPassword(e.target.value);
                 setError(null);
               }}
-              className="w-full h-14 pl-12 pr-12 rounded-2xl border-gray-200 bg-gray-50/50 focus:bg-white focus:border-[#4F46E5] focus:ring-[#4F46E5]/20 transition-all duration-200"
+              className={`w-full h-14 pl-12 pr-12 rounded-2xl border-gray-200 bg-gray-50/50 focus:bg-white ${TW_AUTH_INPUT_FOCUS} transition-all duration-200`}
             />
             <button
               type="button"
@@ -110,8 +117,8 @@ export default function Login() {
 
           <Button
             type="submit"
-            disabled={isLoading}
-            className="w-full h-14 bg-gradient-to-r from-[#4F46E5] to-[#6366F1] hover:from-[#4338CA] hover:to-[#5B21B6] text-white font-semibold rounded-2xl shadow-lg shadow-indigo-500/30 transition-all duration-300 hover:shadow-xl hover:shadow-indigo-500/40 active:scale-[0.98]"
+            disabled={isLoading || !canSubmit}
+            className={`w-full h-14 ${TW_UTOPP_GRADIENT_R} hover:brightness-105 text-white font-semibold rounded-2xl shadow-lg shadow-[#9333EA]/25 transition-all duration-300 hover:shadow-xl active:scale-[0.98]`}
           >
             {isLoading ? (
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -134,7 +141,7 @@ export default function Login() {
           <button
             type="button"
             onClick={() => navigate("/register")}
-            className="text-[#4F46E5] font-semibold hover:underline transition-all"
+            className={TW_AUTH_FOOTER_LINK}
           >
             Regístrate
           </button>

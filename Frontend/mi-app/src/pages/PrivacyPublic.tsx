@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { ArrowLeft } from "lucide-react"
-import { getCurrentTerms, type TermsCurrent } from "../api/legal.api"
+import { getCurrentPrivacy, type TermsCurrent } from "../api/legal.api"
 import LegalMarkdownBody from "../components/legal/LegalMarkdownBody"
 import { useLegalPublicScrollPadding } from "../hooks/useLegalPublicScrollPadding"
 import { useScrollSentinelVisible } from "../hooks/useScrollSentinelVisible"
@@ -18,8 +18,8 @@ function formatDate(iso: string): string {
   }
 }
 
-/** Página pública de solo lectura del documento legal vigente (Markdown desde API). */
-export default function TermsPublic() {
+/** Página pública de solo lectura de la política de privacidad vigente (Markdown desde API). */
+export default function PrivacyPublic() {
   const navigate = useNavigate()
   const scrollRef = useRef<HTMLDivElement>(null)
   const sentinelRef = useRef<HTMLDivElement>(null)
@@ -39,13 +39,13 @@ export default function TermsPublic() {
     let cancelled = false
     const load = async () => {
       try {
-        const t = await getCurrentTerms()
+        const t = await getCurrentPrivacy()
         if (!cancelled) {
           setDoc(t)
           setError(null)
         }
       } catch {
-        if (!cancelled) setError("No se pudieron cargar los términos. Intenta más tarde.")
+        if (!cancelled) setError("No se pudo cargar la política de privacidad. Intenta más tarde.")
       }
     }
     void load()
@@ -93,7 +93,7 @@ export default function TermsPublic() {
                 UTOPP
               </p>
               <h1 className="text-3xl font-bold leading-tight tracking-tight text-slate-900 sm:text-4xl">
-                {doc.title?.trim() || "Términos y condiciones"}
+                {doc.title?.trim() || "Política de datos y privacidad"}
               </h1>
               <p className="text-sm text-slate-600 sm:text-base pt-1">
                 Vigente desde {formatDate(doc.effective_at)}
@@ -118,7 +118,6 @@ export default function TermsPublic() {
         {doc && (
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
             <LegalMarkdownBody markdown={doc.content} variant="light" onReady={handleMarkdownReady} />
-            {/* Sin overflow: el IO marca el sentinela visible de inmediato → Volver habilitado. */}
             <div ref={sentinelRef} className="h-px w-full shrink-0 scroll-mt-0" aria-hidden />
           </div>
         )}

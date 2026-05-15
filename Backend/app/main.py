@@ -44,7 +44,7 @@ async def lifespan(app: FastAPI):
         role_service.seed_default_roles_if_empty(db)
         from app.services import legal_service
 
-        legal_service.seed_initial_terms_if_absent(db)
+        legal_service.sync_legal_documents_from_repo(db)
     finally:
         db.close()
 

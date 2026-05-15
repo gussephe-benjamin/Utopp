@@ -22,6 +22,7 @@ import { AVAILABILITY_OPTIONS, CAREER_FACULTIES, CAREER_OPTIONS } from "../featu
 import { ConfirmModal } from "../features/profile/components/ConfirmModal"
 import { ProfilePostListCard } from "../features/profile/components/ProfilePostListCard"
 import type { FollowerItem, PostItem, ProfileData, ProfileTab } from "../features/profile/types"
+import { TW_UTOPP_GRADIENT_BR, TW_UTOPP_GRADIENT_R } from "../shared/constants/brand"
 
 // ─── Componente principal ──────────────────────────────────
 
@@ -379,7 +380,7 @@ export default function Profile({ viewUserId }: { viewUserId?: number } = {}) {
       )}
 
       {/* ── Cover / Banner ─────────────────────────────── */}
-      <div className="relative z-0 h-36 bg-gradient-to-r from-[#2563EB] via-[#4F46E5] to-[#7C3AED]">
+      <div className={`relative z-0 h-36 ${TW_UTOPP_GRADIENT_R}`}>
         <div className="absolute inset-0 opacity-20"
           style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)', backgroundSize: '60px 60px' }}
         />
@@ -393,7 +394,7 @@ export default function Profile({ viewUserId }: { viewUserId?: number } = {}) {
           {/* Avatar centrado */}
           <div className="flex flex-col items-center text-center mb-4">
             <div className="relative mb-3">
-              <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+              <div className={`w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-lg ${TW_UTOPP_GRADIENT_BR} flex items-center justify-center`}>
                 {avatarUrl ? (
                   <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
                 ) : (
@@ -452,7 +453,7 @@ export default function Profile({ viewUserId }: { viewUserId?: number } = {}) {
                 className={`mt-3 flex items-center gap-1.5 px-5 py-2 rounded-xl text-sm font-semibold transition-all ${
                   isFollowing
                     ? 'bg-gray-100 text-gray-700 hover:bg-red-50 hover:text-red-600'
-                    : 'bg-gradient-to-r from-[#4F46E5] to-[#7C3AED] text-white shadow-md hover:shadow-lg'
+                    : `${TW_UTOPP_GRADIENT_R} text-white shadow-md hover:shadow-lg`
                 }`}
               >
                 {isFollowing ? <UserMinus className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
@@ -525,14 +526,14 @@ export default function Profile({ viewUserId }: { viewUserId?: number } = {}) {
                 onClick={() => handleTabChange(tab.id)}
                 className={`flex items-center gap-1.5 px-4 py-3.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
                   activeTab === tab.id
-                    ? 'border-[#4F46E5] text-[#4F46E5]'
+                    ? 'border-[#C026D3] text-[#9333EA]'
                     : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}
               >
                 {tab.icon}
                 {tab.label}
                 {tab.count !== undefined && (
-                  <span className={`text-xs px-1.5 py-0.5 rounded-full ${activeTab === tab.id ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-500'}`}>
+                  <span className={`text-xs px-1.5 py-0.5 rounded-full ${activeTab === tab.id ? 'bg-fuchsia-100 text-fuchsia-800' : 'bg-gray-100 text-gray-500'}`}>
                     {tab.count}
                   </span>
                 )}
@@ -701,7 +702,7 @@ function FollowerList({
             {avatarSaved ? (
               <img src={avatarSaved} alt="" className="w-10 h-10 rounded-full object-cover border border-gray-200 shrink-0" />
             ) : (
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-semibold text-sm shrink-0">
+              <div className={`w-10 h-10 rounded-full ${TW_UTOPP_GRADIENT_BR} flex items-center justify-center text-white font-semibold text-sm shrink-0`}>
                 {(item.full_name || item.email).charAt(0).toUpperCase()}
               </div>
             )}
@@ -718,7 +719,7 @@ function FollowerList({
                     {onFollowUser && (
                       <button
                         onClick={() => onFollowUser(item.user_id)}
-                        className="px-2.5 py-1 text-xs font-medium rounded-lg bg-[#4F46E5] text-white hover:bg-[#4338CA] transition-colors"
+                        className="px-2.5 py-1 text-xs font-medium rounded-lg bg-[#2563EB] text-white hover:bg-[#9333EA] transition-colors"
                       >
                         Seguir
                       </button>
@@ -789,22 +790,22 @@ function SocialModal({
             <button
               onClick={() => setTab('followers')}
               className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
-                tab === 'followers' ? 'bg-white text-[#4F46E5] shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                tab === 'followers' ? 'bg-white text-[#9333EA] shadow-sm' : 'text-gray-500 hover:text-gray-700'
               }`}
             >
               Seguidores
-              <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${tab === 'followers' ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-200 text-gray-500'}`}>
+              <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${tab === 'followers' ? 'bg-fuchsia-100 text-fuchsia-800' : 'bg-gray-200 text-gray-500'}`}>
                 {followers.length}
               </span>
             </button>
             <button
               onClick={() => setTab('following')}
               className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
-                tab === 'following' ? 'bg-white text-[#4F46E5] shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                tab === 'following' ? 'bg-white text-[#9333EA] shadow-sm' : 'text-gray-500 hover:text-gray-700'
               }`}
             >
               Seguidos
-              <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${tab === 'following' ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-200 text-gray-500'}`}>
+              <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${tab === 'following' ? 'bg-fuchsia-100 text-fuchsia-800' : 'bg-gray-200 text-gray-500'}`}>
                 {following.length}
               </span>
             </button>
@@ -937,7 +938,7 @@ function SavedPostsTab({
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); onUnsave(post.id) }}
-              className="p-1.5 rounded-lg text-[#4F46E5] hover:bg-indigo-50 transition-colors"
+              className="p-1.5 rounded-lg text-[#2563EB] hover:bg-fuchsia-50 transition-colors"
               title="Quitar de guardados"
             >
               <Bookmark className="w-4 h-4 fill-current" />
@@ -960,7 +961,7 @@ function SavedPostsTab({
               onClick={() => setFilter(f.key)}
               className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
                 filter === f.key
-                  ? 'bg-gradient-to-r from-blue-600 to-[#7C3AED] text-white border-transparent shadow-sm'
+                  ? `${TW_UTOPP_GRADIENT_R} text-white border-transparent shadow-sm`
                   : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
               }`}
             >
@@ -982,7 +983,7 @@ function SavedPostsTab({
               onClick={() => setTimeFilter(opt.key)}
               className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
                 timeFilter === opt.key
-                  ? 'bg-gradient-to-r from-blue-600 to-[#7C3AED] text-white border-transparent shadow-sm'
+                  ? `${TW_UTOPP_GRADIENT_R} text-white border-transparent shadow-sm`
                   : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
               }`}
             >
@@ -1519,7 +1520,7 @@ function AvatarCropModal({
               const centeredY = (cPx - imgNatural.h * newScale) / 2
               setOffset(clampOffset(centeredX, centeredY, newScale, imgNatural))
             }}
-            className="flex-1 accent-[#4F46E5] h-1.5"
+            className="flex-1 accent-[#9333EA] h-1.5"
           />
           <span className="text-xs text-gray-400">+</span>
         </div>
@@ -1528,7 +1529,7 @@ function AvatarCropModal({
           <button onClick={onCancel} className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 transition-colors">
             Cancelar
           </button>
-          <button onClick={handleConfirm} className="flex-1 px-4 py-2.5 rounded-xl bg-[#4F46E5] text-white font-medium hover:bg-[#4338CA] transition-colors">
+          <button onClick={handleConfirm} className="flex-1 px-4 py-2.5 rounded-xl bg-[#2563EB] text-white font-medium hover:bg-[#9333EA] transition-colors">
             Confirmar
           </button>
         </div>

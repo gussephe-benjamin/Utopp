@@ -19,7 +19,10 @@ export interface AuthMeResponse {
   id: number
   email: string
   onboarding_completed: boolean
+  /** True si falta aceptar términos o privacidad (compatibilidad con flujos existentes). */
   needs_terms?: boolean
+  needs_terms_consent?: boolean
+  needs_privacy_consent?: boolean
 }
 
 // ─── Auth clásica ────────────────────────────────────────
@@ -41,11 +44,19 @@ export async function login(email: string, password: string) {
  * Error 400 si el email ya existe. Valida dominio UTEC.
  * Auth: No requerida.
  */
-export async function register(email: string, password: string, fullName?: string) {
+export async function register(
+  email: string,
+  password: string,
+  fullName: string | undefined,
+  termsDocumentId: number,
+  privacyDocumentId: number
+) {
   const { data } = await api.post("/auth/register", {
     email,
     password,
     full_name: fullName || undefined,
+    terms_document_id: termsDocumentId,
+    privacy_document_id: privacyDocumentId,
   })
   return data
 }
@@ -79,8 +90,16 @@ export async function getMe(): Promise<AuthMeResponse> {
  * Error 409 si el usuario ya existe.
  * Auth: No requerida (usa token de Google).
  */
-export async function googleRegister(googleToken: string) {
-  const { data } = await api.post("/google/register", { token: googleToken })
+export async function googleRegister(
+  googleToken: string,
+  termsDocumentId: number,
+  privacyDocumentId: number
+) {
+  const { data } = await api.post("/google/register", {
+    token: googleToken,
+    terms_document_id: termsDocumentId,
+    privacy_document_id: privacyDocumentId,
+  })
   return data
 }
 

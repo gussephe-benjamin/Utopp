@@ -16,6 +16,12 @@
       "sourceType": "github",
       "computedHash": "1d3f63da1a2bb8ef4dc7dffc260f7ec7eeeb36e39479dacb4f895c0ab6dad0dc"
     },
+    "strategic-compact": {
+      "source": "affaan-m/everything-claude-code",
+      "sourceType": "github",
+      "skillPath": "skills/strategic-compact/SKILL.md",
+      "computedHash": "1e3a97daac327993c73e63aff97df54848e70306674b5ae72c1ed22149f6a3dc"
+    },
     "tailwind-design-system": {
       "source": "wshobson/agents",
       "sourceType": "github",

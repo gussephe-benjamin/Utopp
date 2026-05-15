@@ -1,13 +1,6 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
-import { AUTH_BACKGROUND_IMAGE_URL } from "../constants/brand";
-import { UtoppLogo } from "../brand/UtoppLogo";
-
-// ─── Constantes visuales (mismo look que el diseño original) ─────────────
-// El gradiente va *encima* de la foto en la pila de capas CSS (primera capa = más al frente).
-
-// Gradiente alineado a la paleta del feed (azul → morado).
-const AUTH_GRADIENT_OVERLAY =
-  "linear-gradient(to bottom right, rgba(37,99,235,0.85), rgba(79,70,229,0.85), rgba(124,58,237,0.85))";
+import { AUTH_BACKGROUND_IMAGE_URL, AUTH_SCREEN_OVERLAY_GRADIENT } from "../constants/brand";
+import { UtoppBrandMark } from "../brand/UtoppBrandMark";
 
 type AuthScreenLayoutProps = {
   children: ReactNode;
@@ -61,8 +54,8 @@ export function AuthScreenLayout({
   const shellStyle: CSSProperties = {
     backgroundImage:
       bgImageReady && resolvedBgUrl
-        ? `${AUTH_GRADIENT_OVERLAY}, url("${safeUrl}")`
-        : AUTH_GRADIENT_OVERLAY,
+        ? `${AUTH_SCREEN_OVERLAY_GRADIENT}, url("${safeUrl}")`
+        : AUTH_SCREEN_OVERLAY_GRADIENT,
     backgroundSize: bgImageReady && resolvedBgUrl ? "cover, cover" : "cover",
     backgroundPosition: bgImageReady && resolvedBgUrl ? "center, center" : "center",
     backgroundRepeat: "no-repeat",
@@ -75,10 +68,12 @@ export function AuthScreenLayout({
     >
       {/* ─── Capa decorativa (orbes + líneas; misma jerarquía que antes) ─── */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-white/10 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-purple-400/20 rounded-full blur-3xl" />
-        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-indigo-400/10 rounded-full blur-2xl" />
-        <div className="absolute inset-0 opacity-10">
+        
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-violet-200/10 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-fuchsia-400/12 rounded-full blur-3xl" />
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-purple-400/10 rounded-full blur-2xl" />
+        <div className="absolute inset-0 opacity-[0.06]">
+
           <div className="absolute top-20 right-10 w-40 h-0.5 bg-white rotate-45" />
           <div className="absolute top-32 right-20 w-32 h-0.5 bg-white rotate-45" />
           <div className="absolute bottom-40 left-10 w-48 h-0.5 bg-white rotate-45" />
@@ -87,7 +82,7 @@ export function AuthScreenLayout({
 
       {/* ─── Contenido (logo + formulario / children) ─────────────────────── */}
       <div className={`w-full max-w-md relative z-10 ${contentClassName}`.trim()}>
-        {showLogo ? <UtoppLogo /> : null}
+        {showLogo ? <UtoppBrandMark variant="auth" /> : null}
         {children}
       </div>
     </div>
