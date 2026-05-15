@@ -23,5 +23,8 @@ class User(Base):
     last_accepted_legal_document_id: Mapped[int | None] = mapped_column(
         ForeignKey("legal_documents.id"), nullable=True, index=True
     )
+    last_accepted_privacy_document_id: Mapped[int | None] = mapped_column(
+        ForeignKey("legal_documents.id"), nullable=True, index=True
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 

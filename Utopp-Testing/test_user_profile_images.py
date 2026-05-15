@@ -5,6 +5,7 @@ import httpx
 import pytest
 
 from config import API_BASE_URL
+from auth_helpers import with_legal_ids
 
 
 class TestUserProfileImagesAPI:
@@ -33,7 +34,10 @@ class TestUserProfileImagesAPI:
             password = "TestPassword123!"
             reg = post_with_retry(
                 "/auth/register",
-                json={"email": email, "password": password, "full_name": "Profile Image QA"},
+                json=with_legal_ids(
+                    client,
+                    {"email": email, "password": password, "full_name": "Profile Image QA"},
+                ),
             )
             assert reg.status_code == 201, reg.text
             login = post_with_retry("/auth/login", json={"email": email, "password": password})

@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { getPost } from '../api/posts.api'
 import { unsavePost } from '../api/saved-posts.api'
 import { POST_TYPE_LABELS, POST_TYPE_ICONS, SUBTYPE_LABELS } from '../types/post.types'
+import { TW_UTOPP_GRADIENT_BR, TW_UTOPP_GRADIENT_R } from '../shared/constants/brand'
 
 interface PostImageOut {
   id: number
@@ -165,7 +166,7 @@ export default function PostDetailModal({ postId, onClose, onUnsaved }: PostDeta
               <button
                 onClick={handleUnsave}
                 disabled={unsaving}
-                className="p-2 rounded-xl text-[#4F46E5] hover:bg-indigo-50 transition-colors disabled:opacity-40"
+                className="p-2 rounded-xl text-[#2563EB] hover:bg-fuchsia-50 transition-colors disabled:opacity-40"
                 title="Quitar de guardados"
               >
                 <Bookmark className="w-4 h-4 fill-current" />
@@ -184,7 +185,7 @@ export default function PostDetailModal({ postId, onClose, onUnsaved }: PostDeta
         <div className="flex-1 overflow-y-auto">
           {loading && (
             <div className="flex items-center justify-center py-16 gap-2 text-gray-400">
-              <div className="w-5 h-5 border-2 border-gray-200 border-t-purple-500 rounded-full animate-spin" />
+              <div className="w-5 h-5 border-2 border-gray-200 border-t-[#9333EA] rounded-full animate-spin" />
               <span className="text-sm">Cargando publicación...</span>
             </div>
           )}
@@ -210,7 +211,7 @@ export default function PostDetailModal({ postId, onClose, onUnsaved }: PostDeta
                       className="w-9 h-9 rounded-full object-cover shrink-0 border border-gray-200"
                     />
                   ) : (
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-sm font-semibold shrink-0">
+                    <div className={`w-9 h-9 rounded-full ${TW_UTOPP_GRADIENT_BR} flex items-center justify-center text-white text-sm font-semibold shrink-0`}>
                       {userName.charAt(0).toUpperCase()}
                     </div>
                   )}
@@ -294,7 +295,7 @@ export default function PostDetailModal({ postId, onClose, onUnsaved }: PostDeta
                       {needsTrunc && (
                         <button
                           onClick={() => setDescExpanded(v => !v)}
-                          className="mt-1 text-xs font-medium text-[#4F46E5] hover:text-[#7C3AED] transition-colors"
+                          className="mt-1 text-xs font-medium text-[#2563EB] hover:text-[#C026D3] transition-colors"
                         >
                           {descExpanded ? 'Ver menos' : 'Ver más'}
                         </button>
@@ -334,7 +335,7 @@ export default function PostDetailModal({ postId, onClose, onUnsaved }: PostDeta
                       href={mainLink.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 flex-1 min-w-0 justify-center py-2.5 px-4 rounded-xl text-sm font-semibold bg-gradient-to-r from-[#4F46E5] to-[#7C3AED] text-white hover:opacity-90 transition-opacity"
+                      className={`flex items-center gap-1.5 flex-1 min-w-0 justify-center py-2.5 px-4 rounded-xl text-sm font-semibold ${TW_UTOPP_GRADIENT_R} text-white hover:opacity-90 transition-opacity`}
                     >
                       <ExternalLink className="w-3.5 h-3.5 shrink-0" />
                       <span className="truncate">{mainLink.label}</span>

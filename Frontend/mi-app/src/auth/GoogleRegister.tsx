@@ -3,43 +3,43 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "./useAuth";
 import { useState } from "react";
 import { googleRegister } from "../api/auth.api";
-import { acceptTerms } from "../api/legal.api";
+import { getCurrentPrivacy, getCurrentTerms } from "../api/legal.api";
 import { redirectAfterAuthSession } from "./postAuthRedirect";
 
 export interface GoogleRegisterProps {
-  /** Id del documento legal vigente; obligatorio para registrar. */
-  termsDocumentId: number | null;
-  /** El usuario marcó explícitamente la casilla de aceptación. */
+  /** El usuario marcó explícitamente ambas casillas de aceptación. */
   termsAccepted: boolean;
-  /** Términos cargados correctamente (no loading ni error). */
-  termsReady: boolean;
+  privacyAccepted: boolean;
+  /** Ambos documentos legales cargaron correctamente. */
+  legalReady: boolean;
 }
 
 export default function GoogleRegister({
-  termsDocumentId,
   termsAccepted,
-  termsReady,
+  privacyAccepted,
+  legalReady,
 }: GoogleRegisterProps) {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const blocked = !termsReady || !termsAccepted || termsDocumentId == null;
+  const blocked = !legalReady || !termsAccepted || !privacyAccepted;
 
   const handleGoogleSuccess = async (credentialResponse: { credential?: string }) => {
-    if (!credentialResponse.credential || blocked || termsDocumentId == null) return;
+    if (!credentialResponse.credential || blocked) return;
 
     setIsLoading(true);
     setError(null);
     try {
-      const data = await googleRegister(credentialResponse.credential);
+      const termsFresh = await getCurrentTerms();
+      const privacyFresh = await getCurrentPrivacy();
+      const data = await googleRegister(
+        credentialResponse.credential,
+        termsFresh.id,
+        privacyFresh.id
+      );
       login(data.access_token);
-      try {
-        await acceptTerms(termsDocumentId);
-      } catch {
-        // Si falla el POST, /auth/me seguirá con needs_terms y redirectAfterAuthSession o la pantalla de términos lo resuelve.
-      }
       await redirectAfterAuthSession(navigate);
     } catch (err: unknown) {
       console.error("Error en Google register:", err);
@@ -47,6 +47,11 @@ export default function GoogleRegister({
       const detail = axiosErr?.response?.data?.detail;
       if (typeof detail === "string" && detail.includes("ya está registrado")) {
         setError("Ya tienes una cuenta. Usa 'Iniciar sesión' con Google.");
+      } else if (
+        typeof detail === "string" &&
+        detail.includes("documentos legales")
+      ) {
+        setError("Los textos legales se actualizaron. Recarga la página y vuelve a intentarlo.");
       } else {
         setError("No se pudo registrar con Google. Intenta de nuevo.");
       }
@@ -57,17 +62,12 @@ export default function GoogleRegister({
 
   return (
     <div className="flex flex-col items-center gap-3 w-full">
-      {!termsReady && (
-        <p className="text-gray-500 text-xs text-center">Cargando términos y condiciones…</p>
-      )}
-      {termsReady && !termsAccepted && (
-        <p className="text-amber-700 text-xs text-center">
-          Marca la casilla de abajo para aceptar los términos y poder continuar con Google.
-        </p>
+      {!legalReady && (
+        <p className="text-gray-500 text-xs text-center">Cargando términos y política de privacidad…</p>
       )}
       {isLoading ? (
         <div className="flex items-center gap-2 text-gray-500 text-sm py-2">
-          <div className="w-4 h-4 border-2 border-gray-300 border-t-indigo-500 rounded-full animate-spin" />
+          <div className="w-4 h-4 border-2 border-gray-300 border-t-[#9333EA] rounded-full animate-spin" />
           <span>Registrando con Google...</span>
         </div>
       ) : (

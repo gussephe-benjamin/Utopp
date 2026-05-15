@@ -10,6 +10,7 @@ import {
   POST_TYPE_ICONS,
   SUBTYPE_LABELS,
 } from '../types/post.types'
+import { TW_UTOPP_GRADIENT_R } from '../shared/constants/brand'
 
 interface Step5PreviewProps {
   postType: PostType
@@ -224,7 +225,7 @@ export default function Step5Preview({
                   {needsTrunc && (
                     <button
                       onClick={() => setDescExpanded(v => !v)}
-                      className="mt-1 text-xs font-medium text-[#4F46E5] hover:text-[#7C3AED] transition-colors"
+                      className="mt-1 text-xs font-medium text-[#2563EB] hover:text-[#C026D3] transition-colors"
                     >
                       {descExpanded ? 'Ver menos' : 'Ver más'}
                     </button>
@@ -250,7 +251,7 @@ export default function Step5Preview({
                   href={links[0].url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 text-center py-2.5 px-3 rounded-xl text-sm font-medium bg-gradient-to-r from-[#4F46E5] to-[#7C3AED] text-white shadow hover:shadow-md transition-all"
+                  className={`flex-1 text-center py-2.5 px-3 rounded-xl text-sm font-medium ${TW_UTOPP_GRADIENT_R} text-white shadow hover:shadow-md transition-all`}
                 >
                   {links[0].label}
                 </a>

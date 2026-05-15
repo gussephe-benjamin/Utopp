@@ -2,22 +2,35 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import GoogleRegister from "../../auth/GoogleRegister";
 import { AuthScreenLayout } from "../../shared/layout/AuthScreenLayout";
-import { getCurrentTerms, type TermsCurrent } from "../../api/legal.api";
+import { getCurrentPrivacy, getCurrentTerms, type TermsCurrent } from "../../api/legal.api";
+import {
+  TW_AUTH_CHECKBOX,
+  TW_AUTH_FOOTER_LINK,
+  TW_AUTH_HEADING,
+  TW_AUTH_LEGAL_LINK,
+} from "../../shared/constants/brand";
 
 export default function RegisterOG() {
   const navigate = useNavigate();
-  const [doc, setDoc] = useState<TermsCurrent | null>(null);
+  const [termsDoc, setTermsDoc] = useState<TermsCurrent | null>(null);
+  const [privacyDoc, setPrivacyDoc] = useState<TermsCurrent | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [checked, setChecked] = useState(false);
+  const [termsChecked, setTermsChecked] = useState(false);
+  const [privacyChecked, setPrivacyChecked] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const t = await getCurrentTerms();
-        if (!cancelled) setDoc(t);
+        const [t, p] = await Promise.all([getCurrentTerms(), getCurrentPrivacy()]);
+        if (!cancelled) {
+          setTermsDoc(t);
+          setPrivacyDoc(p);
+        }
       } catch {
-        if (!cancelled) setLoadError("No se pudieron cargar los términos. Recarga la página o intenta más tarde.");
+        if (!cancelled) {
+          setLoadError("No se pudieron cargar los textos legales. Recarga la página o intenta más tarde.");
+        }
       }
     })();
     return () => {
@@ -25,13 +38,13 @@ export default function RegisterOG() {
     };
   }, []);
 
-  const termsReady = !!doc && !loadError;
+  const legalReady = !!termsDoc && !!privacyDoc && !loadError;
 
   return (
     <AuthScreenLayout>
       <div className="bg-white rounded-3xl shadow-2xl p-8">
         <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-[#4F46E5]">Crear cuenta</h1>
+          <h1 className={`text-2xl font-bold ${TW_AUTH_HEADING}`}>Crear cuenta</h1>
           <p className="text-gray-500 text-sm">Únete a la comunidad Utopp</p>
         </div>
 
@@ -48,27 +61,56 @@ export default function RegisterOG() {
           </div>
         </div>
 
-        <label className="flex items-start gap-3 cursor-pointer mb-6">
-          <input
-            type="checkbox"
-            className="mt-0.5 size-4 rounded border-gray-300 text-[#4F46E5] focus:ring-[#4F46E5]"
-            checked={checked}
-            onChange={(e) => setChecked(e.target.checked)}
-            disabled={!termsReady}
-          />
-          <span className="text-sm text-gray-700">
-            He leído y acepto los{" "}
-            <Link to="/terms" className="font-semibold text-[#4F46E5] underline underline-offset-2 hover:text-[#4338CA]">
-              términos y condiciones
-            </Link>
-            . Podré volver a aceptar una versión nueva cuando se actualicen.
-          </span>
-        </label>
+        <div className="space-y-4 mb-6">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              className={`mt-0.5 size-4 rounded border-gray-300 ${TW_AUTH_CHECKBOX}`}
+              checked={termsChecked}
+              onChange={(e) => setTermsChecked(e.target.checked)}
+              disabled={!legalReady}
+            />
+            <span className="text-sm text-gray-700">
+              He leído y acepto los{" "}
+              <Link
+                to="/terms"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={TW_AUTH_LEGAL_LINK}
+              >
+                términos y condiciones
+              </Link>
+              .
+            </span>
+          </label>
+
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              className={`mt-0.5 size-4 rounded border-gray-300 ${TW_AUTH_CHECKBOX}`}
+              checked={privacyChecked}
+              onChange={(e) => setPrivacyChecked(e.target.checked)}
+              disabled={!legalReady}
+            />
+            <span className="text-sm text-gray-700">
+              He leído y acepto la{" "}
+              <Link
+                to="/privacy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={TW_AUTH_LEGAL_LINK}
+              >
+                política de datos y privacidad
+              </Link>
+              .
+            </span>
+          </label>
+        </div>
 
         <GoogleRegister
-          termsDocumentId={doc?.id ?? null}
-          termsAccepted={checked}
-          termsReady={termsReady}
+          termsAccepted={termsChecked}
+          privacyAccepted={privacyChecked}
+          legalReady={legalReady}
         />
 
         <p className="text-center mt-6 text-gray-500 text-sm">
@@ -76,7 +118,7 @@ export default function RegisterOG() {
           <button
             type="button"
             onClick={() => navigate("/login")}
-            className="text-[#4F46E5] font-semibold hover:underline transition-all"
+            className={TW_AUTH_FOOTER_LINK}
           >
             Inicia sesión
           </button>

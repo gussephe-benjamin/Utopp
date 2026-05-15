@@ -16,11 +16,36 @@ export async function getCurrentTerms(): Promise<TermsCurrent> {
   return data
 }
 
-export async function acceptTerms(documentId: number): Promise<{
-  ok: boolean
+export async function getCurrentPrivacy(): Promise<TermsCurrent> {
+  const { data } = await api.get<TermsCurrent>("/legal/privacy/current")
+  return data
+}
+
+export interface AcceptLegalPart {
   legal_document_id: number
   accepted_at: string
-}> {
-  const { data } = await api.post("/legal/accept", { document_id: documentId })
+}
+
+export interface AcceptLegalResponse {
+  ok: boolean
+  terms?: AcceptLegalPart
+  privacy?: AcceptLegalPart
+}
+
+export async function acceptLegal(params: {
+  termsDocumentId?: number | null
+  privacyDocumentId?: number | null
+  /** Alias compatible con el backend (solo términos) */
+  documentId?: number | null
+}): Promise<AcceptLegalResponse> {
+  const body: Record<string, number> = {}
+  if (params.termsDocumentId != null) body.terms_document_id = params.termsDocumentId
+  if (params.privacyDocumentId != null) body.privacy_document_id = params.privacyDocumentId
+  if (params.documentId != null) body.document_id = params.documentId
+  const { data } = await api.post<AcceptLegalResponse>("/legal/accept", body)
   return data
+}
+
+export async function acceptTerms(documentId: number): Promise<AcceptLegalResponse> {
+  return acceptLegal({ documentId })
 }

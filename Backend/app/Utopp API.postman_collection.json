@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "22f00328-432a-40fe-889c-39c0c30030d5",
     "name": "Utopp API",
-    "description": "# Utopp API\n\nAPI REST del backend de Utopp, plataforma de publicaciones académicas para la comunidad UTEC. Construida con FastAPI + SQLAlchemy + PostgreSQL.\n\n## Arquitectura\nCapas: Routers (endpoints HTTP) → Services (lógica de negocio) → Models (SQLAlchemy/PostgreSQL) → Schemas (Pydantic). Autenticación: JWT Bearer Token obtenido en `/auth/login` o `/google/login`.\n\n## Tablas y relaciones\n\n**`users`** — Usuarios registrados. Campos: `id`, `email`, `full_name`, `career`, `cycle`, `interests` (JSONB), `availability`, `onboarding_completed`.\n\n**`posts`** — Publicaciones. FK: `user_id → users`. Campos clave: `title` (nullable), `description`, `post_type` (enum), `subtype` (enum), `status` (draft/published/archived), `time_status` (no_deadline/in_time/out_of_time), `deadline_at`, `tags` (JSONB), `specific_fields` (JSONB).\n\nTipos de post: `international_opportunity`, `event`, `academic_project`, `announcement`, `simple_post`.\nSubtipos por tipo: international_opportunity → [intercambio, pasantia, investigacion, 4+1] | event → [conferencia, arte, emprendimiento, hackathon, voluntariado, deporte, visita_academica, empleo] | academic_project → [competencia, proyecto_investigacion] | announcement → [comunicado, urgente] | simple_post → [informativo, pregunta, debate].\n\n**`post_images`** — Imágenes de posts. FK: `post_id → posts`. Campos: `cloudinary_id`, `url`, `position`.\n\n**`post_links`** — Links de posts. FK: `post_id → posts`. Campos: `label`, `url`, `type`, `display_type`, `position`.\n\n**`follows`** — Seguimiento entre usuarios. FKs: `follower_id → users`, `following_id → users`. Clave compuesta única.\n\n**`saved_posts`** — Posts guardados como favoritos. FKs: `user_id → users`, `post_id → posts`. Clave compuesta única.\n\n**`event_participants`** — Participación en eventos/proyectos. FKs: `user_id → users`, `post_id → posts`. Campo: `status` (interested/going/attended).\n\n**`roles`** — Roles del sistema (ej: admin). Campos: `id`, `name`, `description`.\n\n**`user_roles`** — Asignación de roles. FKs: `user_id → users`, `role_id → roles`.\n\n## Flujo recomendado\n1. `POST /auth/register` — Crear usuario\n2. `POST /auth/login` — Obtener token (se guarda en `{{token}}`)\n3. `POST /onboarding/update` — Completar perfil\n4. Crear post con endpoint especializado (academic-projects, simple-posts, announcements) o genérico `POST /posts/`\n5. `POST /posts/{{post_id}}/publish` — Publicar\n6. `GET /feed` — Ver en el feed",
+    "description": "# Utopp API\n\nAPI REST del backend de Utopp, plataforma de publicaciones académicas para la comunidad UTEC. Construida con FastAPI + SQLAlchemy + PostgreSQL.\n\n## Arquitectura\nCapas: Routers (endpoints HTTP) → Services (lógica de negocio) → Models (SQLAlchemy/PostgreSQL) → Schemas (Pydantic). Autenticación: JWT Bearer Token obtenido en `/auth/login` o `/google/login`.\n\n## Tablas y relaciones\n\n**`users`** — Usuarios registrados. Campos: `id`, `email`, `full_name`, `career`, `cycle`, `interests` (JSONB), `availability`, `onboarding_completed`.\n\n**`posts`** — Publicaciones. FK: `user_id → users`. Campos clave: `title` (nullable), `description`, `post_type` (enum), `subtype` (enum), `status` (draft/published/archived), `time_status` (no_deadline/in_time/out_of_time), `deadline_at`, `tags` (JSONB), `specific_fields` (JSONB).\n\nTipos de post: `international_opportunity`, `event`, `academic_project`, `announcement`, `simple_post`.\nSubtipos por tipo: international_opportunity → [intercambio, pasantia, investigacion, 4+1] | event → [conferencia, arte, emprendimiento, hackathon, voluntariado, deporte, visita_academica, empleo] | academic_project → [competencia, proyecto_investigacion] | announcement → [comunicado, urgente] | simple_post → [informativo, pregunta, debate].\n\n**`post_images`** — Imágenes de posts. FK: `post_id → posts`. Campos: `cloudinary_id`, `url`, `position`.\n\n**`post_links`** — Links de posts. FK: `post_id → posts`. Campos: `label`, `url`, `type`, `display_type`, `position`.\n\n**`follows`** — Seguimiento entre usuarios. FKs: `follower_id → users`, `following_id → users`. Clave compuesta única.\n\n**`saved_posts`** — Posts guardados como favoritos. FKs: `user_id → users`, `post_id → posts`. Clave compuesta única.\n\n**`event_participants`** — Participación en eventos/proyectos. FKs: `user_id → users`, `post_id → posts`. Campo: `status` (interested/going/attended).\n\n**`roles`** — Roles del sistema (ej: admin). Campos: `id`, `name`, `description`.\n\n**`user_roles`** — Asignación de roles. FKs: `user_id → users`, `role_id → roles`.\n\n## Flujo recomendado\n1. **Legal:** `GET /legal/terms/current` y `GET /legal/privacy/current` (los tests de la carpeta Legal guardan `terms_document_id` y `privacy_document_id`).\n2. `POST /auth/register` o `POST /google/register` — incluir esos ids en el body.\n3. `POST /auth/login` — Obtener token (`{{token}}`)\n4. Si falta consentimiento: `POST /legal/accept` con ids vigentes.\n5. `POST /onboarding/update` — Completar perfil\n6. Crear post (endpoints especializados o `POST /posts/`)\n7. `POST /posts/{{post_id}}/publish` — Publicar\n8. `GET /feed` — Ver en el feed",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "45592436",
     "_collection_link": "https://go.postman.co/collection/45592436-22f00328-432a-40fe-889c-39c0c30030d5?source=collection_link"
@@ -68,7 +68,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"email\": \"alumno@utec.edu.pe\",\n    \"password\": \"password123\",\n    \"full_name\": \"Juan Pérez\"\n}"
+              "raw": "{\n    \"email\": \"alumno@utec.edu.pe\",\n    \"password\": \"password123\",\n    \"full_name\": \"Juan Pérez\",\n    \"terms_document_id\": {{terms_document_id}},\n    \"privacy_document_id\": {{privacy_document_id}}\n}"
             },
             "url": {
               "raw": "{{base_url}}/auth/register",
@@ -80,7 +80,7 @@
                 "register"
               ]
             },
-            "description": "POST /auth/register — Crea un nuevo usuario en la tabla `users`. Requiere `email`, `password` y `full_name`. El usuario queda con `onboarding_completed = false`. No requiere autenticación."
+            "description": "POST /auth/register — Crea usuario en `users`. Requiere `email`, `password`, `full_name`, **`terms_document_id`** y **`privacy_document_id`** (ids del `GET /legal/terms/current` y `GET /legal/privacy/current` vigentes). Ejecuta antes las peticiones **Legal → Terms** y **Legal → Privacy** para guardar esos ids en variables de colección. Registra también las aceptaciones legales. No requiere JWT."
           },
           "response": []
         },
@@ -180,7 +180,7 @@
                 "me"
               ]
             },
-            "description": "GET /auth/me — Devuelve `id`, `email` y `onboarding_completed` del usuario autenticado. Útil para verificar que el token es válido y conocer el estado de onboarding. Requiere autenticación."
+            "description": "GET /auth/me — Devuelve `id`, `email`, `onboarding_completed`, **`needs_terms`** (true si falta cualquier consentimiento legal), **`needs_terms_consent`** y **`needs_privacy_consent`**. Requiere Bearer."
           },
           "response": []
         }
@@ -219,7 +219,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"token\": \"GOOGLE_ID_TOKEN_AQUI\"\n}"
+              "raw": "{\n    \"token\": \"GOOGLE_ID_TOKEN_AQUI\",\n    \"terms_document_id\": {{terms_document_id}},\n    \"privacy_document_id\": {{privacy_document_id}}\n}"
             },
             "url": {
               "raw": "{{base_url}}/google/register",
@@ -231,7 +231,7 @@
                 "register"
               ]
             },
-            "description": "POST /google/register — Registra un nuevo usuario usando un Google ID Token. El backend verifica el token con Google, extrae `email` y `name`, y crea el usuario en `users`. Devuelve un JWT de Utopp. Error 409 si el email ya existe."
+            "description": "POST /google/register — Registra usuario nuevo con Google ID Token más **`terms_document_id`** y **`privacy_document_id`** vigentes (mismo criterio que `/auth/register`). Devuelve JWT Utopp. 409 si el email ya existe. 400 si los ids legales no coinciden con los activos."
           },
           "response": []
         },
@@ -281,7 +281,143 @@
           "response": []
         }
       ],
-      "description": "Autenticación mediante Google OAuth 2.0. El frontend obtiene un Google ID Token → lo envía al backend → el backend lo valida con Google, extrae email y nombre, y devuelve un JWT propio de Utopp. Usar `/google/register` la primera vez y `/google/login` en accesos posteriores."
+      "description": "Autenticación mediante Google OAuth 2.0. El frontend obtiene un Google ID Token → lo envía al backend → el backend lo valida con Google, extrae email y nombre, y devuelve un JWT propio de Utopp. Usar `/google/register` la primera vez y `/google/login` en accesos posteriores. **Registro:** el body debe incluir también `terms_document_id` y `privacy_document_id` (ids vigentes de `GET /legal/terms/current` y `GET /legal/privacy/current`)."
+    },
+    {
+      "name": "Legal",
+      "item": [
+        {
+          "name": "Terms — documento actual",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var j = pm.response.json();",
+                  "    pm.collectionVariables.set('terms_document_id', String(j.id));",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/legal/terms/current",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "legal",
+                "terms",
+                "current"
+              ]
+            },
+            "description": "GET /legal/terms/current — Devuelve el documento activo de términos (`id`, `slug`, `version`, `title`, `content` Markdown, hashes y fechas). Público. El script de tests guarda `id` en la variable de colección `terms_document_id` para usarla en **Register** o **Accept legal**."
+          },
+          "response": []
+        },
+        {
+          "name": "Privacy — documento actual",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var j = pm.response.json();",
+                  "    pm.collectionVariables.set('privacy_document_id', String(j.id));",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/legal/privacy/current",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "legal",
+                "privacy",
+                "current"
+              ]
+            },
+            "description": "GET /legal/privacy/current — Devuelve el documento activo de política de datos y privacidad. Público. El script guarda `id` en `privacy_document_id`."
+          },
+          "response": []
+        },
+        {
+          "name": "Accept legal consent",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"terms_document_id\": {{terms_document_id}},\n    \"privacy_document_id\": {{privacy_document_id}}\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/legal/accept",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "legal",
+                "accept"
+              ]
+            },
+            "description": "POST /legal/accept — Registra aceptación del usuario autenticado (Bearer `{{token}}`). Envía al menos uno de: `terms_document_id`, `privacy_document_id` (deben coincidir con los `GET .../current`). Respuesta: `{ \"ok\": true, \"terms\": {...}, \"privacy\": {...} }` (cada parte omitida si no se envió). Opcional: header `Idempotency-Key`. Compatibilidad: también acepta `document_id` como alias de solo términos."
+          },
+          "response": []
+        },
+        {
+          "name": "Accept legal — solo términos (legacy)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"document_id\": {{terms_document_id}}\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/legal/accept",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "legal",
+                "accept"
+              ]
+            },
+            "description": "Mismo `POST /legal/accept` con cuerpo mínimo legacy: solo `document_id` igual al id vigente de términos."
+          },
+          "response": []
+        }
+      ],
+      "description": "Documentos legales (Markdown servido desde BD, sincronizado desde `app/legal/*.md` al arranque). Ejecutar **Terms** y **Privacy** antes de **Register** o de **Accept** para rellenar `terms_document_id` y `privacy_document_id`."
     },
     {
       "name": "Onboarding",
@@ -2185,6 +2321,16 @@
     },
     {
       "key": "follower_id",
+      "value": "2",
+      "type": "string"
+    },
+    {
+      "key": "terms_document_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "privacy_document_id",
       "value": "2",
       "type": "string"
     }

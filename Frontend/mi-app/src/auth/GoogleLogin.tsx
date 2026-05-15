@@ -33,7 +33,7 @@ export default function GoogleLogin() {
     <div className="flex flex-col items-center gap-3 w-full">
       {isLoading ? (
         <div className="flex items-center gap-2 text-gray-500 text-sm py-2">
-          <div className="w-4 h-4 border-2 border-gray-300 border-t-indigo-500 rounded-full animate-spin" />
+          <div className="w-4 h-4 border-2 border-gray-300 border-t-[#9333EA] rounded-full animate-spin" />
           <span>Validando con Google...</span>
         </div>
       ) : (

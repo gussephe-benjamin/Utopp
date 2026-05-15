@@ -36,6 +36,8 @@ class UserCreate(BaseModel):
     email: EmailStr = Field(..., max_length=255)
     password: str = Field(min_length=6, max_length=128)
     full_name: str | None = Field(None, max_length=255)
+    terms_document_id: int = Field(..., ge=1, description="Id del documento activo de términos al momento del registro")
+    privacy_document_id: int = Field(..., ge=1, description="Id del documento activo de privacidad al momento del registro")
 
 
 class UserBasicOut(BaseModel):
@@ -135,3 +137,12 @@ class TokenOut(BaseModel):
     """Respuesta con JWT token."""
     access_token: str
     token_type: str = "bearer"
+
+
+class GoogleRegisterIn(BaseModel):
+    """Registro con Google: token y snapshot de documentos legales vigentes."""
+    model_config = {"extra": "ignore"}
+
+    token: str = Field(..., min_length=10)
+    terms_document_id: int = Field(..., ge=1)
+    privacy_document_id: int = Field(..., ge=1)

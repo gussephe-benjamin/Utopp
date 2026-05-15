@@ -3,7 +3,7 @@ import uuid
 import pytest
 import httpx
 from config import API_BASE_URL
-from auth_helpers import register_then_login_access_token
+from auth_helpers import register_then_login_access_token, with_legal_ids
 
 
 class TestAuthAPI:
@@ -47,7 +47,7 @@ class TestAuthAPI:
         unique_data = test_user_data.copy()
         unique_data["email"] = f"{uuid.uuid4().hex}.{test_user_data['email']}"
         
-        response = client.post("/auth/register", json=unique_data)
+        response = client.post("/auth/register", json=with_legal_ids(client, unique_data))
         assert response.status_code == 201
         data = response.json()
         assert "id" in data
@@ -56,7 +56,7 @@ class TestAuthAPI:
     
     def test_register_existing_email(self, client, test_user_data):
         """Test POST /auth/register - Error with existing email."""
-        response = client.post("/auth/register", json=test_user_data)
+        response = client.post("/auth/register", json=with_legal_ids(client, dict(test_user_data)))
         assert response.status_code == 400
         data = response.json()
         assert "detail" in data
@@ -69,7 +69,7 @@ class TestAuthAPI:
             "password": "TestPassword123!",
             "full_name": "Test User"
         }
-        response = client.post("/auth/register", json=non_utec_data)
+        response = client.post("/auth/register", json=with_legal_ids(client, non_utec_data))
         assert response.status_code in [400, 422]
     
     def test_login_success(self, client, test_user_data):
@@ -154,7 +154,7 @@ class TestAuthAPI:
             "password": "TestPassword123!",
             "full_name": "Test User"
         }
-        response = client.post("/auth/register", json=invalid_data)
+        response = client.post("/auth/register", json=with_legal_ids(client, invalid_data))
         assert response.status_code in [400, 422]
     
     def test_register_empty_email(self, client):
@@ -164,7 +164,7 @@ class TestAuthAPI:
             "password": "TestPassword123!",
             "full_name": "Test User"
         }
-        response = client.post("/auth/register", json=invalid_data)
+        response = client.post("/auth/register", json=with_legal_ids(client, invalid_data))
         assert response.status_code in [400, 422]
     
     def test_register_empty_password(self, client):
@@ -174,7 +174,7 @@ class TestAuthAPI:
             "password": "",
             "full_name": "Test User"
         }
-        response = client.post("/auth/register", json=invalid_data)
+        response = client.post("/auth/register", json=with_legal_ids(client, invalid_data))
         assert response.status_code in [400, 422]
     
     def test_register_empty_full_name(self, client):
@@ -184,7 +184,7 @@ class TestAuthAPI:
             "password": "TestPassword123!",
             "full_name": ""
         }
-        response = client.post("/auth/register", json=invalid_data)
+        response = client.post("/auth/register", json=with_legal_ids(client, invalid_data))
         assert response.status_code in [400, 422]
     
     def test_register_weak_password(self, client):
@@ -194,7 +194,7 @@ class TestAuthAPI:
             "password": "123",
             "full_name": "Test User"
         }
-        response = client.post("/auth/register", json=invalid_data)
+        response = client.post("/auth/register", json=with_legal_ids(client, invalid_data))
         assert response.status_code in [400, 422]
     
     def test_register_password_no_special_chars(self, client):
@@ -205,7 +205,7 @@ class TestAuthAPI:
             "password": "Password123",
             "full_name": "Test User"
         }
-        response = client.post("/auth/register", json=invalid_data)
+        response = client.post("/auth/register", json=with_legal_ids(client, invalid_data))
         # Might pass or fail depending on password policy
         assert response.status_code in [201, 400, 422]
     
@@ -254,7 +254,7 @@ class TestAuthAPI:
             "password": "TestPassword123!",
             "full_name": "Test User"
         }
-        response = client.post("/auth/register", json=invalid_data)
+        response = client.post("/auth/register", json=with_legal_ids(client, invalid_data))
         assert response.status_code in [400, 422]
     
     def test_register_very_long_full_name(self, client):
@@ -264,7 +264,7 @@ class TestAuthAPI:
             "password": "TestPassword123!",
             "full_name": "x" * 1000
         }
-        response = client.post("/auth/register", json=invalid_data)
+        response = client.post("/auth/register", json=with_legal_ids(client, invalid_data))
         assert response.status_code in [400, 422]
     
     def test_register_very_long_password(self, client):
@@ -274,7 +274,7 @@ class TestAuthAPI:
             "password": "x" * 1000,
             "full_name": "Test User"
         }
-        response = client.post("/auth/register", json=invalid_data)
+        response = client.post("/auth/register", json=with_legal_ids(client, invalid_data))
         assert response.status_code in [400, 422]
     
     def test_register_email_case_sensitivity(self, client):
@@ -285,7 +285,7 @@ class TestAuthAPI:
             "password": "TestPassword123!",
             "full_name": "Test User"
         }
-        response = client.post("/auth/register", json=test_data)
+        response = client.post("/auth/register", json=with_legal_ids(client, test_data))
         # Should fail if email already exists (case-insensitive check)
         assert response.status_code in [400, 201]
     
@@ -306,7 +306,7 @@ class TestAuthAPI:
             "password": "TestPassword123!",
             "full_name": "Test User-José O'Connor"
         }
-        response = client.post("/auth/register", json=test_data)
+        response = client.post("/auth/register", json=with_legal_ids(client, test_data))
         assert response.status_code in [201, 400, 422]
     
     def test_register_unicode_name(self, client):
@@ -316,16 +316,16 @@ class TestAuthAPI:
             "password": "TestPassword123!",
             "full_name": "Test 用户 ユーザー"
         }
-        response = client.post("/auth/register", json=test_data)
+        response = client.post("/auth/register", json=with_legal_ids(client, test_data))
         assert response.status_code in [201, 400, 422]
     
     def test_multiple_register_attempts(self, client, test_user_data):
         """Test multiple register attempts with same email."""
         # First attempt
-        response1 = client.post("/auth/register", json=test_user_data)
-        
+        response1 = client.post("/auth/register", json=with_legal_ids(client, dict(test_user_data)))
+
         # Second attempt with same data
-        response2 = client.post("/auth/register", json=test_user_data)
+        response2 = client.post("/auth/register", json=with_legal_ids(client, dict(test_user_data)))
         
         # First should fail (already exists) or succeed, second should fail
         assert response1.status_code in [201, 400]
@@ -416,7 +416,7 @@ class TestAuthAPI:
             "password": "TestPassword123!",
             "full_name": "Test User"
         }
-        response = client.post("/auth/register", json=test_data)
+        response = client.post("/auth/register", json=with_legal_ids(client, test_data))
         assert response.status_code in [201, 400]  # 400 if already exists
     
     def test_invalid_domain_gmail(self, client):
@@ -426,7 +426,7 @@ class TestAuthAPI:
             "password": "TestPassword123!",
             "full_name": "Test User"
         }
-        response = client.post("/auth/register", json=test_data)
+        response = client.post("/auth/register", json=with_legal_ids(client, test_data))
         assert response.status_code in [400, 422]
     
     def test_invalid_domain_yahoo(self, client):
@@ -436,7 +436,7 @@ class TestAuthAPI:
             "password": "TestPassword123!",
             "full_name": "Test User"
         }
-        response = client.post("/auth/register", json=test_data)
+        response = client.post("/auth/register", json=with_legal_ids(client, test_data))
         assert response.status_code in [400, 422]
     
     def test_subdomain_variations(self, client):
@@ -446,7 +446,7 @@ class TestAuthAPI:
             "password": "TestPassword123!",
             "full_name": "Test User"
         }
-        response = client.post("/auth/register", json=test_data)
+        response = client.post("/auth/register", json=with_legal_ids(client, test_data))
         # May fail if only @utec.edu.pe is allowed
         assert response.status_code in [201, 400, 422]
     
@@ -457,7 +457,7 @@ class TestAuthAPI:
             "password": "TestPassword123!",
             "full_name": "Test User"
         }
-        response = client.post("/auth/register", json=test_data)
+        response = client.post("/auth/register", json=with_legal_ids(client, test_data))
         assert response.status_code in [201, 400, 422]
     
     def test_multiple_at_symbols(self, client):
@@ -467,7 +467,7 @@ class TestAuthAPI:
             "password": "TestPassword123!",
             "full_name": "Test User"
         }
-        response = client.post("/auth/register", json=test_data)
+        response = client.post("/auth/register", json=with_legal_ids(client, test_data))
         assert response.status_code in [400, 422]
     
     # ==================== Response Schema Tests ====================
@@ -479,7 +479,7 @@ class TestAuthAPI:
             "password": "TestPassword123!",
             "full_name": "Test User"
         }
-        response = client.post("/auth/register", json=test_data)
+        response = client.post("/auth/register", json=with_legal_ids(client, test_data))
         if response.status_code == 201:
             data = response.json()
             expected_fields = ["id", "email", "full_name"]
@@ -523,7 +523,7 @@ class TestAuthAPI:
             "password": "TestPassword123!",
             "full_name": "Test User"
         }
-        register_response = client.post("/auth/register", json=test_data)
+        register_response = client.post("/auth/register", json=with_legal_ids(client, test_data))
         
         if register_response.status_code == 201:
             # Try to login
@@ -553,7 +553,7 @@ class TestAuthAPI:
             "password": "TestPassword123!",
             "full_name": "Test User"
         }
-        response = client.post("/auth/register", json=test_data)
+        response = client.post("/auth/register", json=with_legal_ids(client, test_data))
         
         if response.status_code == 201:
             # Login to get token
