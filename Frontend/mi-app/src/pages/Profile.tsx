@@ -453,7 +453,7 @@ export default function Profile({ viewUserId }: { viewUserId?: number } = {}) {
                 className={`mt-3 flex items-center gap-1.5 px-5 py-2 rounded-xl text-sm font-semibold transition-all ${
                   isFollowing
                     ? 'bg-gray-100 text-gray-700 hover:bg-red-50 hover:text-red-600'
-                    : `${TW_UTOPP_GRADIENT_R} text-white shadow-md hover:shadow-lg`
+                    : 'bg-gradient-to-r from-[#2f55f6] to-[#ba4ef8] text-white shadow-md hover:shadow-lg hover:brightness-105 active:scale-95'
                 }`}
               >
                 {isFollowing ? <UserMinus className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
@@ -719,7 +719,7 @@ function FollowerList({
                     {onFollowUser && (
                       <button
                         onClick={() => onFollowUser(item.user_id)}
-                        className="px-2.5 py-1 text-xs font-medium rounded-lg bg-[#2563EB] text-white hover:bg-[#9333EA] transition-colors"
+                        className="px-2.5 py-1 text-xs font-medium rounded-lg bg-gradient-to-r from-[#2f55f6] to-[#ba4ef8] text-white hover:brightness-105 transition-all shadow-sm active:scale-95"
                       >
                         Seguir
                       </button>
@@ -1323,7 +1323,7 @@ function InfoTab({
               </div>
             </div>
             <div className="flex gap-2">
-              <button onClick={onSaveInterests} className="flex items-center gap-1.5 px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors">
+              <button onClick={onSaveInterests} className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-[#2f55f6] to-[#ba4ef8] text-white rounded-lg text-sm font-medium hover:brightness-105 transition-all shadow-sm active:scale-95">
                 <Check className="w-4 h-4" /> Guardar
               </button>
               <button onClick={onCancelInterests} className="flex items-center gap-1.5 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-300 transition-colors">
@@ -1529,7 +1529,7 @@ function AvatarCropModal({
           <button onClick={onCancel} className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 transition-colors">
             Cancelar
           </button>
-          <button onClick={handleConfirm} className="flex-1 px-4 py-2.5 rounded-xl bg-[#2563EB] text-white font-medium hover:bg-[#9333EA] transition-colors">
+          <button onClick={handleConfirm} className="flex-1 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#2f55f6] to-[#ba4ef8] text-white font-medium hover:brightness-105 transition-all shadow-md active:scale-95">
             Confirmar
           </button>
         </div>

@@ -5,6 +5,11 @@ import { getMyProfile } from "../api/users.api";
 import { INTERESTS } from "../constants/interests";
 import { TW_AUTH_FOOTER_LINK, TW_UTOPP_GRADIENT_R } from "../shared/constants/brand";
 import { PostCard } from "../features/feed/components/PostCard";
+import { LeftSidebar } from "../features/feed/components/LeftSidebar";
+import { RightSidebar } from "../features/feed/components/RightSidebar";
+import { FeedWelcomeBanner } from "../features/feed/components/FeedWelcomeBanner";
+import { FeedQuickCreate } from "../features/feed/components/FeedQuickCreate";
+import { FeedHorizontalFilters } from "../features/feed/components/FeedHorizontalFilters";
 import {
   getClampedRightPopoverStyle,
   type MenuPopoverAnchor,
@@ -20,6 +25,8 @@ export type FeedProps = {
   filterPopoverAnchor?: MenuPopoverAnchor | null;
   /** Notifica si hay al menos una categoría seleccionada (para resaltar el botón en la barra). */
   onCategoryFiltersActiveChange?: (active: boolean) => void;
+  /** Callback para abrir el wizard de creación */
+  onOpenCreate?: () => void;
 };
 
 type FeedFiltersPanelProps = {
@@ -173,6 +180,7 @@ export default function Feed({
   onCloseFiltersSheet = () => {},
   filterPopoverAnchor = null,
   onCategoryFiltersActiveChange,
+  onOpenCreate = () => {},
 }: FeedProps) {
   const [posts, setPosts] = useState<FeedPostOut[]>([]);
   const [page, setPage] = useState(1);
@@ -180,6 +188,13 @@ export default function Feed({
   const [loading, setLoading] = useState(false);
   const loadingRef = useRef(false);
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  const [userName, setUserName] = useState<string>("Usuario");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [userCareer, setUserCareer] = useState<string | null>(null);
+  const [userCycle, setUserCycle] = useState<number | null>(null);
+  const [userPostsCount, setUserPostsCount] = useState<number>(0);
+  const [userFollowersCount, setUserFollowersCount] = useState<number>(0);
+  const [userFollowingCount, setUserFollowingCount] = useState<number>(0);
   const loaderRef = useRef<HTMLDivElement | null>(null);
 
   const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
@@ -192,7 +207,25 @@ export default function Feed({
 
   useEffect(() => {
     getMyProfile()
-      .then((d: { id: number }) => setCurrentUserId(d.id))
+      .then((d: {
+        id: number;
+        full_name?: string;
+        profile_image_url?: string;
+        career?: string;
+        cycle?: number;
+        posts_count?: number;
+        followers_count?: number;
+        following_count?: number;
+      }) => {
+        setCurrentUserId(d.id);
+        if (d.full_name) setUserName(d.full_name.split(" ")[0]);
+        if (d.profile_image_url) setAvatarUrl(d.profile_image_url);
+        if (d.career) setUserCareer(d.career);
+        if (d.cycle) setUserCycle(d.cycle);
+        setUserPostsCount(d.posts_count ?? 0);
+        setUserFollowersCount(d.followers_count ?? 0);
+        setUserFollowingCount(d.following_count ?? 0);
+      })
       .catch(() => {});
   }, []);
 
@@ -260,9 +293,36 @@ export default function Feed({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50" style={{ overflowAnchor: "none" }}>
-      <div className="w-full max-w-[550px] mx-auto p-4 space-y-4">
-        <div className="pt-14 sm:pt-12">
+    <div className="min-h-screen bg-gray-50 flex justify-center" style={{ overflowAnchor: "none" }}>
+      <div className="w-full max-w-[1320px] mx-auto px-4 flex gap-6 pt-[80px] pb-8 items-start justify-center">
+        
+        <LeftSidebar
+          userName={userName}
+          avatarUrl={avatarUrl}
+          career={userCareer}
+          cycle={userCycle}
+          postsCount={userPostsCount}
+          followersCount={userFollowersCount}
+          followingCount={userFollowingCount}
+        />
+
+        <div className="flex-1 w-full max-w-[620px] min-w-0 space-y-5">
+          <FeedWelcomeBanner userName={userName} newOpportunitiesCount={3} />
+          
+          <FeedQuickCreate avatarUrl={avatarUrl} onOpenWizard={onOpenCreate} />
+          
+          <div className="pt-2">
+            <FeedHorizontalFilters
+              statusFilter={statusFilter}
+              setStatusFilter={setStatusFilter}
+              sortOrder={sortOrder}
+              setSortOrder={setSortOrder}
+              selectedTags={selectedTags}
+              setSelectedTags={setSelectedTags}
+            />
+          </div>
+
+          <div className="w-full space-y-4 pt-4">
           {(() => {
             const lastPinnedIdx = posts.reduce((acc, p, i) => (p.is_pinned ? i : acc), -1);
             return posts.map((post, i) => (
@@ -300,6 +360,9 @@ export default function Feed({
           <div className="text-center py-4 text-sm text-gray-400">Cargando más...</div>
         )}
         <div ref={loaderRef} />
+        </div>
+
+        <RightSidebar />
       </div>
 
       {filtersSheetOpen && (

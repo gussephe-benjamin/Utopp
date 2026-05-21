@@ -219,6 +219,7 @@ export default function DashboardLayout() {
             }}
             filterPopoverAnchor={filterPopoverAnchor}
             onCategoryFiltersActiveChange={onCategoryFiltersActiveChange}
+            onOpenCreate={() => setShowWizard(true)}
           />
         </div>
         <div className={`absolute inset-0 overflow-y-auto pb-6 bg-gray-50${isProfileActive ? '' : ' hidden'}`}>

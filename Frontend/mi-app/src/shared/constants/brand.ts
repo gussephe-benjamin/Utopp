@@ -26,14 +26,14 @@ export const AUTH_BACKGROUND_IMAGE_URL =
 /**
  * Clases Tailwind literales (JIT): gradiente marca en diagonal (squircle U, avatares fallback).
  */
-export const TW_UTOPP_GRADIENT_BR = "bg-gradient-to-br from-[#2563EB] via-[#9333EA] to-[#C026D3]";
+export const TW_UTOPP_GRADIENT_BR = "bg-gradient-to-br from-[#2f55f6] to-[#ba4ef8]";
 
 /** Gradiente horizontal (botones pill, barra crear). */
-export const TW_UTOPP_GRADIENT_R = "bg-gradient-to-r from-[#2563EB] via-[#9333EA] to-[#C026D3]";
+export const TW_UTOPP_GRADIENT_R = "bg-gradient-to-r from-[#2f55f6] to-[#ba4ef8]";
 
 /** Wordmark / texto con el mismo gradiente. */
 export const TW_UTOPP_GRADIENT_TEXT =
-  "bg-gradient-to-r from-[#2563EB] via-[#9333EA] to-[#C026D3] bg-clip-text text-transparent";
+  "bg-gradient-to-r from-[#2f55f6] to-[#ba4ef8] bg-clip-text text-transparent";
 
 /** Anillo activo en avatar (ruta perfil). */
 export const TW_UTOPP_RING_PROFILE = "ring-2 ring-[#C026D3] ring-offset-2";
