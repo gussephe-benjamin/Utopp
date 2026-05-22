@@ -33,7 +33,12 @@ export default function Step2SubtypeSelection({
     <div>
       {/* Encabezado con ícono y nombre del tipo elegido */}
       <div className="flex items-center mb-6">
-        <div className="text-3xl mr-3">{POST_TYPE_ICONS[publicationType]}</div>
+        <div className="text-purple-600 mr-3">
+          {(() => {
+            const IconComponent = POST_TYPE_ICONS[publicationType]
+            return <IconComponent className="w-8 h-8 stroke-[1.8]" />
+          })()}
+        </div>
         <div>
           <h3 className="text-xl font-semibold text-gray-900">
             Selecciona el subtipo de {POST_TYPE_LABELS[publicationType]}
@@ -63,8 +68,11 @@ export default function Step2SubtypeSelection({
 
             {/* Ícono y nombre del subtipo */}
             <div className="flex items-center mb-3 relative z-10">
-              <div className="text-2xl mr-3 group-hover:scale-110 transition-transform duration-200">
-                {SUBTYPE_ICONS[subtype]}
+              <div className="text-purple-600 mr-3 group-hover:scale-110 transition-transform duration-200">
+                {(() => {
+                  const SubtypeIcon = SUBTYPE_ICONS[subtype]
+                  return <SubtypeIcon className="w-6 h-6 stroke-[1.8]" />
+                })()}
               </div>
               <h4 className="font-semibold text-gray-900">
                 {SUBTYPE_LABELS[subtype]}

@@ -1,3 +1,30 @@
+import {
+  Globe,
+  Calendar,
+  GraduationCap,
+  Megaphone,
+  MessageSquare,
+  Plane,
+  Briefcase,
+  Search,
+  Award,
+  Presentation,
+  Palette,
+  Rocket,
+  Code,
+  Heart,
+  Dumbbell,
+  Building,
+  Trophy,
+  Microscope,
+  FileText,
+  AlertTriangle,
+  Info,
+  HelpCircle,
+  MessagesSquare,
+} from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+
 // ============================================================
 // Tipos compartidos para el flujo de creación y visualización
 // de posts. Estos enums y tipos coinciden 1:1 con el backend.
@@ -81,12 +108,12 @@ export const POST_TYPE_LABELS: Record<PostType, string> = {
   simple_post: 'Publicación Simple',
 }
 
-export const POST_TYPE_ICONS: Record<PostType, string> = {
-  international_opportunity: '🌍',
-  event: '📅',
-  academic_project: '🔬',
-  announcement: '📢',
-  simple_post: '💬',
+export const POST_TYPE_ICONS: Record<PostType, LucideIcon> = {
+  international_opportunity: Globe,
+  event: Calendar,
+  academic_project: GraduationCap,
+  announcement: Megaphone,
+  simple_post: MessageSquare,
 }
 
 export const POST_TYPE_DESCRIPTIONS: Record<PostType, string> = {
@@ -119,27 +146,28 @@ export const SUBTYPE_LABELS: Record<SubPostType, string> = {
   debate: 'Debate',
 }
 
-export const SUBTYPE_ICONS: Record<SubPostType, string> = {
-  intercambio: '✈️',
-  pasantia: '💼',
-  investigacion: '🔬',
-  '4+1': '🎓',
-  conferencia: '🎤',
-  arte: '🎨',
-  emprendimiento: '🚀',
-  hackathon: '💻',
-  voluntariado: '🤝',
-  deporte: '⚽',
-  visita_academica: '🏢',
-  empleo: '🏷️',
-  competencia: '🏆',
-  proyecto_investigacion: '🔍',
-  comunicado: '📋',
-  urgente: '⚠️',
-  informativo: 'ℹ️',
-  pregunta: '❓',
-  debate: '💭',
+export const SUBTYPE_ICONS: Record<SubPostType, LucideIcon> = {
+  intercambio: Plane,
+  pasantia: Briefcase,
+  investigacion: Microscope,
+  '4+1': Award,
+  conferencia: Presentation,
+  arte: Palette,
+  emprendimiento: Rocket,
+  hackathon: Code,
+  voluntariado: Heart,
+  deporte: Dumbbell,
+  visita_academica: Building,
+  empleo: Briefcase,
+  competencia: Trophy,
+  proyecto_investigacion: Microscope,
+  comunicado: FileText,
+  urgente: AlertTriangle,
+  informativo: Info,
+  pregunta: HelpCircle,
+  debate: MessagesSquare,
 }
+
 
 export const SUBTYPE_DESCRIPTIONS: Record<SubPostType, string> = {
   intercambio: 'Programas de intercambio estudiantil en universidades extranjeras',
@@ -251,6 +279,7 @@ export interface FeedPostOut {
   pin_priority: number
   is_saved: boolean
   participation_status?: string
+  status?: string
 }
 
 /** Respuesta paginada del endpoint /feed. */

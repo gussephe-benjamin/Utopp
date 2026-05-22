@@ -7,9 +7,12 @@ export function RightSidebar() {
       
       {/* Widget Trending en UTEC */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-        <div className="flex items-center gap-2 mb-3.5">
-          <Flame className="w-4 h-4 text-orange-500 fill-current" />
-          <h4 className="font-bold text-gray-800 text-sm">Trending en UTEC</h4>
+        <div className="flex items-center justify-between mb-3.5">
+          <div className="flex items-center gap-2">
+            <Flame className="w-4 h-4 text-orange-500 fill-current" />
+            <h4 className="font-bold text-gray-800 text-sm">Trending en UTEC</h4>
+          </div>
+          <SyntheticBadge />
         </div>
         
         <div className="flex flex-col gap-3">
@@ -30,9 +33,12 @@ export function RightSidebar() {
 
       {/* Widget Orgs de la semana */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-        <div className="flex items-center gap-2 mb-3.5">
-          <Trophy className="w-4 h-4 text-yellow-500" />
-          <h4 className="font-bold text-gray-800 text-sm">Orgs de la semana</h4>
+        <div className="flex items-center justify-between mb-3.5">
+          <div className="flex items-center gap-2">
+            <Trophy className="w-4 h-4 text-yellow-500" />
+            <h4 className="font-bold text-gray-800 text-sm">Orgs de la semana</h4>
+          </div>
+          <SyntheticBadge />
         </div>
         
         <div className="flex flex-col gap-3.5">

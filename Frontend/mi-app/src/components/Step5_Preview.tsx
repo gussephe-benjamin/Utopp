@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from 'react'
-import { ChevronLeft, ChevronRight, MoreVertical } from 'lucide-react'
+import { ChevronLeft, ChevronRight, MoreVertical, Link } from 'lucide-react'
 import { getMyProfile } from '../api/users.api'
 import {
   type PostType,
@@ -126,11 +126,15 @@ export default function Step5Preview({
             {/* Badges en columna (sm+) */}
             <div className="flex items-center gap-2 shrink-0">
               <div className="hidden sm:flex sm:flex-col gap-1 items-end">
-                <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-                  {POST_TYPE_ICONS[postType]} {POST_TYPE_LABELS[postType]}
+                <span className="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full inline-flex items-center gap-1">
+                  {(() => {
+                    const TypeIcon = POST_TYPE_ICONS[postType]
+                    return <TypeIcon className="w-3.5 h-3.5 text-gray-500" />
+                  })()}
+                  {POST_TYPE_LABELS[postType]}
                 </span>
                 {subtype && (
-                  <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
+                  <span className="text-xs bg-purple-100 text-purple-700 px-2.5 py-1 rounded-full">
                     {SUBTYPE_LABELS[subtype]}
                   </span>
                 )}
@@ -140,11 +144,15 @@ export default function Step5Preview({
 
           {/* Badges en móvil (fila) */}
           <div className="flex gap-1 px-4 mb-2 sm:hidden items-center flex-wrap">
-            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-              {POST_TYPE_ICONS[postType]} {POST_TYPE_LABELS[postType]}
+            <span className="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full inline-flex items-center gap-1">
+              {(() => {
+                const TypeIcon = POST_TYPE_ICONS[postType]
+                return <TypeIcon className="w-3.5 h-3.5 text-gray-500" />
+              })()}
+              {POST_TYPE_LABELS[postType]}
             </span>
             {subtype && (
-              <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
+              <span className="text-xs bg-purple-100 text-purple-700 px-2.5 py-1 rounded-full">
                 {SUBTYPE_LABELS[subtype]}
               </span>
             )}
@@ -286,7 +294,7 @@ export default function Step5Preview({
                           onClick={() => setExtraMenuOpen(false)}
                           className="flex items-center gap-2.5 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                         >
-                          <span className="text-base">🔗</span>
+                          <Link className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                           <span className="truncate">{link.label}</span>
                         </a>
                       ))}

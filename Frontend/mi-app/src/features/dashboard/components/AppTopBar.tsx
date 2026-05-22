@@ -47,7 +47,7 @@ export function AppTopBar({
   feedFiltersTriggerRef,
 }: AppTopBarProps) {
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 h-14 bg-white/95 backdrop-blur-md border-b border-gray-200/80 shadow-[0_1px_12px_rgba(0,0,0,0.06)]">
+    <header className="hidden md:block fixed top-0 left-0 right-0 z-50 h-14 bg-white/95 backdrop-blur-md border-b border-gray-200/80 shadow-[0_1px_12px_rgba(0,0,0,0.06)]">
       <div className="h-full max-w-[1320px] mx-auto px-3 sm:px-4 flex items-center justify-between gap-3">
         <UtoppBrandMark
           variant="header"

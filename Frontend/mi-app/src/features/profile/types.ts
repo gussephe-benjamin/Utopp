@@ -14,8 +14,13 @@ export interface ProfileData {
 
 export interface PostItem {
   id: number
-  /** Autor del post (necesario para habilitar acciones en guardados). */
   user_id?: number
+  user?: {
+    id: number
+    full_name?: string
+    email: string
+    profile_image_url?: string
+  }
   /** Imagen principal (si backend la expone en listados). */
   image_url?: string
   /** Conteo de imágenes (si backend la expone en listados). */

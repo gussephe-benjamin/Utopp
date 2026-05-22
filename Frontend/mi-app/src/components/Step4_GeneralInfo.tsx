@@ -1,4 +1,5 @@
 import { useRef, useState, useCallback, useEffect } from 'react'
+import { ImageIcon } from 'lucide-react'
 import { type WizardImage } from '../types/post.types'
 import { uploadToCloudinary } from '../api/cloudinary'
 import { INTERESTS } from '../constants/interests'
@@ -188,6 +189,7 @@ export default function Step4GeneralInfo({
           <div className="flex flex-wrap gap-2">
             {INTERESTS.map(interest => {
               const active = tags.includes(interest.id)
+              const IconComponent = interest.icon
               return (
                 <button
                   key={interest.id}
@@ -199,7 +201,7 @@ export default function Step4GeneralInfo({
                       onTagsChange([...tags, interest.id])
                     }
                   }}
-                  className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
                     active
                       ? 'bg-purple-100 text-purple-700 border-purple-300'
                       : tags.length >= 5
@@ -208,7 +210,7 @@ export default function Step4GeneralInfo({
                   }`}
                   disabled={!active && tags.length >= 5}
                 >
-                  <span>{interest.icon}</span>
+                  <IconComponent className="w-3.5 h-3.5 shrink-0" />
                   {interest.label}
                 </button>
               )
@@ -238,7 +240,9 @@ export default function Step4GeneralInfo({
               : 'border-gray-300 hover:border-purple-400 hover:bg-gray-50'
           }`}
         >
-          <div className="text-3xl mb-2">🖼️</div>
+          <div className="flex justify-center mb-2">
+            <ImageIcon className="w-10 h-10 text-gray-400" />
+          </div>
           <p className="text-sm font-medium text-gray-700">Arrastra imágenes aquí</p>
           <p className="text-xs text-gray-400 mt-1">o haz clic para seleccionar desde tu dispositivo</p>
           <input

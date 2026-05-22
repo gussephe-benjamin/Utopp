@@ -16,13 +16,15 @@ import {
   Heart,
   Share2,
   CheckCircle,
+  Star,
 } from "lucide-react";
+import { motion } from "framer-motion";
 import { listImages, type PostImage } from "../../../api/post-images.api";
 import { savePost, unsavePost } from "../../../api/saved-posts.api";
 import EditPostWizard from "../../../components/EditPostWizard";
 import PostDetailModal from "../../../components/PostDetailModal";
-import type { FeedPostOut } from "../../../types/post.types";
-import { POST_TYPE_LABELS, SUBTYPE_LABELS } from "../../../types/post.types";
+import { POST_TYPE_LABELS, SUBTYPE_LABELS, type FeedPostOut } from "../../../types/post.types";
+import { STATUS_BADGE } from "../../../features/profile/constants/profileOptions";
 import { formatDate, isExpired, timeAgo, timeRemaining } from "../../../shared/lib/date";
 import { TYPE_GRADIENTS } from "../constants/typeGradients";
 import { getDisplayName } from "../lib/display";
@@ -34,12 +36,13 @@ type PostCardProps = {
   post: FeedPostOut;
   currentUserId: number | null;
   onEdited: (updated: FeedPostOut) => void;
+  onDeleted?: (id: number) => void;
 };
 
 /**
  * Tarjeta de post del feed: carrusel, links, avatar, menú guardar/editar.
  */
-export function PostCard({ post, currentUserId, onEdited }: PostCardProps) {
+export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardProps) {
   const navigate = useNavigate();
 
   const SS_IDX = `utopp:carousel:idx:${post.id}`;
@@ -248,24 +251,29 @@ export function PostCard({ post, currentUserId, onEdited }: PostCardProps) {
           }}
           onClose={() => setEditingPost(false)}
           onSaved={handleEditSaved}
+          onDeleted={onDeleted}
         />
       )}
       {/* ─── Contenedor tarjeta: sombra suave + hover (micro-interacción feed) ─ */}
-      {/* ─── Contenedor tarjeta: sombra suave + hover (micro-interacción feed) ─ */}
-      <div
+      <motion.div
+        variants={{
+          hidden: { opacity: 0, y: 20, scale: 0.98 },
+          show: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 300, damping: 24 } }
+        }}
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true, margin: "-50px" }}
         className={`bg-white border rounded-[22px] shadow-[0_4px_20px_rgba(0,0,0,0.015)] overflow-hidden transition-all duration-300 hover:shadow-[0_8px_30px_rgba(0,0,0,0.03)] hover:-translate-y-[1px] ${
           post.is_pinned
-            ? "border-cyan-200 shadow-cyan-50/50 ring-1 ring-cyan-100/50"
+            ? "border-amber-200/75 shadow-[0_4px_24px_rgba(245,158,11,0.04)] ring-1 ring-amber-100/30"
             : "border-gray-100"
         }`}
       >
         {post.is_pinned && (
-          <div className="flex items-center gap-1.5 px-4 py-1.5 bg-gradient-to-r from-sky-400 via-cyan-500 to-blue-600 text-white text-xs font-bold shadow-sm">
-            <Pin className="w-3 h-3" />
-            Publicación destacada
-            {post.pin_priority === 3 && <span className="ml-auto opacity-80 text-[10px]">UTEC Root</span>}
-            {post.pin_priority === 2 && <span className="ml-auto opacity-80 text-[10px]">UTEC Admin</span>}
-            {post.pin_priority === 1 && <span className="ml-auto opacity-80 text-[10px]">UTEC Oficina</span>}
+          <div className="px-4 pt-3.5 flex">
+            <span className="inline-flex items-center gap-1.5 bg-[#fff6e6] border border-[#ffe0b2] text-[#b25e00] text-[10px] sm:text-xs font-extrabold px-3 py-1 rounded-full shadow-sm">
+              <Star className="w-3 h-3 fill-current shrink-0" /> Publicación destacada
+            </span>
           </div>
         )}
 
@@ -332,6 +340,11 @@ export function PostCard({ post, currentUserId, onEdited }: PostCardProps) {
                   {post.subtype && (
                     <span className="bg-purple-50 text-purple-600 border border-purple-100 font-semibold px-2.5 py-0.5 text-xs rounded-full">
                       {SUBTYPE_LABELS[post.subtype]}
+                    </span>
+                  )}
+                  {post.status && (
+                    <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${STATUS_BADGE[post.status]?.color ?? 'bg-gray-100 text-gray-500'}`}>
+                      {STATUS_BADGE[post.status]?.label ?? post.status}
                     </span>
                   )}
                 </>
@@ -586,7 +599,7 @@ export function PostCard({ post, currentUserId, onEdited }: PostCardProps) {
             <span className="font-semibold text-sm sm:text-base leading-none">→</span>
           </button>
         </div>
-      </div>
+      </motion.div>
 
       {/* ─── Modal de Detalle Integrado ─── */}
       {detailOpen && (

@@ -50,8 +50,11 @@ export default function Step1TypeSelection({ onSelectType, selectedType, allowed
             <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-100 to-blue-100 rounded-full -mr-10 -mt-10 opacity-50 group-hover:opacity-75 transition-opacity" />
 
             {/* Ícono del tipo */}
-            <div className="text-4xl mb-3 relative z-10 group-hover:scale-110 transition-transform duration-200">
-              {POST_TYPE_ICONS[type]}
+            <div className="text-[#5f38ff] mb-3 relative z-10 group-hover:scale-110 transition-transform duration-200">
+              {(() => {
+                const IconComponent = POST_TYPE_ICONS[type]
+                return <IconComponent className="w-10 h-10 stroke-[1.8]" />
+              })()}
             </div>
 
             {/* Nombre del tipo */}

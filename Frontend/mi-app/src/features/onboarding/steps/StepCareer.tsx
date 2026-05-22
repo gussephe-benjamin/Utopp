@@ -1,6 +1,40 @@
-// import { useState } from 'react';
-import { Check } from 'lucide-react';
+import {
+  Check,
+  Smartphone,
+  BarChart3,
+  Shield,
+  Cpu,
+  Laptop,
+  Database,
+  Dna,
+  Leaf,
+  Hammer,
+  Zap,
+  Cable,
+  Factory,
+  Wrench,
+  Settings,
+  Beaker
+} from 'lucide-react';
 import type { OnboardingData } from '../Onboarding';
+
+const CAREER_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  admin_digital: Smartphone,
+  business_analytics: BarChart3,
+  ciberseguridad: Shield,
+  ciencia_datos_ia: Cpu,
+  ciencia_computacion: Laptop,
+  sistemas_info: Database,
+  bioingenieria: Dna,
+  ambiental: Leaf,
+  civil: Hammer,
+  energia: Zap,
+  electronica: Cable,
+  industrial: Factory,
+  mecatronica: Wrench,
+  mecanica: Settings,
+  quimica: Beaker,
+};
 
 interface CareerStepProps {
   data: OnboardingData;
@@ -48,7 +82,7 @@ const faculties = [
       { id: 'energia',       label: 'Ingeniería de la Energía',  icon: '⚡' },
       { id: 'electronica',   label: 'Ingeniería Electrónica',    icon: '🔌' },
       { id: 'industrial',    label: 'Ingeniería Industrial',     icon: '🏭' },
-      { id: 'mecatronica',   label: 'Ingeniería Mecatrónica',    icon: '�' },
+      { id: 'mecatronica',   label: 'Ingeniería Mecatrónica',    icon: '🤖' },
       { id: 'mecanica',      label: 'Ingeniería Mecánica',       icon: '⚙️' },
       { id: 'quimica',       label: 'Ingeniería Química',        icon: '⚗️' },
     ],
@@ -74,22 +108,27 @@ export default function CareerStep({ data, setData }: CareerStepProps) {
             </div>
 
             {/* Career cards — vertical stack */}
-            {faculty.careers.map((career, index) => {
+             {faculty.careers.map((career, index) => {
               const careerValue = normalizeCareerLabel(career.label);
               const isSelected = data.career === careerValue;
+              const IconComponent = CAREER_ICONS[career.id];
 
               return (
                 <button
                   key={career.id}
                   onClick={() => setData({ ...data, career: careerValue })}
-                  className={`w-full p-3 rounded-xl border-2 text-left flex items-start gap-2 transition-all duration-300 transform active:scale-[0.97] shadow-sm ${
+                  className={`w-full p-3 rounded-xl border-2 text-left flex items-start gap-3 transition-all duration-300 transform active:scale-[0.97] shadow-sm ${
                     isSelected
                       ? `${faculty.selected} shadow-lg`
                       : 'border-white/15 bg-white/5 hover:border-white/25 hover:bg-white/10'
                   }`}
                   style={{ animationDelay: `${index * 40}ms` }}
                 >
-                  <span className="text-lg leading-none mt-0.5 shrink-0">{career.icon}</span>
+                  {IconComponent ? (
+                    <IconComponent className={`w-5 h-5 mt-0.5 shrink-0 ${isSelected ? 'text-white' : 'text-violet-300'}`} />
+                  ) : (
+                    <span className="text-lg leading-none mt-0.5 shrink-0">{career.icon}</span>
+                  )}
                   <span className={`text-sm font-medium leading-snug flex-1 ${isSelected ? 'text-violet-50' : 'text-violet-100/80'}`}>
                     {career.label}
                   </span>

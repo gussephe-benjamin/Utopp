@@ -30,6 +30,7 @@ export default function InterestsStep({
       >
         {INTERESTS.map((interest, index) => {
           const isSelected = data.interests?.includes(interest.id);
+          const IconComponent = interest.icon;
           return (
             <button
               key={interest.id}
@@ -57,7 +58,7 @@ export default function InterestsStep({
 
               {/* Content */}
               <div className="relative flex h-full flex-col items-center justify-center gap-1 px-1 py-2">
-                <span className="text-3xl leading-none sm:text-[2rem]">{interest.icon}</span>
+                <IconComponent className="w-8 h-8 sm:w-9 sm:h-9 text-white drop-shadow" />
                 <span
                   className={`text-center font-medium text-xs leading-tight sm:text-sm ${
                     isSelected ? "text-white" : "text-white/70"
