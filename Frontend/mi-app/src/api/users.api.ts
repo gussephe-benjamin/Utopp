@@ -18,6 +18,13 @@
 
 import api from "./axios"
 
+export interface OrganizationSummary {
+  id: number
+  full_name?: string
+  profile_image_url?: string
+  followers_count: number
+}
+
 /**
  * GET /users/check-username?username=...
  * Verifica si un nombre de usuario está disponible.
@@ -78,6 +85,36 @@ export async function updateMyProfile(payload: Record<string, unknown>) {
  */
 export async function updateInterests(interests: string[]) {
   const { data } = await api.put("/users/me/interests", { interests })
+  return data
+}
+
+/**
+ * GET /users/me/following-organizations
+ * Lista las organizaciones seguidas por el usuario autenticado.
+ * Auth: Requerida.
+ */
+export async function getMyFollowingOrganizations(params?: { page?: number; size?: number }): Promise<OrganizationSummary[]> {
+  const { data } = await api.get("/users/me/following-organizations", { params })
+  return data
+}
+
+/**
+ * GET /users/{userId}/following-organizations
+ * Lista organizaciones seguidas por un usuario.
+ * Auth: No requerida.
+ */
+export async function getUserFollowingOrganizations(userId: number, params?: { page?: number; size?: number }): Promise<OrganizationSummary[]> {
+  const { data } = await api.get(`/users/${userId}/following-organizations`, { params })
+  return data
+}
+
+/**
+ * GET /users/organizations
+ * Lista organizaciones registradas en el sistema.
+ * Auth: No requerida.
+ */
+export async function getOrganizations(params?: { page?: number; size?: number }): Promise<OrganizationSummary[]> {
+  const { data } = await api.get("/users/organizations", { params })
   return data
 }
 
@@ -159,6 +196,18 @@ export async function removeFollower(followerId: number) {
  * Auth: Requerida.
  */
 export async function setProfileImage(cloudinaryId: string, url: string): Promise<{ id: number; url: string; is_active: boolean }> {
-  const { data } = await api.post('/users/me/profile-images', { cloudinary_id: cloudinaryId, url })
-  return data
+  const payload = { cloudinary_id: cloudinaryId, url }
+  try {
+    const { data } = await api.post("/users/me/profile-images", payload)
+    return data
+  } catch (error) {
+    const maybeAxios = error as { response?: { status?: number } }
+    // Compatibilidad temporal:
+    // En algunos entornos el backend expone accidentalmente /users/users/me/profile-images.
+    if (maybeAxios.response?.status === 404) {
+      const { data } = await api.post("/users/users/me/profile-images", payload)
+      return data
+    }
+    throw error
+  }
 }

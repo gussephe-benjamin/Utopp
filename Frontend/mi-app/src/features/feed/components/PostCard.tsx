@@ -1,6 +1,3 @@
-// ─── PostCard (feed): carrusel, enlaces, avatar, menú guardar/editar ───────
-// Transiciones alineadas con la versión monolítica en `Feed` (hover, sombra, slide 350ms).
-
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -9,26 +6,20 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
-  MoreVertical,
   Pencil,
-  Pin,
-  Eye,
-  Heart,
-  Share2,
-  CheckCircle,
   Star,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { listImages, type PostImage } from "../../../api/post-images.api";
+import { listLinks } from "../../../api/post-links.api";
 import { savePost, unsavePost } from "../../../api/saved-posts.api";
 import EditPostWizard from "../../../components/EditPostWizard";
-import PostDetailModal from "../../../components/PostDetailModal";
 import { POST_TYPE_LABELS, SUBTYPE_LABELS, type FeedPostOut } from "../../../types/post.types";
-import { STATUS_BADGE } from "../../../features/profile/constants/profileOptions";
 import { formatDate, isExpired, timeAgo, timeRemaining } from "../../../shared/lib/date";
+import { UTOPP_BRAND } from "../../../shared/constants/brand";
 import { TYPE_GRADIENTS } from "../constants/typeGradients";
 import { getDisplayName } from "../lib/display";
-import { ScoreExplanation } from "./ScoreExplanation";
+import { PostImageViewerModal } from "./PostImageViewerModal";
 import { UserAvatar } from "./UserAvatar";
 
 
@@ -39,49 +30,31 @@ type PostCardProps = {
   onDeleted?: (id: number) => void;
 };
 
-/**
- * Tarjeta de post del feed: carrusel, links, avatar, menú guardar/editar.
- */
+type PostActionLink = {
+  id: number;
+  label: string;
+  url: string;
+  display_type?: string;
+  position: number;
+};
+
 export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardProps) {
   const navigate = useNavigate();
 
   const SS_IDX = `utopp:carousel:idx:${post.id}`;
   const SS_IMGS = `utopp:carousel:imgs:${post.id}`;
+  const DESCRIPTION_PREVIEW_CHARS = 560;
+  const MIN_MEDIA_ASPECT_RATIO = 0.75;
+  const MAX_MEDIA_ASPECT_RATIO = 1.91;
 
   const [descExpanded, setDescExpanded] = useState(false);
-  const [hasMoreDesc, setHasMoreDesc] = useState(() => post.description.length > 180);
+  const [hasMoreDesc, setHasMoreDesc] = useState(() => post.description.length > DESCRIPTION_PREVIEW_CHARS);
   const descRef = useRef<HTMLParagraphElement>(null);
+  const [currentImageRatio, setCurrentImageRatio] = useState<number | null>(null);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [actionLinks, setActionLinks] = useState<PostActionLink[]>([]);
 
-  useEffect(() => {
-    if (descRef.current) {
-      const isTruncated = descRef.current.scrollHeight > descRef.current.clientHeight;
-      setHasMoreDesc(isTruncated);
-    }
-  }, [post.description]);
-
-  // Nuevos estados para interacciones premium
-  const [isLiked, setIsLiked] = useState(false);
-  const [detailOpen, setDetailOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
-
-  // Estadísticas mock deterministas basadas en el ID del post
-  const viewsCount = useMemo(() => (post.id * 37 + 103) % 900 + 47, [post.id]);
-  const savesCount = useMemo(() => (post.id * 13 + 41) % 150 + 12, [post.id]);
-  const postulationsCount = useMemo(() => (post.id * 7 + 19) % 80 + 3, [post.id]);
-
-  const handleLikeToggle = () => {
-    setIsLiked((prev) => !prev);
-  };
-
-  const handleShare = () => {
-    const shareUrl = `${window.location.origin}/app/post/${post.id}`;
-    navigator.clipboard.writeText(shareUrl)
-      .then(() => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      })
-      .catch((err) => console.error("Error al copiar enlace:", err));
-  };
+  const primaryLinks = useMemo(() => actionLinks.slice(0, 2), [actionLinks]);
 
   const getTagStyles = (tag: string) => {
     const lower = tag.toLowerCase();
@@ -128,14 +101,8 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
     }
   };
   const [isSaved, setIsSaved] = useState(post.is_saved);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [savingPost, setSavingPost] = useState(false);
-  const [extraMenuOpen, setExtraMenuOpen] = useState(false);
   const [editingPost, setEditingPost] = useState(false);
-
-  const isOwnPost = currentUserId !== null && post.user_id === currentUserId;
-  const menuRef = useRef<HTMLDivElement>(null);
-  const extraMenuRef = useRef<HTMLDivElement>(null);
 
   const gradient = TYPE_GRADIENTS[post.post_type] ?? TYPE_GRADIENTS.simple_post;
 
@@ -154,22 +121,23 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
           /* noop */
         });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [post.id, post.images_count]);
 
   useEffect(() => {
-    if (!menuOpen && !extraMenuOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (menuOpen && menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenuOpen(false);
-      }
-      if (extraMenuOpen && extraMenuRef.current && !extraMenuRef.current.contains(e.target as Node)) {
-        setExtraMenuOpen(false);
-      }
+    let cancelled = false;
+    listLinks(post.id)
+      .then((links) => {
+        if (cancelled) return;
+        const sorted = [...(links as PostActionLink[])].sort((a, b) => a.position - b.position);
+        setActionLinks(sorted);
+      })
+      .catch(() => {
+        if (!cancelled) setActionLinks([]);
+      });
+    return () => {
+      cancelled = true;
     };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [menuOpen, extraMenuOpen]);
+  }, [post.id]);
 
   const handleSaveToggle = async () => {
     setSavingPost(true);
@@ -177,6 +145,7 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
       if (isSaved) {
         await unsavePost(post.id);
         setIsSaved(false);
+        onDeleted?.(post.id);
       } else {
         await savePost(post.id);
         setIsSaved(true);
@@ -185,7 +154,6 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
       console.error(e);
     } finally {
       setSavingPost(false);
-      setMenuOpen(false);
     }
   };
 
@@ -229,12 +197,52 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [totalImages]);
 
+  useEffect(() => {
+    if (descRef.current) {
+      const isTruncated = descRef.current.scrollHeight > descRef.current.clientHeight;
+      setHasMoreDesc(isTruncated);
+    }
+  }, [post.description, descExpanded]);
+
+  useEffect(() => {
+    if (totalImages === 0) {
+      setCurrentImageRatio(null);
+      return;
+    }
+
+    const currentImage = displayImages[imgIndex];
+    if (!currentImage?.url) return;
+
+    let cancelled = false;
+    const image = new Image();
+
+    image.onload = () => {
+      if (cancelled || image.naturalWidth <= 0 || image.naturalHeight <= 0) return;
+      setCurrentImageRatio(image.naturalWidth / image.naturalHeight);
+    };
+    image.onerror = () => {
+      if (!cancelled) setCurrentImageRatio(null);
+    };
+
+    image.src = currentImage.url;
+    return () => {
+      cancelled = true;
+    };
+  }, [displayImages, imgIndex, totalImages]);
+
   const prevImg = () => setImgIndexSaved(Math.max(0, imgIndex - 1));
   const nextImg = () => setImgIndexSaved(Math.min(totalImages - 1, imgIndex + 1));
+  const clampedMediaAspectRatio = useMemo(() => {
+    if (!currentImageRatio || !Number.isFinite(currentImageRatio)) return 16 / 9;
+    return Math.min(MAX_MEDIA_ASPECT_RATIO, Math.max(MIN_MEDIA_ASPECT_RATIO, currentImageRatio));
+  }, [currentImageRatio]);
+
+  const hasDeadline = Boolean(post.deadline_at);
+  const deadlineExpired = post.deadline_at ? isExpired(post.deadline_at) : false;
+  const deadlineRemaining = post.deadline_at ? timeRemaining(post.deadline_at) : null;
 
   return (
     <>
-      {/* ─── Wizard de edición (mismo flujo que antes del split) ─────────── */}
       {editingPost && (
         <EditPostWizard
           post={{
@@ -251,10 +259,8 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
           }}
           onClose={() => setEditingPost(false)}
           onSaved={handleEditSaved}
-          onDeleted={onDeleted}
         />
       )}
-      {/* ─── Contenedor tarjeta: sombra suave + hover (micro-interacción feed) ─ */}
       <motion.div
         variants={{
           hidden: { opacity: 0, y: 20, scale: 0.98 },
@@ -263,7 +269,7 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
         initial="hidden"
         whileInView="show"
         viewport={{ once: true, margin: "-50px" }}
-        className={`bg-white border rounded-[22px] shadow-[0_4px_20px_rgba(0,0,0,0.015)] overflow-hidden transition-all duration-300 hover:shadow-[0_8px_30px_rgba(0,0,0,0.03)] hover:-translate-y-[1px] ${
+        className={`mx-auto h-auto w-full max-w-[680px] overflow-hidden rounded-[22px] border bg-white shadow-[0_4px_20px_rgba(0,0,0,0.015)] transition-all duration-300 hover:-translate-y-[1px] hover:shadow-[0_8px_30px_rgba(0,0,0,0.03)] ${
           post.is_pinned
             ? "border-amber-200/75 shadow-[0_4px_24px_rgba(245,158,11,0.04)] ring-1 ring-amber-100/30"
             : "border-gray-100"
@@ -277,9 +283,8 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
           </div>
         )}
 
-        {/* ─── Cabecera: avatar, autor, tags de categoría a la derecha, menú ────────────────────── */}
-        <div className="flex items-center justify-between px-4 pt-4 pb-3">
-          <div className="flex items-center gap-3">
+        <div className="flex items-start justify-between gap-4 px-4 pb-3 pt-4">
+          <div className="flex min-w-0 items-center gap-3">
             <UserAvatar
               userName={post.user_name}
               userId={post.user_id}
@@ -287,16 +292,16 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
               profileImageUrl={post.user_profile_image_url}
               currentUserId={currentUserId}
             />
-            <div>
-              <div className="flex items-center gap-2">
+            <div className="min-w-0">
+              <div className="flex min-w-0 items-center gap-2">
                 <button
                   type="button"
                   onClick={() =>
                     navigate(post.user_id === currentUserId ? "/app/perfil" : `/app/perfil/${post.user_id}`)
                   }
-                  className="font-bold text-gray-900 hover:text-[#2f55f6] transition-colors text-sm leading-tight flex items-center gap-1.5"
+                  className="flex min-w-0 items-center gap-1.5 text-left text-sm font-bold leading-tight text-gray-900 transition-colors hover:text-[#2f55f6]"
                 >
-                  <span>{getDisplayName(post.user_name, post.user_id)}</span>
+                  <span className="truncate">{getDisplayName(post.user_name, post.user_id)}</span>
                   {post.user_name && (
                     post.user_name.includes("IEEE") ||
                     post.user_name.includes("UTEC Career") ||
@@ -310,155 +315,89 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
                   )}
                 </button>
               </div>
-              <div className="flex items-center gap-1 mt-0.5 text-gray-400">
+              {post.user_email ? (
+                <p className="mt-0.5 truncate text-xs font-medium text-gray-500">{post.user_email}</p>
+              ) : null}
+              <div className="mt-1 flex items-center gap-1 text-gray-400">
                 <Clock className="w-3 h-3 text-gray-400" />
                 <span className="text-[11px] font-semibold">{timeAgo(post.created_at)}</span>
-                {post.user_email && (
-                  <>
-                    <span className="text-gray-300 text-xs">·</span>
-                    <p className="text-[11px] font-medium text-gray-400 truncate max-w-[150px]">{post.user_email}</p>
-                  </>
-                )}
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            {/* Etiquetas/Tags del post en formato píldora */}
-            <div className="flex items-center gap-1.5">
-              {post.tags && post.tags.length > 0 ? (
-                post.tags.slice(0, 2).map((tag) => (
-                  <span key={tag} className={getTagStyles(tag)}>
-                    {tag}
-                  </span>
-                ))
-              ) : (
-                <>
-                  <span className="bg-gray-50 text-gray-600 border border-gray-100 font-semibold px-2.5 py-0.5 text-xs rounded-full">
-                    {POST_TYPE_LABELS[post.post_type]}
-                  </span>
-                  {post.subtype && (
-                    <span className="bg-purple-50 text-purple-600 border border-purple-100 font-semibold px-2.5 py-0.5 text-xs rounded-full">
-                      {SUBTYPE_LABELS[post.subtype]}
-                    </span>
-                  )}
-                  {post.status && (
-                    <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${STATUS_BADGE[post.status]?.color ?? 'bg-gray-100 text-gray-500'}`}>
-                      {STATUS_BADGE[post.status]?.label ?? post.status}
-                    </span>
-                  )}
-                </>
-              )}
+          <div className="max-w-[48%] shrink-0 text-right">
+            <div className="flex flex-wrap justify-end gap-1.5">
+              <span className="rounded-full border border-gray-100 bg-gray-50 px-2.5 py-0.5 text-xs font-semibold text-gray-600">
+                {POST_TYPE_LABELS[post.post_type]}
+              </span>
+              {post.subtype ? (
+                <span className="rounded-full border border-purple-100 bg-purple-50 px-2.5 py-0.5 text-xs font-semibold text-purple-700">
+                  {SUBTYPE_LABELS[post.subtype]}
+                </span>
+              ) : null}
             </div>
-
-            <ScoreExplanation />
-            
-            <div className="relative" ref={menuRef}>
-              <button
-                type="button"
-                onClick={() => setMenuOpen((v) => !v)}
-                className="p-1.5 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors"
-              >
-                <MoreVertical className="w-4 h-4" />
-              </button>
-              {menuOpen && (
-                <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-xl shadow-lg border border-gray-200 z-20 overflow-hidden">
-                  <button
-                    type="button"
-                    onClick={handleSaveToggle}
-                    disabled={savingPost}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                  >
-                    {isSaved ? (
-                      <>
-                        <BookmarkCheck className="w-4 h-4 text-[#2563EB]" /> Quitar de guardados
-                      </>
-                    ) : (
-                      <>
-                        <Bookmark className="w-4 h-4 text-gray-500" /> Guardar publicación
-                      </>
-                    )}
-                  </button>
-                  {isOwnPost && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMenuOpen(false);
-                        setEditingPost(true);
-                      }}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-t border-gray-100"
-                    >
-                      <Pencil className="w-4 h-4 text-gray-500" /> Editar publicación
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
+            {hasDeadline ? (
+              <div className="mt-2 flex flex-col items-end gap-1">
+                <span className="text-[11px] font-semibold text-gray-500">
+                  Límite: {formatDate(post.deadline_at!)}
+                </span>
+                {deadlineExpired ? (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-600">
+                    Vencido
+                  </span>
+                ) : deadlineRemaining ? (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-fuchsia-100 bg-fuchsia-50 px-2 py-0.5 text-xs font-semibold text-fuchsia-600">
+                    <Clock className="h-3 w-3" />
+                    {deadlineRemaining}
+                  </span>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         </div>
 
-        {/* ─── Título, Descripción y Deadline ─────────────────────────── */}
-        <div className="px-4 pt-1.5 pb-3">
-          {post.title && (
-            <h3 className="font-extrabold text-gray-900 text-base sm:text-lg mb-1 leading-snug tracking-tight">
+        <div className="px-4 pb-3 pt-1.5">
+          {post.title ? (
+            <h3 className="mb-1 text-base font-extrabold leading-snug tracking-tight text-gray-900 sm:text-lg">
               {post.title}
             </h3>
-          )}
+          ) : null}
           <p
             ref={descRef}
-            className={`text-gray-600 text-sm leading-relaxed whitespace-pre-line font-medium mt-1 ${
-              !descExpanded ? "line-clamp-3" : ""
+            className={`mt-1 whitespace-pre-line text-sm font-medium leading-relaxed text-gray-600 ${
+              !descExpanded ? "line-clamp-5" : ""
             }`}
           >
             {post.description}
           </p>
-          {hasMoreDesc && (
+          {hasMoreDesc ? (
             <button
               type="button"
               onClick={() => setDescExpanded((v) => !v)}
-              className="mt-1 text-xs font-semibold text-[#2f55f6] hover:text-[#ba4ef8] transition-colors"
+              className="mt-1 text-xs font-semibold text-[#2f55f6] transition-colors hover:text-[#ba4ef8]"
             >
               {descExpanded ? "Ver menos" : "Ver más"}
             </button>
-          )}
-
-          {post.deadline_at && (
-            <div className="flex items-center justify-between gap-2 mt-2.5">
-              <div className="flex items-center gap-1.5 text-xs text-gray-500 font-semibold">
-                <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                  />
-                </svg>
-                <span>Fecha límite: {formatDate(post.deadline_at)}</span>
-              </div>
-              {post.deadline_at && isExpired(post.deadline_at) ? (
-                <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full shrink-0">
-                  Vencido
-                </span>
-              ) : post.deadline_at && !isExpired(post.deadline_at) && timeRemaining(post.deadline_at) ? (
-                <span className="inline-flex items-center gap-1 text-xs font-semibold text-fuchsia-600 bg-fuchsia-50 border border-fuchsia-100 px-2 py-0.5 rounded-full shrink-0">
-                  <Clock className="w-3 h-3" />
-                  {timeRemaining(post.deadline_at)}
-                </span>
-              ) : null}
-            </div>
-          )}
+          ) : null}
         </div>
 
         {post.images_count > 0 && images.length === 0 && (
           <div className="px-4 pb-3">
-            <div className="w-full aspect-[16/9] bg-gray-100 animate-pulse rounded-2xl border border-gray-100" />
+            <div className="w-full animate-pulse rounded-2xl border border-gray-100 bg-gray-100" style={{ aspectRatio: "16 / 9" }} />
           </div>
         )}
 
-        {/* ─── Carrusel: translateX + transition 350ms ease-in-out (original) ─ */}
         {totalImages > 0 && (
           <div className="px-4 pb-3">
-            <div className="relative w-full aspect-[16/9] bg-gray-50 overflow-hidden rounded-2xl border border-gray-100/70 shadow-sm group">
+            <div
+              className="group relative w-full overflow-hidden rounded-2xl border border-gray-100/70 bg-gray-50 shadow-sm"
+              style={{
+                aspectRatio: String(clampedMediaAspectRatio),
+                minHeight: "220px",
+                maxHeight: "520px",
+              }}
+              onClick={() => setViewerOpen(true)}
+            >
               <div
                 className="flex h-full will-change-transform"
                 style={{
@@ -488,12 +427,15 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
                   );
                 })}
               </div>
-              {totalImages > 1 && (
+              {totalImages > 1 ? (
                 <>
                   <button
                     type="button"
                     onClick={prevImg}
                     disabled={imgIndex === 0}
+                    aria-label="Imagen anterior"
+                    onMouseDown={(event) => event.stopPropagation()}
+                    onClickCapture={(event) => event.stopPropagation()}
                     className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/40 hover:bg-black/60 rounded-full flex items-center justify-center text-white transition-all duration-200 disabled:opacity-0 disabled:pointer-events-none opacity-0 group-hover:opacity-100 shadow-md"
                   >
                     <ChevronLeft className="w-5 h-5" />
@@ -502,6 +444,9 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
                     type="button"
                     onClick={nextImg}
                     disabled={imgIndex === totalImages - 1}
+                    aria-label="Imagen siguiente"
+                    onMouseDown={(event) => event.stopPropagation()}
+                    onClickCapture={(event) => event.stopPropagation()}
                     className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/40 hover:bg-black/60 rounded-full flex items-center justify-center text-white transition-all duration-200 disabled:opacity-0 disabled:pointer-events-none opacity-0 group-hover:opacity-100 shadow-md"
                   >
                     <ChevronRight className="w-5 h-5" />
@@ -512,6 +457,8 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
                         key={i}
                         type="button"
                         onClick={() => setImgIndexSaved(i)}
+                        onMouseDown={(event) => event.stopPropagation()}
+                        onClickCapture={(event) => event.stopPropagation()}
                         className={`rounded-full transition-all duration-350 ${
                           i === imgIndex ? "w-4 h-1.5 bg-white" : "w-1.5 h-1.5 bg-white/50 hover:bg-white/80"
                         }`}
@@ -519,95 +466,91 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
                     ))}
                   </div>
                 </>
-              )}
+              ) : null}
             </div>
           </div>
         )}
 
-        {/* ─── Estadísticas de interacciones ─────────────────────────── */}
-        <div className="px-4 pb-3 pt-1 flex items-center gap-4 text-xs font-semibold text-gray-400">
-          <span className="flex items-center gap-1.5 hover:text-gray-600 transition-colors cursor-default">
-            <Eye className="w-3.5 h-3.5 text-gray-400" />
-            {viewsCount} vistas
-          </span>
-          <span className="flex items-center gap-1.5 hover:text-gray-600 transition-colors cursor-default">
-            <Bookmark className="w-3.5 h-3.5 text-gray-400" />
-            {savesCount} guardados
-          </span>
-          <span className="flex items-center gap-1.5 hover:text-gray-600 transition-colors cursor-default">
-            <CheckCircle className="w-3.5 h-3.5 text-gray-400" />
-            {postulationsCount} postulaciones
-          </span>
-        </div>
-
-        {/* ─── Separador sutil ─────────────────────────── */}
-        <div className="border-t border-gray-100/80 w-full" />
-
-        {/* ─── Pie de tarjeta: iconos a la izquierda, Ver más a la derecha ─────────────────── */}
-        <div className="px-5 py-4 flex justify-between items-center bg-white">
-          <div className="flex items-center gap-2 sm:gap-4">
-            {/* Corazón / Like */}
-            <button
-              type="button"
-              onClick={handleLikeToggle}
-              className={`p-2 rounded-full transition-all duration-300 hover:bg-red-50 flex items-center justify-center ${
-                isLiked ? "text-red-500 scale-110" : "text-gray-400 hover:text-red-500 active:scale-95"
-              }`}
-              title={isLiked ? "Quitar me gusta" : "Me gusta"}
-            >
-              <Heart className={`w-5 h-5 ${isLiked ? "fill-current" : ""}`} />
-            </button>
-
-            {/* Guardar / Bookmark */}
-            <button
-              type="button"
-              onClick={handleSaveToggle}
-              disabled={savingPost}
-              className={`p-2 rounded-full transition-all duration-300 hover:bg-blue-50 flex items-center justify-center ${
-                isSaved ? "text-[#2f55f6] scale-110" : "text-gray-400 hover:text-[#2f55f6] active:scale-95"
-              }`}
-              title={isSaved ? "Quitar de guardados" : "Guardar publicación"}
-            >
-              {isSaved ? <BookmarkCheck className="w-5 h-5 fill-current" /> : <Bookmark className="w-5 h-5" />}
-            </button>
-
-            {/* Compartir / Share */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={handleShare}
-                className="p-2 rounded-full text-gray-400 hover:bg-purple-50 hover:text-[#ba4ef8] active:scale-95 transition-all duration-300 flex items-center justify-center"
-                title="Compartir publicación"
-              >
-                <Share2 className="w-5 h-5" />
-              </button>
-              {copied && (
-                <span className="absolute left-1/2 -translate-x-1/2 -top-8 px-2 py-1 text-[10px] font-bold text-white bg-slate-800 rounded shadow-md animate-bounce whitespace-nowrap z-10">
-                  ¡Copiado!
+        {post.tags && post.tags.length > 0 ? (
+          <div className="px-4 pb-3">
+            <div className="flex flex-wrap gap-1.5">
+              {post.tags.map((tag) => (
+                <span key={tag} className={getTagStyles(tag)}>
+                  {tag}
                 </span>
-              )}
+              ))}
             </div>
           </div>
+        ) : null}
 
-          {/* Botón Ver más → */}
+        <div className="border-t border-gray-100/80 w-full" />
+
+        <div className="flex items-center justify-between gap-4 bg-white px-4 py-3.5">
           <button
             type="button"
-            onClick={() => setDetailOpen(true)}
-            className="bg-gradient-to-r from-[#2f55f6] to-[#ba4ef8] hover:brightness-110 text-white font-bold text-xs sm:text-sm px-6 py-2.5 rounded-full shadow-[0_4px_14px_rgba(47,85,246,0.25)] hover:shadow-[0_6px_20px_rgba(186,78,248,0.35)] active:scale-95 transition-all duration-300 flex items-center gap-1.5"
+            onClick={handleSaveToggle}
+            disabled={savingPost}
+            className={`inline-flex h-8 w-8 items-center justify-center transition-colors ${
+              isSaved
+                ? "text-[#2f55f6]"
+                : "text-gray-400 hover:text-[#9333EA]"
+            } ${savingPost ? "cursor-not-allowed opacity-60" : ""}`}
+            title={isSaved ? "Quitar de guardados" : "Guardar publicación"}
+            aria-label={isSaved ? "Quitar de guardados" : "Guardar publicación"}
           >
-            <span>Ver más</span>
-            <span className="font-semibold text-sm sm:text-base leading-none">→</span>
+            {isSaved ? (
+              <BookmarkCheck className="h-5 w-5" style={{ color: UTOPP_BRAND.blue }} />
+            ) : (
+              <Bookmark className="h-5 w-5" />
+            )}
           </button>
+
+          <div className="flex w-1/2 flex-wrap items-center justify-end gap-2">
+            {primaryLinks.map((link, index) => (
+              <a
+                key={link.id}
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={
+                  index === 0
+                    ? "inline-flex max-w-[160px] items-center justify-center truncate rounded-full bg-gradient-to-r from-[#2f55f6] to-[#ba4ef8] px-4 py-2 text-xs font-bold text-white shadow-[0_4px_14px_rgba(47,85,246,0.25)] transition-all duration-300 hover:brightness-110 hover:shadow-[0_6px_20px_rgba(186,78,248,0.35)] sm:text-sm"
+                    : "inline-flex max-w-[160px] items-center justify-center truncate rounded-full border border-gray-200 bg-gray-100 px-4 py-2 text-xs font-semibold text-gray-700 transition-colors hover:bg-gray-200 sm:text-sm"
+                }
+                title={link.label}
+              >
+                <span className="truncate">{link.label}</span>
+              </a>
+            ))}
+            {currentUserId !== null && post.user_id === currentUserId ? (
+              <button
+                type="button"
+                onClick={() => setEditingPost(true)}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 text-gray-600 transition-colors hover:bg-gray-50"
+                title="Editar publicación"
+                aria-label="Editar publicación"
+              >
+                <Pencil className="h-4 w-4" />
+              </button>
+            ) : null}
+          </div>
         </div>
       </motion.div>
 
-      {/* ─── Modal de Detalle Integrado ─── */}
-      {detailOpen && (
-        <PostDetailModal
-          postId={post.id}
-          onClose={() => setDetailOpen(false)}
+      {viewerOpen ? (
+        <PostImageViewerModal
+          images={displayImages.map((image) => {
+            const imageData = image as PostImage | { url: string };
+            return {
+              url: image.url,
+              objectPosition: "object_position" in imageData ? (imageData.object_position ?? "center center") : "center center",
+              scale: "scale" in imageData ? (imageData.scale ?? 1) : 1,
+            };
+          })}
+          initialIndex={imgIndex}
+          onClose={() => setViewerOpen(false)}
         />
-      )}
+      ) : null}
     </>
   );
 }

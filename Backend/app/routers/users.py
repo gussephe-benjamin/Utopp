@@ -10,13 +10,93 @@ from app.dependencies.pagination import PaginationParams
 from app.models.user import User
 from app.models.follow import Follow
 from app.models.post import Post
+from app.models.role import Role
+from app.models.user_role import UserRole
 from app.models.user_profile_image import UserProfileImage
-from app.schemas.user import UserResponse_total, UserOut, UserPublicOut, UserUpdate, FollowerOut
+from app.schemas.user import (
+    UserResponse_total,
+    UserOut,
+    UserPublicOut,
+    UserUpdate,
+    FollowerOut,
+    OrganizationSummaryOut,
+)
 from app.schemas.post import PostOut
 from app.services.users_service import get_all_users
 from app.services.profile_service import follow as svc_follow, unfollow as svc_unfollow, update_interests as svc_update_interests
+from app.services.role_service import ORG_ROLE_NAME, STUDENT_ROLE_NAME, assign_student_role
 
 router = APIRouter()
+
+
+def _has_role(db: Session, user_id: int, role_name: str) -> bool:
+    row = db.execute(
+        select(Role.name)
+        .join(UserRole, UserRole.role_id == Role.id)
+        .where(
+            UserRole.user_id == user_id,
+            Role.name == role_name,
+        )
+        .limit(1)
+    ).first()
+    return row is not None
+
+
+def _has_any_role(db: Session, user_id: int) -> bool:
+    row = db.execute(
+        select(UserRole.user_id).where(UserRole.user_id == user_id).limit(1)
+    ).first()
+    return row is not None
+
+
+def _ensure_student_role_or_check(db: Session, user_id: int) -> bool:
+    """
+    Asegura que un usuario sea tratado como estudiante para la acción de follow.
+    Si ya tiene el rol explícito, retorna True. Si NO tiene ningún rol (usuarios
+    legacy creados antes del catálogo), se le asigna el rol estudiante por
+    defecto del sistema y se retorna True. Si tiene otro rol (organización,
+    oficina, etc.), retorna False y la acción debe bloquearse.
+    """
+    if _has_role(db, user_id, STUDENT_ROLE_NAME):
+        return True
+    if _has_any_role(db, user_id):
+        return False
+    assign_student_role(db, user_id)
+    return True
+
+
+def _organization_rows_query():
+    followers_count_sq = (
+        select(
+            Follow.following_id.label("org_id"),
+            func.count().label("followers_count"),
+        )
+        .group_by(Follow.following_id)
+        .subquery()
+    )
+
+    active_image_sq = (
+        select(
+            UserProfileImage.user_id.label("img_user_id"),
+            UserProfileImage.url.label("profile_image_url"),
+        )
+        .where(UserProfileImage.is_active.is_(True))
+        .subquery()
+    )
+
+    return (
+        select(
+            User.id,
+            User.full_name,
+            active_image_sq.c.profile_image_url,
+            func.coalesce(followers_count_sq.c.followers_count, 0).label("followers_count"),
+        )
+        .join(UserRole, UserRole.user_id == User.id)
+        .join(Role, Role.id == UserRole.role_id)
+        .outerjoin(followers_count_sq, followers_count_sq.c.org_id == User.id)
+        .outerjoin(active_image_sq, active_image_sq.c.img_user_id == User.id)
+        .where(Role.name == ORG_ROLE_NAME)
+    )
 
 
 # ============================================================
@@ -116,6 +196,101 @@ def update_interests(
 
 
 # ============================================================
+# GET /users/me/following-organizations
+# Lista las organizaciones (rol organización estudiantil)
+# seguidas por el usuario autenticado.
+# Auth: Requerida
+# ============================================================
+@router.get("/me/following-organizations", response_model=List[OrganizationSummaryOut])
+def get_my_following_organizations(
+    pagination: PaginationParams = Depends(),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_terms_accepted),
+):
+    rows = db.execute(
+        _organization_rows_query()
+        .join(Follow, Follow.following_id == User.id)
+        .where(Follow.follower_id == current_user.id)
+        .order_by(Follow.created_at.desc())
+        .offset(pagination.offset)
+        .limit(pagination.size)
+    ).all()
+    return [
+        OrganizationSummaryOut(
+            id=row.id,
+            full_name=row.full_name,
+            profile_image_url=row.profile_image_url,
+            followers_count=row.followers_count or 0,
+        )
+        for row in rows
+    ]
+
+
+# ============================================================
+# GET /users/{user_id}/following-organizations
+# Lista las organizaciones seguidas por un usuario.
+# Auth: No requerida
+# ============================================================
+@router.get("/{user_id}/following-organizations", response_model=List[OrganizationSummaryOut])
+def get_user_following_organizations(
+    user_id: int,
+    pagination: PaginationParams = Depends(),
+    db: Session = Depends(get_db),
+):
+    user = db.get(User, user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuario no encontrado",
+        )
+
+    rows = db.execute(
+        _organization_rows_query()
+        .join(Follow, Follow.following_id == User.id)
+        .where(Follow.follower_id == user_id)
+        .order_by(Follow.created_at.desc())
+        .offset(pagination.offset)
+        .limit(pagination.size)
+    ).all()
+    return [
+        OrganizationSummaryOut(
+            id=row.id,
+            full_name=row.full_name,
+            profile_image_url=row.profile_image_url,
+            followers_count=row.followers_count or 0,
+        )
+        for row in rows
+    ]
+
+
+# ============================================================
+# GET /users/organizations
+# Lista todas las organizaciones del sistema.
+# Auth: No requerida
+# ============================================================
+@router.get("/organizations", response_model=List[OrganizationSummaryOut])
+def list_organizations(
+    pagination: PaginationParams = Depends(),
+    db: Session = Depends(get_db),
+):
+    rows = db.execute(
+        _organization_rows_query()
+        .order_by(User.full_name.asc(), User.id.asc())
+        .offset(pagination.offset)
+        .limit(pagination.size)
+    ).all()
+    return [
+        OrganizationSummaryOut(
+            id=row.id,
+            full_name=row.full_name,
+            profile_image_url=row.profile_image_url,
+            followers_count=row.followers_count or 0,
+        )
+        for row in rows
+    ]
+
+
+# ============================================================
 # GET /users/check-username?username=...
 # Verifica si un nombre de usuario ya está en uso.
 # Devuelve { "available": bool }
@@ -185,6 +360,7 @@ def get_user_profile(
         career=user.career,
         cycle=user.cycle,
         interests=user.interests,
+        availability=user.availability,
         followers_count=followers_count,
         following_count=following_count,
         posts_count=posts_count,
@@ -246,6 +422,18 @@ def follow_user(
             detail="Usuario no encontrado"
         )
 
+    if not _ensure_student_role_or_check(db, current_user.id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Solo los alumnos pueden seguir organizaciones",
+        )
+
+    if not _has_role(db, target_user.id, ORG_ROLE_NAME):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Solo puedes seguir cuentas de organizaciones estudiantiles",
+        )
+
     svc_follow(db, follower_id=current_user.id, following_id=user_id)
     return {"status": "followed"}
 
@@ -261,6 +449,25 @@ def unfollow_user(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_terms_accepted),
 ):
+    target_user = db.get(User, user_id)
+    if not target_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuario no encontrado",
+        )
+
+    if not _ensure_student_role_or_check(db, current_user.id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Solo los alumnos pueden dejar de seguir organizaciones",
+        )
+
+    if not _has_role(db, target_user.id, ORG_ROLE_NAME):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Solo puedes dejar de seguir cuentas de organizaciones estudiantiles",
+        )
+
     svc_unfollow(db, follower_id=current_user.id, following_id=user_id)
     return {"status": "unfollowed"}
 

@@ -1,5 +1,5 @@
 import type { RefObject } from "react";
-import { ListFilter, Plus, Search, Bell } from "lucide-react";
+import { ListFilter, Plus } from "lucide-react";
 import { UtoppBrandMark } from "../../../shared/brand/UtoppBrandMark";
 import {
   TW_UTOPP_GRADIENT_R,
@@ -30,8 +30,6 @@ type AppTopBarProps = {
   accountMenuTriggerRef?: RefObject<HTMLButtonElement | null>;
   /** Anclaje del popover de filtros del feed. */
   feedFiltersTriggerRef?: RefObject<HTMLButtonElement | null>;
-  /** En feed/perfil móvil la barra superior se oculta (se usa barra inferior). */
-  hideOnMobileBottomNav?: boolean;
 };
 
 export function AppTopBar({
@@ -47,34 +45,15 @@ export function AppTopBar({
   isProfileRoute,
   accountMenuTriggerRef,
   feedFiltersTriggerRef,
-  hideOnMobileBottomNav = false,
 }: AppTopBarProps) {
   return (
-    <header
-      className={`fixed top-0 left-0 right-0 z-50 h-14 bg-white/95 backdrop-blur-md border-b border-gray-200/80 shadow-[0_1px_12px_rgba(0,0,0,0.06)] ${
-        hideOnMobileBottomNav ? "hidden sm:block" : ""
-      }`}
-    >
-      <div className="h-full max-w-6xl mx-auto px-3 sm:px-4 flex items-center justify-between gap-3">
+    <header className="hidden md:block fixed top-0 left-0 right-0 z-50 h-14 bg-white/95 backdrop-blur-md border-b border-gray-200/80 shadow-[0_1px_12px_rgba(0,0,0,0.06)]">
+      <div className="h-full max-w-[1320px] mx-auto px-3 sm:px-4 flex items-center justify-between gap-3">
         <UtoppBrandMark
           variant="header"
           onClick={onBrandClick}
           aria-label="Ir a inicio y recargar"
         />
-
-        {/* Barra de Búsqueda (Centro) */}
-        <div className="flex-1 max-w-[600px] hidden md:flex items-center px-4">
-          <div className="relative w-full">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <Search className="h-4 w-4 text-gray-400" />
-            </div>
-            <input
-              type="text"
-              placeholder="Buscar oportunidades, organizaciones, eventos..."
-              className="block w-full pl-10 pr-4 py-2.5 border border-gray-100 rounded-full leading-5 bg-gray-50/80 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-300 focus:border-violet-300 text-sm transition-colors"
-            />
-          </div>
-        </div>
 
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           {canCreate && (
@@ -116,16 +95,6 @@ export function AppTopBar({
               )}
             </button>
           )}
-
-          {/* Campana de Notificaciones [Data Sintética] */}
-          <button
-            type="button"
-            className="relative flex items-center justify-center w-10 h-10 bg-violet-50 text-violet-600 hover:bg-violet-100 rounded-full transition-colors shrink-0"
-            aria-label="Notificaciones"
-          >
-            <Bell className="w-5 h-5" />
-            <span className="absolute top-0 right-0 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-fuchsia-500 text-[8px] font-bold text-white ring-2 ring-white">3</span>
-          </button>
 
           <button
             ref={accountMenuTriggerRef}

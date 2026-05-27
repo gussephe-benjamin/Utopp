@@ -1,5 +1,5 @@
-import { useRef, useState, useEffect } from 'react'
-import { ChevronLeft, ChevronRight, MoreVertical, Link } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Bookmark, ChevronLeft, ChevronRight, Clock, Link } from 'lucide-react'
 import { getMyProfile } from '../api/users.api'
 import {
   type PostType,
@@ -10,7 +10,9 @@ import {
   POST_TYPE_ICONS,
   SUBTYPE_LABELS,
 } from '../types/post.types'
-import { TW_UTOPP_GRADIENT_R } from '../shared/constants/brand'
+import { isExpired, timeRemaining } from '../shared/lib/date'
+import { PostImageViewerModal } from '../features/feed/components/PostImageViewerModal'
+import { UTOPP_BRAND } from '../shared/constants/brand'
 
 interface Step5PreviewProps {
   postType: PostType
@@ -22,36 +24,59 @@ interface Step5PreviewProps {
   links: WizardLink[]
 }
 
-/** Formato legible de fecha ISO (date o datetime-local) */
 function formatDate(isoDate: string): string {
   if (!isoDate) return ''
   const d = new Date(isoDate)
   if (isNaN(d.getTime())) return ''
   return new Intl.DateTimeFormat('es-ES', {
-    day: '2-digit', month: 'long', year: 'numeric',
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
   }).format(d)
 }
 
-/**
- * Paso de preview: replica pixel-perfecta del PostCard del feed.
- * Mismo layout responsive, overflow link button, avatar real, escala de imagen.
- */
 export default function Step5Preview({
-  postType, subtype, title, description, deadline_at, images, links,
+  postType,
+  subtype,
+  title,
+  description,
+  deadline_at,
+  images,
+  links,
 }: Step5PreviewProps) {
-  const [currentImage, setCurrentImage]   = useState(0)
-  const [userName, setUserName]           = useState<string | null>(null)
-  const [userEmail, setUserEmail]         = useState<string | null>(null)
-  const [avatarUrl, setAvatarUrl]         = useState<string | null>(null)
-  const [extraMenuOpen, setExtraMenuOpen] = useState(false)
-  const [descExpanded, setDescExpanded]   = useState(false)
-  const extraMenuRef                      = useRef<HTMLDivElement>(null)
+  const readyImages = images.filter((img) => img.status === 'done' && img.cloudinaryUrl)
 
-  const MAX_DESC_CHARS = 500
+  const [currentImage, setCurrentImage] = useState(0)
+  const [userName, setUserName] = useState<string | null>(null)
+  const [userEmail, setUserEmail] = useState<string | null>(null)
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [descExpanded, setDescExpanded] = useState(false)
+  const [currentImageRatio, setCurrentImageRatio] = useState<number | null>(null)
+  const [viewerOpen, setViewerOpen] = useState(false)
+
+  const MAX_DESC_CHARS = 560
+  const initial = (userName ?? 'T').charAt(0).toUpperCase()
+  const hasDeadline = Boolean(deadline_at)
+  const deadlineExpired = deadline_at ? isExpired(deadline_at) : false
+  const deadlineRemaining = deadline_at ? timeRemaining(deadline_at) : null
+
+  const typeGradients: Record<string, string> = {
+    international_opportunity: 'bg-gradient-to-br from-blue-500 to-cyan-500',
+    event: 'bg-gradient-to-br from-purple-500 to-pink-500',
+    academic_project: 'bg-gradient-to-br from-green-500 to-emerald-500',
+    announcement: 'bg-gradient-to-br from-orange-500 to-red-500',
+    simple_post: 'bg-gradient-to-br from-gray-500 to-slate-500',
+  }
+  const gradient = typeGradients[postType] ?? typeGradients.simple_post
+
+  const mediaAspectRatio = useMemo(() => {
+    if (!currentImageRatio || !Number.isFinite(currentImageRatio)) return 16 / 9
+    return Math.min(1.91, Math.max(0.75, currentImageRatio))
+  }, [currentImageRatio])
 
   useEffect(() => {
     getMyProfile()
-      .then(profile => {
+      .then((profile) => {
         setUserName(profile.full_name || profile.email)
         setUserEmail(profile.email ?? null)
         const saved = localStorage.getItem(`avatar_${profile.id}`)
@@ -60,259 +85,274 @@ export default function Step5Preview({
       .catch(() => setUserName('Tú'))
   }, [])
 
-  // Cierra el overflow menu al hacer clic fuera
   useEffect(() => {
-    if (!extraMenuOpen) return
-    const handler = (e: MouseEvent) => {
-      if (extraMenuRef.current && !extraMenuRef.current.contains(e.target as Node)) {
-        setExtraMenuOpen(false)
-      }
+    if (!readyImages.length) {
+      setCurrentImageRatio(null)
+      return
     }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [extraMenuOpen])
 
-  const readyImages = images.filter(img => img.status === 'done' && img.cloudinaryUrl)
-  const prevImage   = () => setCurrentImage(i => Math.max(0, i - 1))
-  const nextImage   = () => setCurrentImage(i => Math.min(readyImages.length - 1, i + 1))
+    const active = readyImages[currentImage]
+    if (!active?.cloudinaryUrl) return
 
-  const initial = (userName ?? 'T').charAt(0).toUpperCase()
+    let cancelled = false
+    const image = new Image()
+    image.onload = () => {
+      if (cancelled || image.naturalWidth <= 0 || image.naturalHeight <= 0) return
+      setCurrentImageRatio(image.naturalWidth / image.naturalHeight)
+    }
+    image.onerror = () => {
+      if (!cancelled) setCurrentImageRatio(null)
+    }
+    image.src = active.cloudinaryUrl
 
-  // Tipo de post → gradiente de avatar igual que Feed.tsx
-  const typeGradients: Record<string, string> = {
-    international_opportunity: 'bg-gradient-to-br from-blue-500 to-cyan-500',
-    event:                     'bg-gradient-to-br from-purple-500 to-pink-500',
-    academic_project:          'bg-gradient-to-br from-green-500 to-emerald-500',
-    announcement:              'bg-gradient-to-br from-orange-500 to-red-500',
-    simple_post:               'bg-gradient-to-br from-gray-500 to-slate-500',
-  }
-  const gradient = typeGradients[postType] ?? typeGradients.simple_post
+    return () => {
+      cancelled = true
+    }
+  }, [currentImage, readyImages])
+
+  const prevImage = () => setCurrentImage((i) => Math.max(0, i - 1))
+  const nextImage = () => setCurrentImage((i) => Math.min(readyImages.length - 1, i + 1))
+
+  const primaryLinks = links.slice(0, 2)
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-gray-500 text-center font-medium">
-        Así se verá tu publicación en el feed
-      </p>
+      <p className="text-center text-sm font-medium text-gray-500">Así se verá tu publicación en el feed</p>
 
-      {/* Fondo gris simulando el feed */}
-      <div className="bg-gray-100 rounded-2xl p-3">
-
-        {/* Tarjeta — misma estructura exacta que PostCard */}
-        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden w-full max-w-[500px] mx-auto">
-
-          {/* Header: avatar + nombre + email + tiempo + badges */}
-          <div className="flex items-start justify-between px-4 pt-4 pb-4 sm:pb-3">
-            <div className="flex items-center gap-3">
+      <div className="rounded-2xl bg-gray-100 p-3">
+        <div className="mx-auto w-full max-w-[680px] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+          <div className="flex items-start justify-between gap-4 px-4 pb-3 pt-4">
+            <div className="flex min-w-0 items-center gap-3">
               {avatarUrl ? (
-                <img src={avatarUrl} alt={userName ?? 'Tú'} className="w-10 h-10 rounded-full object-cover border border-gray-200" />
+                <img
+                  src={avatarUrl}
+                  alt={userName ?? 'Tú'}
+                  className="h-10 w-10 rounded-full border border-gray-200 object-cover"
+                />
               ) : (
-                <div className={`w-10 h-10 ${gradient} rounded-full flex items-center justify-center text-white font-semibold text-sm shrink-0`}>
+                <div
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white ${gradient}`}
+                >
                   {initial}
                 </div>
               )}
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-gray-900 text-sm leading-tight">{userName ?? 'Cargando...'}</span>
-                  <span className="hidden sm:inline text-gray-300 text-xs">·</span>
-                  <span className="hidden sm:inline text-xs text-gray-400">Ahora</span>
+
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold leading-tight text-gray-900">{userName ?? 'Cargando...'}</p>
+                {userEmail ? <p className="mt-0.5 truncate text-xs leading-tight text-gray-500">{userEmail}</p> : null}
+                <div className="mt-1 flex items-center gap-1 text-gray-400">
+                  <Clock className="h-3 w-3" />
+                  <span className="text-[11px] font-semibold">Ahora</span>
                 </div>
-                {userEmail && (
-                  <p className="text-xs text-gray-400 leading-tight mt-0.5">{userEmail}</p>
-                )}
-                <p className="sm:hidden text-xs text-gray-400 leading-tight mt-0.5">Ahora</p>
               </div>
             </div>
 
-            {/* Badges en columna (sm+) */}
-            <div className="flex items-center gap-2 shrink-0">
-              <div className="hidden sm:flex sm:flex-col gap-1 items-end">
-                <span className="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full inline-flex items-center gap-1">
+            <div className="max-w-[48%] shrink-0 text-right">
+              <div className="flex flex-wrap justify-end gap-1.5">
+                <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1 text-xs text-gray-600">
                   {(() => {
                     const TypeIcon = POST_TYPE_ICONS[postType]
-                    return <TypeIcon className="w-3.5 h-3.5 text-gray-500" />
+                    return <TypeIcon className="h-3.5 w-3.5 text-gray-500" />
                   })()}
                   {POST_TYPE_LABELS[postType]}
                 </span>
-                {subtype && (
-                  <span className="text-xs bg-purple-100 text-purple-700 px-2.5 py-1 rounded-full">
+                {subtype ? (
+                  <span className="rounded-full bg-purple-100 px-2.5 py-1 text-xs text-purple-700">
                     {SUBTYPE_LABELS[subtype]}
                   </span>
-                )}
+                ) : null}
               </div>
+
+              {hasDeadline ? (
+                <div className="mt-2 flex flex-col items-end gap-1">
+                  <span className="text-[11px] font-semibold text-gray-500">Límite: {formatDate(deadline_at)}</span>
+                  {deadlineExpired ? (
+                    <span className="rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-600">
+                      Vencido
+                    </span>
+                  ) : deadlineRemaining ? (
+                    <span className="inline-flex items-center gap-1 rounded-full border border-fuchsia-100 bg-fuchsia-50 px-2 py-0.5 text-xs font-semibold text-fuchsia-600">
+                      <Clock className="h-3 w-3" />
+                      {deadlineRemaining}
+                    </span>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
           </div>
 
-          {/* Badges en móvil (fila) */}
-          <div className="flex gap-1 px-4 mb-2 sm:hidden items-center flex-wrap">
-            <span className="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full inline-flex items-center gap-1">
-              {(() => {
-                const TypeIcon = POST_TYPE_ICONS[postType]
-                return <TypeIcon className="w-3.5 h-3.5 text-gray-500" />
-              })()}
-              {POST_TYPE_LABELS[postType]}
-            </span>
-            {subtype && (
-              <span className="text-xs bg-purple-100 text-purple-700 px-2.5 py-1 rounded-full">
-                {SUBTYPE_LABELS[subtype]}
-              </span>
-            )}
-          </div>
-
-          {/* Carrusel de imágenes (slide CSS) — aspect-ratio 4:5 */}
-          {readyImages.length > 0 && (
-            <div className="relative w-full max-w-[500px] mx-auto aspect-[4/5] bg-gray-100 overflow-hidden">
-              {/* Fila de imágenes: slide via translateX */}
-              <div
-                className="flex h-full"
-                style={{
-                  width: `${readyImages.length * 100}%`,
-                  transform: `translateX(-${(currentImage / readyImages.length) * 100}%)`,
-                  transition: 'transform 350ms ease-in-out',
-                }}
-              >
-                {readyImages.map((img, i) => (
-                  <img
-                    key={i}
-                    src={img.cloudinaryUrl!}
-                    alt={`Imagen ${i + 1}`}
-                    className="h-full object-cover"
-                    style={{
-                      width: `${100 / readyImages.length}%`,
-                      objectPosition: img.objectPosition ?? 'center center',
-                      transform: `scale(${img.scale ?? 1})`,
-                      transformOrigin: img.objectPosition ?? 'center center',
-                    }}
-                  />
-                ))}
-              </div>
-              {readyImages.length > 1 && (
-                <>
-                  <button
-                    onClick={prevImage}
-                    disabled={currentImage === 0}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/40 hover:bg-black/60 rounded-full flex items-center justify-center text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                  >
-                    <ChevronLeft className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={nextImage}
-                    disabled={currentImage === readyImages.length - 1}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/40 hover:bg-black/60 rounded-full flex items-center justify-center text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                  >
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
-                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-                    {readyImages.map((_, i) => (
-                      <button
-                        key={i}
-                        onClick={() => setCurrentImage(i)}
-                        className={`rounded-full transition-all ${i === currentImage ? 'w-5 h-2 bg-white' : 'w-2 h-2 bg-white/60'}`}
-                      />
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-
-          {/* Contenido: título, descripción, deadline */}
-          <div className="px-4 pt-3 pb-2">
-            {title && (
-              <h3 className="font-bold text-gray-900 text-base mb-1 leading-snug">{title}</h3>
-            )}
+          <div className="px-4 pb-3 pt-1.5">
+            {title ? (
+              <h3 className="mb-1 text-base font-extrabold leading-snug tracking-tight text-gray-900 sm:text-lg">
+                {title}
+              </h3>
+            ) : null}
             {(() => {
               const needsTrunc = description.length > MAX_DESC_CHARS
-              const displayText = needsTrunc && !descExpanded
-                ? description.slice(0, MAX_DESC_CHARS) + '…'
-                : description
+              const displayText = needsTrunc && !descExpanded ? description.slice(0, MAX_DESC_CHARS) + '…' : description
               return (
                 <>
-                  <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-line">
+                  <p className="mt-1 whitespace-pre-line text-sm font-medium leading-relaxed text-gray-600">
                     {displayText}
                   </p>
-                  {needsTrunc && (
+                  {needsTrunc ? (
                     <button
-                      onClick={() => setDescExpanded(v => !v)}
-                      className="mt-1 text-xs font-medium text-[#2563EB] hover:text-[#C026D3] transition-colors"
+                      onClick={() => setDescExpanded((v) => !v)}
+                      className="mt-1 text-xs font-semibold text-[#2f55f6] transition-colors hover:text-[#ba4ef8]"
                     >
                       {descExpanded ? 'Ver menos' : 'Ver más'}
                     </button>
-                  )}
+                  ) : null}
                 </>
               )
             })()}
-            {deadline_at && (
-              <div className="flex items-center gap-1.5 mt-2 text-xs text-gray-500">
-                <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                <span>Fecha límite: {formatDate(deadline_at)}</span>
-              </div>
-            )}
           </div>
 
-          {/* Botones CTA + overflow (idéntico al PostCard del feed) */}
-          {links.length > 0 && (
-            <div className="px-4 pb-3 flex gap-2 items-stretch">
-              {links[0] && (
-                <a
-                  href={links[0].url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`flex-1 text-center py-2.5 px-3 rounded-xl text-sm font-medium ${TW_UTOPP_GRADIENT_R} text-white shadow hover:shadow-md transition-all`}
+          {readyImages.length > 0 ? (
+            <div className="px-4 pb-3">
+              <div
+                className="relative w-full overflow-hidden rounded-2xl border border-gray-100/70 bg-gray-100"
+                style={{
+                  aspectRatio: String(mediaAspectRatio),
+                  minHeight: '220px',
+                  maxHeight: '520px',
+                }}
+                onClick={() => setViewerOpen(true)}
+              >
+                <div
+                  className="flex h-full"
+                  style={{
+                    width: `${readyImages.length * 100}%`,
+                    transform: `translateX(-${(currentImage / readyImages.length) * 100}%)`,
+                    transition: 'transform 350ms ease-in-out',
+                  }}
                 >
-                  {links[0].label}
-                </a>
-              )}
-              {links[1] && (
-                <a
-                  href={links[1].url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 text-center py-2.5 px-3 rounded-xl text-sm font-medium bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200 transition-all"
-                >
-                  {links[1].label}
-                </a>
-              )}
-              {links.length > 2 && (
-                <div className="relative" ref={extraMenuRef}>
-                  <button
-                    onClick={() => setExtraMenuOpen(v => !v)}
-                    className="py-2.5 px-2.5 rounded-xl bg-gray-100 border border-gray-200 text-gray-600 hover:bg-gray-200 transition-colors flex items-center justify-center"
-                    title="Más enlaces"
-                  >
-                    <MoreVertical className="w-4 h-4" />
-                  </button>
-                  {extraMenuOpen && (
-                    <div className="absolute right-0 bottom-full mb-1 w-52 bg-white rounded-xl shadow-lg border border-gray-200 z-30 overflow-hidden">
-                      {links.slice(2).map(link => (
-                        <a
-                          key={link.tempId}
-                          href={link.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={() => setExtraMenuOpen(false)}
-                          className="flex items-center gap-2.5 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                        >
-                          <Link className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                          <span className="truncate">{link.label}</span>
-                        </a>
+                  {readyImages.map((img, i) => (
+                    <img
+                      key={i}
+                      src={img.cloudinaryUrl!}
+                      alt={`Imagen ${i + 1}`}
+                      className="h-full object-cover"
+                      style={{
+                        width: `${100 / readyImages.length}%`,
+                        objectPosition: img.objectPosition ?? 'center center',
+                        transform: `scale(${img.scale ?? 1})`,
+                        transformOrigin: img.objectPosition ?? 'center center',
+                      }}
+                    />
+                  ))}
+                </div>
+
+                {readyImages.length > 1 ? (
+                  <>
+                    <button
+                      onClick={prevImage}
+                      disabled={currentImage === 0}
+                      onMouseDown={(event) => event.stopPropagation()}
+                      onClickCapture={(event) => event.stopPropagation()}
+                      className="absolute left-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white transition-colors hover:bg-black/60 disabled:cursor-not-allowed disabled:opacity-30"
+                    >
+                      <ChevronLeft className="h-5 w-5" />
+                    </button>
+                    <button
+                      onClick={nextImage}
+                      disabled={currentImage === readyImages.length - 1}
+                      onMouseDown={(event) => event.stopPropagation()}
+                      onClickCapture={(event) => event.stopPropagation()}
+                      className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white transition-colors hover:bg-black/60 disabled:cursor-not-allowed disabled:opacity-30"
+                    >
+                      <ChevronRight className="h-5 w-5" />
+                    </button>
+                    <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5">
+                      {readyImages.map((_, i) => (
+                        <button
+                          key={i}
+                          onClick={() => setCurrentImage(i)}
+                          onMouseDown={(event) => event.stopPropagation()}
+                          onClickCapture={(event) => event.stopPropagation()}
+                          className={`rounded-full transition-all ${i === currentImage ? 'h-2 w-5 bg-white' : 'h-2 w-2 bg-white/60'}`}
+                        />
                       ))}
                     </div>
-                  )}
-                </div>
-              )}
+                  </>
+                ) : null}
+              </div>
             </div>
-          )}
+          ) : null}
+
+          {links.length > 0 ? (
+            <>
+              <div className="border-t border-gray-100/80" />
+              <div className="flex items-center justify-between gap-4 bg-white px-4 py-3.5">
+                <button
+                  type="button"
+                  disabled
+                  className="inline-flex h-8 w-8 items-center justify-center text-gray-400"
+                  title="Guardar publicación"
+                  aria-label="Guardar publicación"
+                >
+                  <Bookmark className="h-5 w-5" style={{ color: UTOPP_BRAND.blue }} />
+                </button>
+                <div className="flex min-h-[36px] w-1/2 items-center justify-end gap-2">
+                  {primaryLinks[0] ? (
+                    <a
+                      href={primaryLinks[0].url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`inline-flex max-w-[160px] items-center justify-center truncate rounded-full bg-gradient-to-r from-[#2f55f6] to-[#ba4ef8] px-4 py-2 text-xs font-bold text-white shadow-[0_4px_14px_rgba(47,85,246,0.25)] transition-all duration-300 hover:brightness-110 hover:shadow-[0_6px_20px_rgba(186,78,248,0.35)] sm:text-sm`}
+                    >
+                      <span className="truncate">{primaryLinks[0].label}</span>
+                    </a>
+                  ) : null}
+                  {primaryLinks[1] ? (
+                    <a
+                      href={primaryLinks[1].url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex max-w-[160px] items-center justify-center truncate rounded-full border border-gray-200 bg-gray-100 px-4 py-2 text-xs font-semibold text-gray-700 transition-colors hover:bg-gray-200 sm:text-sm"
+                    >
+                      <span className="truncate">{primaryLinks[1].label}</span>
+                    </a>
+                  ) : null}
+                </div>
+              </div>
+              {links.length > 2 ? (
+                <div className="space-y-1.5 px-4 pb-3">
+                  {links.slice(2).map((link) => (
+                    <a
+                      key={link.tempId}
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2.5 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-100"
+                    >
+                      <Link className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+                      <span className="truncate">{link.label}</span>
+                    </a>
+                  ))}
+                </div>
+              ) : null}
+            </>
+          ) : null}
         </div>
       </div>
 
-      {/* Advertencia si hay imágenes aún subiendo */}
-      {images.some(img => img.status === 'uploading') && (
-        <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700 text-center">
+      {images.some((img) => img.status === 'uploading') ? (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-center text-sm text-amber-700">
           Hay imágenes que aún se están subiendo. Espera a que terminen antes de publicar.
         </div>
-      )}
+      ) : null}
+      {viewerOpen ? (
+        <PostImageViewerModal
+          images={readyImages.map((image) => ({
+            url: image.cloudinaryUrl!,
+            objectPosition: image.objectPosition ?? 'center center',
+            scale: image.scale ?? 1,
+          }))}
+          initialIndex={currentImage}
+          onClose={() => setViewerOpen(false)}
+        />
+      ) : null}
     </div>
   )
 }

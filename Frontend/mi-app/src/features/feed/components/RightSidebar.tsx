@@ -1,35 +1,41 @@
 import { Calendar as CalendarIcon, Flame, Trophy } from "lucide-react";
 import { SyntheticBadge } from "../../../components/ui/SyntheticBadge";
 
-export function RightSidebar() {
+type RightSidebarProps = {
+  showTrending?: boolean
+}
+
+export function RightSidebar({ showTrending = true }: RightSidebarProps) {
   return (
     <aside className="hidden xl:flex w-80 flex-col gap-4 sticky top-[80px] h-[calc(100vh-80px)] overflow-y-auto pb-6 no-scrollbar">
       
       {/* Widget Trending en UTEC */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-        <div className="flex items-center justify-between mb-3.5">
-          <div className="flex items-center gap-2">
-            <Flame className="w-4 h-4 text-orange-500 fill-current" />
-            <h4 className="font-bold text-gray-800 text-sm">Trending en UTEC</h4>
-          </div>
-          <SyntheticBadge />
-        </div>
-        
-        <div className="flex flex-col gap-3">
-          {[
-            { tag: "#Hackathon", count: "324 posts" },
-            { tag: "#Voluntariado", count: "198 posts" },
-            { tag: "#Intercambio", count: "156 posts" },
-            { tag: "#DemoDay", count: "112 posts" },
-            { tag: "#IA", count: "98 posts" },
-          ].map((item) => (
-            <div key={item.tag} className="flex justify-between items-center text-xs font-semibold">
-              <span className="text-[#2563EB] hover:underline cursor-pointer">{item.tag}</span>
-              <span className="text-gray-400 font-normal">{item.count}</span>
+      {showTrending ? (
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+          <div className="flex items-center justify-between mb-3.5">
+            <div className="flex items-center gap-2">
+              <Flame className="w-4 h-4 text-orange-500 fill-current" />
+              <h4 className="font-bold text-gray-800 text-sm">Trending en UTEC</h4>
             </div>
-          ))}
+            <SyntheticBadge />
+          </div>
+          
+          <div className="flex flex-col gap-3">
+            {[
+              { tag: "#Hackathon", count: "324 posts" },
+              { tag: "#Voluntariado", count: "198 posts" },
+              { tag: "#Intercambio", count: "156 posts" },
+              { tag: "#DemoDay", count: "112 posts" },
+              { tag: "#IA", count: "98 posts" },
+            ].map((item) => (
+              <div key={item.tag} className="flex justify-between items-center text-xs font-semibold">
+                <span className="text-[#2563EB] hover:underline cursor-pointer">{item.tag}</span>
+                <span className="text-gray-400 font-normal">{item.count}</span>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      ) : null}
 
       {/* Widget Orgs de la semana */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">

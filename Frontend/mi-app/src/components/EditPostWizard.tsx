@@ -21,6 +21,12 @@ import Step4GeneralInfo from './Step4_GeneralInfo'
 import StepFrameEditor from './StepFrameEditor'
 import Step5Preview from './Step5_Preview'
 import ModernStepper from './ModernStepper'
+import {
+  countWords,
+  isPostDescriptionWordCountValid,
+  POST_DESCRIPTION_MAX_WORDS,
+  POST_DESCRIPTION_MIN_WORDS,
+} from '../shared/lib/wordCount'
 
 interface PostItem {
   id: number
@@ -157,12 +163,15 @@ export default function EditPostWizard({ post, onClose, onSaved }: EditPostWizar
   const hasImages   = readyImages.length > 0
   const TOTAL_STEPS = hasImages ? 4 : 3    // Links, Info, [Frame,] Preview
   const PREVIEW_STEP = TOTAL_STEPS
+  const descriptionWordCount = countWords(description)
+  const descriptionWordCountValid = isPostDescriptionWordCountValid(description)
 
   const canAdvance = (): boolean => {
     if (currentStep === 1) return true
     if (currentStep === 2) {
       return (
         description.trim().length > 0 &&
+        descriptionWordCountValid &&
         !images.some(img => img.status === 'uploading')
       )
     }
@@ -188,6 +197,12 @@ export default function EditPostWizard({ post, onClose, onSaved }: EditPostWizar
   // ── Save ──────────────────────────────────────────────────────
   const handleSave = async () => {
     if (!postId || !post) return
+    if (!descriptionWordCountValid) {
+      setSaveError(
+        `La descripción debe tener entre ${POST_DESCRIPTION_MIN_WORDS} y ${POST_DESCRIPTION_MAX_WORDS} palabras. Actualmente tiene ${descriptionWordCount}.`,
+      )
+      return
+    }
     setSaving(true)
     setSaveError(null)
 
@@ -449,6 +464,11 @@ export default function EditPostWizard({ post, onClose, onSaved }: EditPostWizar
               {saveError}
             </div>
           )}
+          {currentStep === 2 && !descriptionWordCountValid ? (
+            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              La descripción debe tener entre {POST_DESCRIPTION_MIN_WORDS} y {POST_DESCRIPTION_MAX_WORDS} palabras.
+            </div>
+          ) : null}
           {renderStep()}
         </div>
 
@@ -484,7 +504,11 @@ export default function EditPostWizard({ post, onClose, onSaved }: EditPostWizar
               {currentStep === PREVIEW_STEP ? (
                 <button
                   onClick={handleSave}
-                  disabled={saving || images.some(img => img.status === 'uploading')}
+                  disabled={
+                    saving ||
+                    images.some(img => img.status === 'uploading') ||
+                    !descriptionWordCountValid
+                  }
                   className="px-3 py-2 sm:px-6 sm:py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed sm:min-w-[160px] text-sm sm:text-base font-medium whitespace-nowrap"
                 >
                   {saving ? (saveProgress ?? 'Guardando...') : 'Guardar'}

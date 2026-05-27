@@ -32,6 +32,12 @@ class ProfileImageOut(BaseModel):
 # Auth: Requerida
 # ============================================================
 @router.post(
+    "/me/profile-images",
+    response_model=ProfileImageOut,
+    status_code=status.HTTP_201_CREATED,
+    tags=["user-profile-images"],
+)
+@router.post(
     "/users/me/profile-images",
     response_model=ProfileImageOut,
     status_code=status.HTTP_201_CREATED,

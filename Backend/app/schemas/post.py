@@ -5,6 +5,23 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.models.post import PostType, SubPostType, PostStatus, TimeStatus, VALID_SUBTYPES
 
+DESCRIPTION_MIN_WORDS = 200
+DESCRIPTION_MAX_WORDS = 700
+
+
+def _count_words(value: str) -> int:
+    return len([word for word in value.strip().split() if word])
+
+
+def _validate_description_word_count(value: str) -> str:
+    words = _count_words(value)
+    if words < DESCRIPTION_MIN_WORDS or words > DESCRIPTION_MAX_WORDS:
+        raise ValueError(
+            f"La descripción debe tener entre {DESCRIPTION_MIN_WORDS} y "
+            f"{DESCRIPTION_MAX_WORDS} palabras (actual: {words})."
+        )
+    return value
+
 
 class PostBase(BaseModel):
     """Schema base para posts."""
@@ -34,6 +51,11 @@ class PostBase(BaseModel):
                     f"Subtipos válidos: {valid_values}"
                 )
         return v
+
+    @field_validator("description")
+    @classmethod
+    def validate_description_words(cls, v: str):
+        return _validate_description_word_count(v)
 
 
 class PostCreate(PostBase):
@@ -67,6 +89,11 @@ class AcademicProjectCreate(BaseModel):
             )
         return v
 
+    @field_validator("description")
+    @classmethod
+    def validate_description_words(cls, v: str):
+        return _validate_description_word_count(v)
+
 
 class SimplePostCreate(BaseModel):
     """Schema para crear una publicación simple (sin título)."""
@@ -85,6 +112,11 @@ class SimplePostCreate(BaseModel):
                 f"Subtipos válidos: {[s.value for s in valid]}"
             )
         return v
+
+    @field_validator("description")
+    @classmethod
+    def validate_description_words(cls, v: str):
+        return _validate_description_word_count(v)
 
 
 class AnnouncementCreate(BaseModel):
@@ -108,6 +140,11 @@ class AnnouncementCreate(BaseModel):
             )
         return v
 
+    @field_validator("description")
+    @classmethod
+    def validate_description_words(cls, v: str):
+        return _validate_description_word_count(v)
+
 
 class AcademicProjectDeadlineUpdate(BaseModel):
     """Schema para asignar o reemplazar el deadline de un proyecto académico."""
@@ -123,6 +160,13 @@ class PostUpdate(BaseModel):
     specific_fields: Optional[Dict[str, Any]] = None
     deadline_at: Optional[datetime] = None
     is_pinned: Optional[bool] = None
+
+    @field_validator("description")
+    @classmethod
+    def validate_description_words(cls, v: Optional[str]):
+        if v is None:
+            return v
+        return _validate_description_word_count(v)
 
 
 class PostImageOut(BaseModel):

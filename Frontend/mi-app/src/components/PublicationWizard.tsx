@@ -19,6 +19,12 @@ import ModernStepper from './ModernStepper'
 import { createPost, publishPost } from '../api/posts.api'
 import { addImage } from '../api/post-images.api'
 import { addLink } from '../api/post-links.api'
+import {
+  countWords,
+  isPostDescriptionWordCountValid,
+  POST_DESCRIPTION_MAX_WORDS,
+  POST_DESCRIPTION_MIN_WORDS,
+} from '../shared/lib/wordCount'
 
 // Estado inicial vacío del formulario
 const initialFormData: WizardFormData = {
@@ -119,6 +125,8 @@ export default function PublicationWizard({ isOpen, onClose, allowedTypes }: Pub
   //   Con imágenes: 1→2→3→4→5(FrameEditor)→6(Preview)
   const TOTAL_STEPS   = hasImages ? 6 : 5
   const PREVIEW_STEP  = TOTAL_STEPS
+  const descriptionWordCount = countWords(formData.description)
+  const descriptionWordCountValid = isPostDescriptionWordCountValid(formData.description)
 
   const canAdvance = (): boolean => {
     switch (currentStep) {
@@ -129,6 +137,7 @@ export default function PublicationWizard({ isOpen, onClose, allowedTypes }: Pub
         return (
           formData.title.trim().length > 0 &&
           formData.description.trim().length > 0 &&
+          descriptionWordCountValid &&
           // Los announcements requieren deadline obligatorio
           (formData.post_type !== 'announcement' || formData.deadline_at !== '') &&
           // No permitir avanzar si hay imágenes aún subiendo
@@ -179,6 +188,12 @@ export default function PublicationWizard({ isOpen, onClose, allowedTypes }: Pub
    */
   const handlePublish = async () => {
     if (!formData.post_type || !formData.subtype) return
+    if (!descriptionWordCountValid) {
+      setPublishError(
+        `La descripción debe tener entre ${POST_DESCRIPTION_MIN_WORDS} y ${POST_DESCRIPTION_MAX_WORDS} palabras. Actualmente tiene ${descriptionWordCount}.`,
+      )
+      return
+    }
 
     setIsPublishing(true)
     setPublishError(null)
@@ -372,6 +387,11 @@ export default function PublicationWizard({ isOpen, onClose, allowedTypes }: Pub
               {publishError}
             </div>
           )}
+          {currentStep === 4 && !descriptionWordCountValid ? (
+            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              La descripción debe tener entre {POST_DESCRIPTION_MIN_WORDS} y {POST_DESCRIPTION_MAX_WORDS} palabras.
+            </div>
+          ) : null}
           {renderStep()}
         </div>
 
@@ -407,7 +427,11 @@ export default function PublicationWizard({ isOpen, onClose, allowedTypes }: Pub
               // En el último paso el botón publica directamente
               <button
                 onClick={handlePublish}
-                disabled={isPublishing || formData.images.some(img => img.status === 'uploading')}
+                disabled={
+                  isPublishing ||
+                  formData.images.some(img => img.status === 'uploading') ||
+                  !descriptionWordCountValid
+                }
                 className="px-3 py-2 sm:px-6 sm:py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed sm:min-w-[140px] text-sm sm:text-base font-medium whitespace-nowrap"
               >
                 {isPublishing ? (publishProgress ?? 'Publicando...') : 'Publicar'}

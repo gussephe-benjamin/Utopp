@@ -1,52 +1,24 @@
 import type { CSSProperties } from "react";
 
-export type PopoverPlacement = "below" | "above";
-
-/** Posición fija respecto a un trigger (borde derecho alineado con el del trigger). */
+/** Posición fija bajo un trigger (borde derecho alineado con el del trigger), estilo menú GitHub. */
 export type MenuPopoverAnchor = {
-  placement: PopoverPlacement;
-  top?: number;
-  bottom?: number;
+  top: number;
   right: number;
   minWidth: number;
-  /** Espacio disponible sobre el trigger (solo placement above). */
-  maxHeightPx?: number;
 };
 
-export type MeasureMenuAnchorOpts = {
-  gap?: number;
-  placement?: PopoverPlacement;
-};
-
-export function measureMenuAnchor(
-  el: HTMLElement | null,
-  opts?: number | MeasureMenuAnchorOpts,
-): MenuPopoverAnchor | null {
+export function measureMenuAnchor(el: HTMLElement | null, gap = 8): MenuPopoverAnchor | null {
   if (!el) return null;
-  const gap = typeof opts === "number" ? opts : (opts?.gap ?? 8);
-  const placement = typeof opts === "number" ? "below" : (opts?.placement ?? "below");
   const r = el.getBoundingClientRect();
-  const right = window.innerWidth - r.right;
-
-  if (placement === "above") {
-    return {
-      placement: "above",
-      bottom: window.innerHeight - r.top + gap,
-      right,
-      minWidth: r.width,
-      maxHeightPx: Math.max(120, r.top - gap - 12),
-    };
-  }
-
   return {
-    placement: "below",
     top: r.bottom + gap,
-    right,
+    right: window.innerWidth - r.right,
     minWidth: r.width,
   };
 }
 
 type ClampedPopoverOpts = {
+  /** Ancho máximo del panel (px). */
   maxWidth?: number;
   margin?: number;
 };
@@ -66,40 +38,11 @@ export function getClampedRightPopoverStyle(
   const rightPx = anchor.right;
   const leftEdge = vw - rightPx - panelW;
 
-  if (anchor.placement === "above") {
-    const bottomPx = anchor.bottom ?? margin;
-    const maxHeight =
-      anchor.maxHeightPx != null
-        ? `min(640px, ${anchor.maxHeightPx}px)`
-        : `min(640px, calc(100vh - ${bottomPx}px - 12px))`;
-
-    if (leftEdge < margin) {
-      return {
-        bottom: bottomPx,
-        top: "auto",
-        left: margin,
-        right: "auto",
-        width: panelW,
-        maxHeight,
-      };
-    }
-
-    return {
-      bottom: bottomPx,
-      top: "auto",
-      right: Math.max(margin, rightPx),
-      left: "auto",
-      width: panelW,
-      maxHeight,
-    };
-  }
-
-  const topPx = anchor.top ?? margin;
-  const maxHeight = `min(640px, calc(100vh - ${topPx}px - 12px))`;
+  const maxHeight = `min(640px, calc(100vh - ${anchor.top}px - 12px))`;
 
   if (leftEdge < margin) {
     return {
-      top: topPx,
+      top: anchor.top,
       left: margin,
       right: "auto",
       width: panelW,
@@ -108,7 +51,7 @@ export function getClampedRightPopoverStyle(
   }
 
   return {
-    top: topPx,
+    top: anchor.top,
     right: Math.max(margin, rightPx),
     left: "auto",
     width: panelW,

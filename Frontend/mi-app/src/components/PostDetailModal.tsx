@@ -79,6 +79,7 @@ export default function PostDetailModal({ postId, onClose, onUnsaved }: PostDeta
   const [post, setPost]             = useState<PostDetail | null>(null)
   const [loading, setLoading]       = useState(false)
   const [imgIdx, setImgIdx]         = useState(0)
+  const [currentImageRatio, setCurrentImageRatio] = useState<number | null>(null)
   const [unsaving, setUnsaving]     = useState(false)
   const [descExpanded, setDescExpanded] = useState(false)
 
@@ -134,6 +135,33 @@ export default function PostDetailModal({ postId, onClose, onUnsaved }: PostDeta
   const isExpired = post?.time_status === 'out_of_time'
 
   const userName = post?.user?.full_name || post?.user?.email || 'Usuario'
+  const mediaAspectRatio = (() => {
+    if (!currentImageRatio || !Number.isFinite(currentImageRatio)) return 16 / 9
+    return Math.min(1.91, Math.max(0.75, currentImageRatio))
+  })()
+
+  useEffect(() => {
+    if (!totalImgs) {
+      setCurrentImageRatio(null)
+      return
+    }
+    const active = sortedImages[imgIdx]
+    if (!active?.url) return
+
+    let cancelled = false
+    const image = new Image()
+    image.onload = () => {
+      if (cancelled || image.naturalWidth <= 0 || image.naturalHeight <= 0) return
+      setCurrentImageRatio(image.naturalWidth / image.naturalHeight)
+    }
+    image.onerror = () => {
+      if (!cancelled) setCurrentImageRatio(null)
+    }
+    image.src = active.url
+    return () => {
+      cancelled = true
+    }
+  }, [imgIdx, post?.id, totalImgs])
 
   return ReactDOM.createPortal(
     <AnimatePresence>
@@ -228,6 +256,9 @@ export default function PostDetailModal({ postId, onClose, onUnsaved }: PostDeta
                   )}
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-gray-900 truncate">{userName}</p>
+                    {post.user?.email ? (
+                      <p className="text-xs text-gray-500 truncate">{post.user.email}</p>
+                    ) : null}
                     <p className="text-xs text-gray-400">{timeAgo(post.created_at)}</p>
                   </div>
                 </button>
@@ -235,7 +266,14 @@ export default function PostDetailModal({ postId, onClose, onUnsaved }: PostDeta
 
               {/* Image carousel (slide CSS) */}
               {totalImgs > 0 && (
-                <div className="relative w-full bg-black overflow-hidden" style={{ aspectRatio: '1/1', maxHeight: '55vh' }}>
+                <div
+                  className="relative w-full overflow-hidden bg-black"
+                  style={{
+                    aspectRatio: String(mediaAspectRatio),
+                    minHeight: '220px',
+                    maxHeight: '60vh',
+                  }}
+                >
                   {/* Fila de imágenes: slide via translateX */}
                   <div
                     className="flex h-full"

@@ -6,27 +6,13 @@ import { useAuth } from '../auth/useAuth'
 import { getMe } from '../api/auth.api'
 import { getMyProfile } from '../api/users.api'
 import { useRole } from '../hooks/useRole'
-import Feed from '../pages/Feed'
 import Profile from '../pages/Profile'
 import { AppTopBar } from '../features/dashboard/components/AppTopBar'
 import { AccountOptionsSheet } from '../features/dashboard/components/AccountOptionsSheet'
-import { FeedBottomBar } from '../features/feed/components/FeedBottomBar'
 import { measureMenuAnchor, type MenuPopoverAnchor } from '../features/dashboard/popoverAnchor'
+import FeedModeResolver from '../features/feed/FeedModeResolver'
 
-const FALLBACK_MENU_ANCHOR: MenuPopoverAnchor = {
-  placement: 'below',
-  top: 64,
-  right: 12,
-  minWidth: 40,
-}
-
-const FALLBACK_MENU_ANCHOR_ABOVE: MenuPopoverAnchor = {
-  placement: 'above',
-  bottom: 72,
-  right: 12,
-  minWidth: 40,
-  maxHeightPx: 480,
-}
+const FALLBACK_MENU_ANCHOR: MenuPopoverAnchor = { top: 64, right: 12, minWidth: 40 }
 
 /**
  * Layout principal tras el login.
@@ -37,7 +23,7 @@ export default function DashboardLayout() {
   const location  = useLocation()
   const { logout } = useAuth()
 
-  const { canCreate, allowedTypes } = useRole()
+  const { canCreate, allowedTypes, roleName } = useRole()
 
   useEffect(() => {
     getMe()
@@ -54,18 +40,6 @@ export default function DashboardLayout() {
 
   const accountMenuTriggerRef = useRef<HTMLButtonElement>(null)
   const feedFiltersTriggerRef = useRef<HTMLButtonElement>(null)
-  const accountMenuTriggerRefMobile = useRef<HTMLButtonElement>(null)
-  const feedFiltersTriggerRefMobile = useRef<HTMLButtonElement>(null)
-
-  const getAccountTriggerEl = () =>
-    window.matchMedia('(min-width: 640px)').matches
-      ? accountMenuTriggerRef.current
-      : accountMenuTriggerRefMobile.current
-
-  const getFeedFiltersTriggerEl = () =>
-    window.matchMedia('(min-width: 640px)').matches
-      ? feedFiltersTriggerRef.current
-      : feedFiltersTriggerRefMobile.current
   const [accountMenuAnchor, setAccountMenuAnchor] = useState<MenuPopoverAnchor | null>(null)
   const [filterPopoverAnchor, setFilterPopoverAnchor] = useState<MenuPopoverAnchor | null>(null)
 
@@ -146,7 +120,6 @@ export default function DashboardLayout() {
 
   const isFeedActive    = location.pathname === '/app/inicio'
   const isProfileActive = location.pathname.startsWith('/app/perfil')
-  const useMobileBottomNav = isFeedActive || isProfileActive
   const profileViewIdMatch = location.pathname.match(/^\/app\/perfil\/(\d+)$/)
   const profileViewId = profileViewIdMatch ? Number(profileViewIdMatch[1]) : undefined
 
@@ -157,24 +130,37 @@ export default function DashboardLayout() {
     }
   }, [isFeedActive])
 
-  const getMobileNavPopoverPlacement = useCallback((): 'below' | 'above' => {
-    if (!useMobileBottomNav) return 'below'
-    return window.matchMedia('(min-width: 640px)').matches ? 'below' : 'above'
-  }, [useMobileBottomNav])
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(min-width: 768px)')
+    let lastMatches = mediaQuery.matches
+
+    const handleBreakpointChange = (event?: MediaQueryListEvent) => {
+      const nextMatches = event?.matches ?? mediaQuery.matches
+      if (nextMatches !== lastMatches) {
+        setShowFeedFiltersSheet(false)
+        setFilterPopoverAnchor(null)
+        lastMatches = nextMatches
+      }
+    }
+
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', handleBreakpointChange)
+      return () => mediaQuery.removeEventListener('change', handleBreakpointChange)
+    }
+
+    mediaQuery.addListener(handleBreakpointChange)
+    return () => mediaQuery.removeListener(handleBreakpointChange)
+  }, [])
 
   const syncAccountMenuAnchor = useCallback(() => {
-    const m = measureMenuAnchor(getAccountTriggerEl(), {
-      placement: getMobileNavPopoverPlacement(),
-    })
+    const m = measureMenuAnchor(accountMenuTriggerRef.current)
     if (m) setAccountMenuAnchor(m)
-  }, [getMobileNavPopoverPlacement])
+  }, [])
 
   const syncFilterMenuAnchor = useCallback(() => {
-    const m = measureMenuAnchor(getFeedFiltersTriggerEl(), {
-      placement: getMobileNavPopoverPlacement(),
-    })
+    const m = measureMenuAnchor(feedFiltersTriggerRef.current)
     if (m) setFilterPopoverAnchor(m)
-  }, [getMobileNavPopoverPlacement])
+  }, [])
 
   useLayoutEffect(() => {
     if (!showOptionsModal) return
@@ -209,7 +195,6 @@ export default function DashboardLayout() {
   return (
     <div className={`min-h-screen flex flex-col bg-gray-50 ${showWizard ? 'overflow-hidden' : ''}`}>
       <AppTopBar
-        hideOnMobileBottomNav={useMobileBottomNav}
         onBrandClick={() => {
           if (isFeedActive) {
             window.location.assign(`${window.location.origin}/app/inicio`)
@@ -221,12 +206,7 @@ export default function DashboardLayout() {
           setShowFeedFiltersSheet(false)
           setFilterPopoverAnchor(null)
           setAccountMenuAnchor(
-            measureMenuAnchor(getAccountTriggerEl(), {
-              placement: getMobileNavPopoverPlacement(),
-            }) ??
-              (getMobileNavPopoverPlacement() === 'above'
-                ? FALLBACK_MENU_ANCHOR_ABOVE
-                : FALLBACK_MENU_ANCHOR),
+            measureMenuAnchor(accountMenuTriggerRef.current) ?? FALLBACK_MENU_ANCHOR,
           )
           setShowOptionsModal(true)
         }}
@@ -235,9 +215,7 @@ export default function DashboardLayout() {
             ? () => {
                 setShowOptionsModal(false)
                 setFilterPopoverAnchor(
-                  measureMenuAnchor(getFeedFiltersTriggerEl(), {
-                    placement: 'below',
-                  }) ?? FALLBACK_MENU_ANCHOR,
+                  measureMenuAnchor(feedFiltersTriggerRef.current) ?? FALLBACK_MENU_ANCHOR,
                 )
                 setShowFeedFiltersSheet(true)
               }
@@ -254,61 +232,9 @@ export default function DashboardLayout() {
         feedFiltersTriggerRef={feedFiltersTriggerRef}
       />
 
-      {useMobileBottomNav && (
-        <FeedBottomBar
-          onBrandClick={() => {
-            if (isFeedActive) {
-              window.location.assign(`${window.location.origin}/app/inicio`)
-              return
-            }
-            navigate('/app/inicio')
-          }}
-          onOpenAccountMenu={() => {
-            setShowFeedFiltersSheet(false)
-            setFilterPopoverAnchor(null)
-            setAccountMenuAnchor(
-              measureMenuAnchor(accountMenuTriggerRefMobile.current, { placement: 'above' }) ??
-                FALLBACK_MENU_ANCHOR_ABOVE,
-            )
-            setShowOptionsModal(true)
-          }}
-          onOpenFeedFilters={
-            isFeedActive
-              ? () => {
-                  setShowOptionsModal(false)
-                  setFilterPopoverAnchor(
-                    measureMenuAnchor(feedFiltersTriggerRefMobile.current, { placement: 'above' }) ??
-                      FALLBACK_MENU_ANCHOR_ABOVE,
-                  )
-                  setShowFeedFiltersSheet(true)
-                }
-              : undefined
-          }
-          feedCategoryFiltersActive={isFeedActive && feedCategoryFiltersActive}
-          onOpenCreate={() => setShowWizard(true)}
-          canCreate={canCreate}
-          avatarUrl={avatarUrl}
-          avatarInitial={initial}
-          displayName={displayName}
-          isProfileRoute={isProfileActive}
-          accountMenuTriggerRef={accountMenuTriggerRefMobile}
-          feedFiltersTriggerRef={feedFiltersTriggerRefMobile}
-        />
-      )}
-
-      <main
-        className={`flex-1 relative overflow-hidden ${
-          useMobileBottomNav ? 'pt-0 sm:pt-14' : 'pt-14'
-        }`}
-      >
-        <div
-          className={`absolute inset-0 overflow-y-auto bg-gray-50${
-            isFeedActive
-              ? ' pb-[calc(3.5rem+env(safe-area-inset-bottom))] sm:pb-6'
-              : ' pb-6'
-          }${isFeedActive ? '' : ' hidden'}`}
-        >
-          <Feed
+      <main className="flex-1 relative overflow-hidden pt-0 md:pt-14">
+        <div className={`absolute inset-0 overflow-y-auto no-scrollbar pb-24 md:pb-6 bg-gray-50${isFeedActive ? '' : ' hidden'}`}>
+          <FeedModeResolver
             filtersSheetOpen={showFeedFiltersSheet}
             onCloseFiltersSheet={() => {
               setShowFeedFiltersSheet(false)
@@ -319,86 +245,146 @@ export default function DashboardLayout() {
             onOpenCreate={() => setShowWizard(true)}
           />
         </div>
-        <div
-          className={`absolute inset-0 overflow-y-auto bg-gray-50${
-            isProfileActive
-              ? ' pb-[calc(3.5rem+env(safe-area-inset-bottom))] sm:pb-6'
-              : ' pb-6'
-          }${isProfileActive ? '' : ' hidden'}`}
-        >
+        <div className={`absolute inset-0 overflow-y-auto no-scrollbar pb-24 md:pb-6 bg-gray-50${isProfileActive ? '' : ' hidden'}`}>
           <Profile viewUserId={profileViewId} />
         </div>
         {!isFeedActive && !isProfileActive && (
-          <div className="absolute inset-0 overflow-y-auto pb-24 md:pb-6 bg-gray-50">
+          <div className="absolute inset-0 overflow-y-auto no-scrollbar pb-24 md:pb-6 bg-gray-50">
             <Outlet />
           </div>
         )}
       </main>
 
       {/* Barra de Navegación Inferior (Móvil) */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/95 backdrop-blur-md border-t border-gray-100/80 shadow-[0_-4px_20px_rgba(0,0,0,0.03)] z-50 flex items-center justify-around px-4">
-        <button
-          onClick={() => {
-            if (isFeedActive) {
-              window.location.assign(`${window.location.origin}/app/inicio`)
-              return
-            }
-            navigate('/app/inicio')
-          }}
-          className="flex flex-col items-center justify-center w-12 h-12 active:scale-95 transition-transform"
-        >
-          <div className="w-11 h-11 rounded-2xl bg-[#5f38ff] flex items-center justify-center text-white font-extrabold text-lg shadow-[0_4px_12px_rgba(95,56,255,0.25)]">
-            u
-          </div>
-        </button>
-        
-        <button
-          onClick={() => {
-            if (isFeedActive) {
-              window.scrollTo({ top: 0, behavior: 'smooth' })
-            } else {
-              navigate('/app/inicio')
-            }
-          }}
-          className="flex flex-col items-center justify-center w-12 h-12 active:scale-95 transition-transform"
-        >
-          <div className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${isFeedActive ? 'bg-[#f3efff] text-[#5f38ff] shadow-sm' : 'bg-transparent text-gray-400'}`}>
-            <Home className="w-5.5 h-5.5 stroke-[2]" />
-          </div>
-        </button>
+      <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/95 backdrop-blur-md border-t border-gray-100/80 shadow-[0_-4px_20px_rgba(0,0,0,0.03)] z-50 px-4">
+        {canCreate ? (
+          <div className="flex h-full items-center justify-around">
+            <button
+              onClick={() => {
+                if (isFeedActive) {
+                  window.location.assign(`${window.location.origin}/app/inicio`)
+                  return
+                }
+                navigate('/app/inicio')
+              }}
+              className="flex flex-col items-center justify-center w-12 h-12 active:scale-95 transition-transform"
+            >
+              <div className="w-11 h-11 rounded-2xl bg-[#5f38ff] flex items-center justify-center text-white font-extrabold text-lg shadow-[0_4px_12px_rgba(95,56,255,0.25)]">
+                U
+              </div>
+            </button>
+            
+            <button
+              onClick={() => {
+                if (isFeedActive) {
+                  window.scrollTo({ top: 0, behavior: 'smooth' })
+                } else {
+                  navigate('/app/inicio')
+                }
+              }}
+              className="flex flex-col items-center justify-center w-12 h-12 active:scale-95 transition-transform"
+            >
+              <div className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${isFeedActive ? 'bg-[#f3efff] text-[#5f38ff] shadow-sm' : 'bg-transparent text-gray-400'}`}>
+                <Home className="w-5.5 h-5.5 stroke-[2]" />
+              </div>
+            </button>
 
-        <div className="relative w-12 h-12 flex items-center justify-center">
-          <button
-            type="button"
-            onClick={() => setShowWizard(true)}
-            className="absolute -top-[22px] w-[54px] h-[54px] rounded-full bg-gradient-to-br from-[#2f55f6] to-[#ba4ef8] text-white flex items-center justify-center shadow-[0_6px_20px_rgba(47,85,246,0.35)] border-4 border-white active:scale-95 transition-all"
-          >
-            <Plus className="w-5.5 h-5.5 stroke-[3.5]" />
-          </button>
-        </div>
+            <div className="relative w-12 h-12 flex items-center justify-center">
+              <button
+                type="button"
+                onClick={() => setShowWizard(true)}
+                className="absolute -top-[22px] w-[54px] h-[54px] rounded-full bg-gradient-to-br from-[#2f55f6] to-[#ba4ef8] text-white flex items-center justify-center shadow-[0_6px_20px_rgba(47,85,246,0.35)] border-4 border-white active:scale-95 transition-all"
+              >
+                <Plus className="w-5.5 h-5.5 stroke-[3.5]" />
+              </button>
+            </div>
 
-        <button
-          onClick={() => navigate('/app/perfil')}
-          className="flex flex-col items-center justify-center w-12 h-12 active:scale-95 transition-transform"
-        >
-          <div className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${isProfileActive ? 'bg-[#f3efff] text-[#5f38ff] shadow-sm' : 'bg-transparent text-gray-400'}`}>
-            <User className="w-5.5 h-5.5 stroke-[2]" />
-          </div>
-        </button>
+            <button
+              onClick={() => navigate('/app/perfil')}
+              className="flex flex-col items-center justify-center w-12 h-12 active:scale-95 transition-transform"
+            >
+              <div className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${isProfileActive ? 'bg-[#f3efff] text-[#5f38ff] shadow-sm' : 'bg-transparent text-gray-400'}`}>
+                <User className="w-5.5 h-5.5 stroke-[2]" />
+              </div>
+            </button>
 
-        <button
-          onClick={() => {
-            setShowFeedFiltersSheet(false)
-            setFilterPopoverAnchor(null)
-            setAccountMenuAnchor(FALLBACK_MENU_ANCHOR)
-            setShowOptionsModal(true)
-          }}
-          className="flex flex-col items-center justify-center w-12 h-12 active:scale-95 transition-transform"
-        >
-          <div className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${showOptionsModal ? 'bg-[#f3efff] text-[#5f38ff] shadow-sm' : 'bg-transparent text-gray-400'}`}>
-            <MoreVertical className="w-5.5 h-5.5 stroke-[2]" />
+            <button
+              onClick={() => {
+                setShowFeedFiltersSheet(false)
+                setFilterPopoverAnchor(null)
+                setAccountMenuAnchor(FALLBACK_MENU_ANCHOR)
+                setShowOptionsModal(true)
+              }}
+              className="flex flex-col items-center justify-center w-12 h-12 active:scale-95 transition-transform"
+            >
+              <div className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${showOptionsModal ? 'bg-[#f3efff] text-[#5f38ff] shadow-sm' : 'bg-transparent text-gray-400'}`}>
+                <MoreVertical className="w-5.5 h-5.5 stroke-[2]" />
+              </div>
+            </button>
           </div>
-        </button>
+        ) : (
+          <div className="grid h-full grid-cols-3 items-center justify-items-center">
+            <button
+              onClick={() => {
+                if (isFeedActive) {
+                  window.location.assign(`${window.location.origin}/app/inicio`)
+                  return
+                }
+                navigate('/app/inicio')
+              }}
+              className="flex flex-col items-center justify-center w-12 h-12 active:scale-95 transition-transform"
+            >
+              <div className="w-11 h-11 rounded-2xl bg-[#5f38ff] flex items-center justify-center text-white font-extrabold text-lg shadow-[0_4px_12px_rgba(95,56,255,0.25)]">
+                U
+              </div>
+            </button>
+
+            <button
+              onClick={() => {
+                if (isFeedActive) {
+                  window.scrollTo({ top: 0, behavior: 'smooth' })
+                } else {
+                  navigate('/app/inicio')
+                }
+              }}
+              className="flex flex-col items-center justify-center w-12 h-12 active:scale-95 transition-transform"
+            >
+              <div className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${isFeedActive ? 'bg-[#f3efff] text-[#5f38ff] shadow-sm' : 'bg-transparent text-gray-400'}`}>
+                <Home className="w-5.5 h-5.5 stroke-[2]" />
+              </div>
+            </button>
+
+            <button
+              onClick={() => {
+                setShowFeedFiltersSheet(false)
+                setFilterPopoverAnchor(null)
+                setAccountMenuAnchor(FALLBACK_MENU_ANCHOR)
+                setShowOptionsModal(true)
+              }}
+              className="flex flex-col items-center justify-center w-12 h-12 active:scale-95 transition-transform"
+            >
+              <div className="w-11 h-11 rounded-2xl flex items-center justify-center transition-all">
+                <div
+                  className={`rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 p-[2px] shadow-sm ${
+                    showOptionsModal || isProfileActive ? 'ring-2 ring-violet-200' : ''
+                  }`}
+                >
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt={displayName}
+                      className="w-9 h-9 rounded-full object-cover border-2 border-white bg-white"
+                    />
+                  ) : (
+                    <div className="w-9 h-9 rounded-full border-2 border-white flex items-center justify-center bg-violet-100 text-violet-700 font-bold text-sm">
+                      {initial}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </button>
+          </div>
+        )}
       </div>
 
       <PublicationWizard isOpen={showWizard} onClose={() => setShowWizard(false)} allowedTypes={allowedTypes} />
@@ -409,12 +395,7 @@ export default function DashboardLayout() {
           userEmail={userEmail}
           avatarUrl={avatarUrl}
           initial={initial}
-          anchor={
-            accountMenuAnchor ??
-            (useMobileBottomNav && getMobileNavPopoverPlacement() === 'above'
-              ? FALLBACK_MENU_ANCHOR_ABOVE
-              : FALLBACK_MENU_ANCHOR)
-          }
+          anchor={accountMenuAnchor ?? FALLBACK_MENU_ANCHOR}
           onClose={() => {
             setShowOptionsModal(false)
             setAccountMenuAnchor(null)

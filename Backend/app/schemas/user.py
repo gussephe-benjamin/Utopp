@@ -77,6 +77,7 @@ class UserPublicOut(BaseModel):
     career: Optional[str] = None
     cycle: Optional[int] = None
     interests: Optional[List[str]] = None
+    availability: Optional[int] = None
     followers_count: int = 0
     following_count: int = 0
     posts_count: int = 0
@@ -112,6 +113,17 @@ class FollowerOut(BaseModel):
     full_name: Optional[str] = None
     email: str
     followed_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class OrganizationSummaryOut(BaseModel):
+    """Resumen de organización para listados en perfil."""
+    id: int
+    full_name: Optional[str] = None
+    profile_image_url: Optional[str] = None
+    followers_count: int = 0
 
     class Config:
         from_attributes = True

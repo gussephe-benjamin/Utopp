@@ -1,4 +1,5 @@
 import { X, Settings, LogOut, ChevronRight } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import type { MenuPopoverAnchor } from '../popoverAnchor'
 import { TW_UTOPP_GRADIENT_BR } from '../../../shared/constants/brand'
 
@@ -24,18 +25,16 @@ export function AccountOptionsSheet({
   onNavigateProfile,
   onLogout,
 }: AccountOptionsSheetProps) {
-  const isAbove = anchor.placement === 'above'
-  const panelStyle = isAbove
-    ? ({
-        bottom: anchor.bottom,
-        top: 'auto' as const,
-        right: anchor.right,
-        minWidth: Math.max(anchor.minWidth, 288),
-        maxHeight:
-          anchor.maxHeightPx != null
-            ? `min(640px, ${anchor.maxHeightPx}px)`
-            : `min(640px, calc(100vh - ${anchor.bottom ?? 0}px - 12px))`,
-      } as const)
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768)
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+
+  const panelStyle = isMobile
+    ? undefined
     : ({
         top: anchor.top,
         right: anchor.right,
@@ -53,13 +52,15 @@ export function AccountOptionsSheet({
   return (
     <>
       <div
-        className="fixed inset-0 z-[69] bg-black/10"
+        className="fixed inset-0 z-[69] bg-black/20 backdrop-blur-sm"
         onClick={() => { onClose() }}
         aria-hidden
       />
       <div
-        className={`fixed z-[70] w-max max-w-[min(26rem,calc(100vw-1rem))] rounded-xl border border-gray-200/90 bg-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] animate-in fade-in zoom-in-95 duration-150 overflow-hidden ${
-          isAbove ? 'slide-in-from-bottom-1' : 'slide-in-from-top-1'
+        className={`fixed z-[70] rounded-xl border border-gray-200/90 bg-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-150 overflow-hidden ${
+          isMobile
+            ? "left-1/2 top-1/2 w-[min(24rem,calc(100vw-1.25rem))] -translate-x-1/2 -translate-y-1/2"
+            : "w-max max-w-[min(26rem,calc(100vw-1rem))]"
         }`}
         style={panelStyle}
         role="dialog"

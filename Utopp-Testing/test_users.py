@@ -1,5 +1,6 @@
 import pytest
 import httpx
+import uuid
 from config import API_BASE_URL
 from auth_helpers import register_then_login_access_token
 
@@ -26,6 +27,33 @@ class TestUsersAPI:
     def auth_headers(self, auth_token):
         """Headers with authentication token."""
         return {"Authorization": f"Bearer {auth_token}"}
+
+    @pytest.fixture(scope="module")
+    def second_student_headers(self, client):
+        token = register_then_login_access_token(
+            client,
+            email=f"test.student2.{uuid.uuid4().hex[:8]}@utec.edu.pe",
+            password="TestPassword123!",
+            full_name="Second Student",
+        )
+        return {"Authorization": f"Bearer {token}"}
+
+    @pytest.fixture(scope="module")
+    def org_headers(self, client):
+        token = register_then_login_access_token(
+            client,
+            email=f"test.org.{uuid.uuid4().hex[:8]}@utec.edu.pe",
+            password="TestPassword123!",
+            full_name="Organization Account",
+        )
+        headers = {"Authorization": f"Bearer {token}"}
+        me_response = client.get("/users/me", headers=headers)
+        assert me_response.status_code == 200
+        org_user_id = me_response.json()["id"]
+        # role identifier 2 = organización estudiantil
+        assign = client.post(f"/roles/users/{org_user_id}/roles/2", headers=headers)
+        assert assign.status_code in [201, 409], assign.text
+        return headers
     
     # ==================== Tests without authentication ====================
     
@@ -197,7 +225,7 @@ class TestUsersAPI:
         response = client.post("/users/1/follow", headers=auth_headers)
         # This might fail if user 1 doesn't exist or if we're trying to follow ourselves
         # We're just checking the endpoint works
-        assert response.status_code in [200, 201, 400, 404]
+        assert response.status_code in [200, 201, 400, 403, 404]
     
     def test_follow_user_unauthorized(self, client):
         """Test POST /users/{user_id}/follow without authentication."""
@@ -212,12 +240,42 @@ class TestUsersAPI:
         
         response = client.post(f"/users/{user_id}/follow", headers=auth_headers)
         assert response.status_code == 400
+
+    def test_student_can_follow_organization(self, client, auth_headers, org_headers):
+        """A student can follow an organization account."""
+        org_me = client.get("/users/me", headers=org_headers)
+        assert org_me.status_code == 200
+        org_id = org_me.json()["id"]
+
+        response = client.post(f"/users/{org_id}/follow", headers=auth_headers)
+        assert response.status_code in [201, 200]
+
+        cleanup = client.delete(f"/users/{org_id}/follow", headers=auth_headers)
+        assert cleanup.status_code in [200, 404]
+
+    def test_student_cannot_follow_student(self, client, auth_headers, second_student_headers):
+        """Students cannot follow other students."""
+        second_me = client.get("/users/me", headers=second_student_headers)
+        assert second_me.status_code == 200
+        second_student_id = second_me.json()["id"]
+
+        response = client.post(f"/users/{second_student_id}/follow", headers=auth_headers)
+        assert response.status_code == 403
+
+    def test_organization_cannot_follow_student(self, client, auth_headers, org_headers):
+        """Organization accounts cannot follow student accounts."""
+        student_me = client.get("/users/me", headers=auth_headers)
+        assert student_me.status_code == 200
+        student_id = student_me.json()["id"]
+
+        response = client.post(f"/users/{student_id}/follow", headers=org_headers)
+        assert response.status_code == 403
     
     def test_unfollow_user(self, client, auth_headers):
         """Test DELETE /users/{user_id}/follow - Unfollow a user."""
         response = client.delete("/users/1/follow", headers=auth_headers)
         # This might fail if not following, but endpoint should work
-        assert response.status_code in [200, 404]
+        assert response.status_code in [200, 403, 404]
     
     def test_unfollow_user_unauthorized(self, client):
         """Test DELETE /users/{user_id}/follow without authentication."""
@@ -570,7 +628,7 @@ class TestUsersAPI:
         data = response.json()
         
         expected_fields = [
-            "id", "full_name", "career", "cycle", "interests",
+            "id", "full_name", "career", "cycle", "interests", "availability",
             "followers_count", "following_count", "posts_count",
             "profile_image_url"
         ]
@@ -579,6 +637,42 @@ class TestUsersAPI:
         
         # Should NOT include email (public profile)
         assert "email" not in data
+
+    def test_list_organizations(self, client):
+        """GET /users/organizations should return list payload."""
+        response = client.get("/users/organizations")
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+        if len(data) > 0:
+            expected_fields = ["id", "full_name", "profile_image_url", "followers_count"]
+            for field in expected_fields:
+                assert field in data[0], f"Missing field: {field}"
+
+    def test_following_organizations_endpoints(self, client, auth_headers, org_headers):
+        """Following organizations endpoints should reflect student -> org relations."""
+        student_me = client.get("/users/me", headers=auth_headers)
+        assert student_me.status_code == 200
+        student_id = student_me.json()["id"]
+        org_me = client.get("/users/me", headers=org_headers)
+        assert org_me.status_code == 200
+        org_id = org_me.json()["id"]
+
+        follow = client.post(f"/users/{org_id}/follow", headers=auth_headers)
+        assert follow.status_code in [201, 200]
+
+        mine = client.get("/users/me/following-organizations", headers=auth_headers)
+        assert mine.status_code == 200
+        mine_ids = [item["id"] for item in mine.json()]
+        assert org_id in mine_ids
+
+        public_following = client.get(f"/users/{student_id}/following-organizations")
+        assert public_following.status_code == 200
+        public_ids = [item["id"] for item in public_following.json()]
+        assert org_id in public_ids
+
+        cleanup = client.delete(f"/users/{org_id}/follow", headers=auth_headers)
+        assert cleanup.status_code in [200, 404]
     
     def test_followers_response_schema(self, client, auth_token):
         """Test that followers response has correct schema."""

@@ -3,6 +3,11 @@ import { ImageIcon } from 'lucide-react'
 import { type WizardImage } from '../types/post.types'
 import { uploadToCloudinary } from '../api/cloudinary'
 import { INTERESTS } from '../constants/interests'
+import {
+  countWords,
+  POST_DESCRIPTION_MAX_WORDS,
+  POST_DESCRIPTION_MIN_WORDS,
+} from '../shared/lib/wordCount'
 
 interface Step4GeneralInfoProps {
   title: string
@@ -125,6 +130,10 @@ export default function Step4GeneralInfo({
 
   const now = new Date()
   const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}T${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`
+  const descriptionWordCount = countWords(description)
+  const descriptionTooShort = descriptionWordCount > 0 && descriptionWordCount < POST_DESCRIPTION_MIN_WORDS
+  const descriptionTooLong = descriptionWordCount > POST_DESCRIPTION_MAX_WORDS
+  const descriptionInvalid = descriptionTooShort || descriptionTooLong
 
   return (
     <div className="space-y-6">
@@ -158,7 +167,12 @@ export default function Step4GeneralInfo({
           placeholder="Describe tu publicación..."
         />
         <div className="text-xs text-gray-400 mt-1">
-          {description.trim().split(/\s+/).filter(Boolean).length} palabras
+          <span className={descriptionInvalid ? 'font-semibold text-red-600' : 'text-gray-400'}>
+            {descriptionWordCount} palabras
+          </span>{' '}
+          <span className={descriptionInvalid ? 'text-red-500' : 'text-gray-400'}>
+            (mín. {POST_DESCRIPTION_MIN_WORDS}, máx. {POST_DESCRIPTION_MAX_WORDS})
+          </span>
         </div>
       </div>
 
