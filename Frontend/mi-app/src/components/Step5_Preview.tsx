@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Bookmark, ChevronLeft, ChevronRight, Clock, Link } from 'lucide-react'
+import { Bookmark, ChevronLeft, ChevronRight, Clock, Link, X } from 'lucide-react'
 import { getMyProfile } from '../api/users.api'
 import {
   type PostType,
@@ -53,6 +53,7 @@ export default function Step5Preview({
   const [descExpanded, setDescExpanded] = useState(false)
   const [currentImageRatio, setCurrentImageRatio] = useState<number | null>(null)
   const [viewerOpen, setViewerOpen] = useState(false)
+  const [extraLinksOpen, setExtraLinksOpen] = useState(false)
 
   const MAX_DESC_CHARS = 560
   const initial = (userName ?? 'T').charAt(0).toUpperCase()
@@ -113,14 +114,15 @@ export default function Step5Preview({
   const prevImage = () => setCurrentImage((i) => Math.max(0, i - 1))
   const nextImage = () => setCurrentImage((i) => Math.min(readyImages.length - 1, i + 1))
 
-  const primaryLinks = links.slice(0, 2)
+  const visibleLinks = links.slice(0, 3)
+  const overflowLinks = links.slice(3)
 
   return (
     <div className="space-y-3">
       <p className="text-center text-sm font-medium text-gray-500">Así se verá tu publicación en el feed</p>
 
       <div className="rounded-2xl bg-gray-100 p-3">
-        <div className="mx-auto w-full max-w-[680px] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+        <div className="relative mx-auto w-full max-w-[680px] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
           <div className="flex items-start justify-between gap-4 px-4 pb-3 pt-4">
             <div className="flex min-w-0 items-center gap-3">
               {avatarUrl ? (
@@ -293,32 +295,56 @@ export default function Step5Preview({
                 >
                   <Bookmark className="h-5 w-5" style={{ color: UTOPP_BRAND.blue }} />
                 </button>
-                <div className="flex min-h-[36px] w-1/2 items-center justify-end gap-2">
-                  {primaryLinks[0] ? (
+                <div className="flex min-h-[36px] flex-1 flex-wrap items-center justify-end gap-2">
+                  {visibleLinks.map((link, index) => (
                     <a
-                      href={primaryLinks[0].url}
+                      key={link.tempId}
+                      href={link.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className={`inline-flex max-w-[160px] items-center justify-center truncate rounded-full bg-gradient-to-r from-[#2f55f6] to-[#ba4ef8] px-4 py-2 text-xs font-bold text-white shadow-[0_4px_14px_rgba(47,85,246,0.25)] transition-all duration-300 hover:brightness-110 hover:shadow-[0_6px_20px_rgba(186,78,248,0.35)] sm:text-sm`}
+                      className={
+                        index === 0
+                          ? 'inline-flex max-w-[160px] items-center justify-center truncate rounded-full bg-gradient-to-r from-[#2f55f6] to-[#ba4ef8] px-4 py-2 text-xs font-bold text-white shadow-[0_4px_14px_rgba(47,85,246,0.25)] transition-all duration-300 hover:brightness-110 hover:shadow-[0_6px_20px_rgba(186,78,248,0.35)] sm:text-sm'
+                          : 'inline-flex max-w-[160px] items-center justify-center truncate rounded-full border border-gray-200 bg-gray-100 px-4 py-2 text-xs font-semibold text-gray-700 transition-colors hover:bg-gray-200 sm:text-sm'
+                      }
                     >
-                      <span className="truncate">{primaryLinks[0].label}</span>
+                      <span className="truncate">{link.label}</span>
                     </a>
-                  ) : null}
-                  {primaryLinks[1] ? (
-                    <a
-                      href={primaryLinks[1].url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex max-w-[160px] items-center justify-center truncate rounded-full border border-gray-200 bg-gray-100 px-4 py-2 text-xs font-semibold text-gray-700 transition-colors hover:bg-gray-200 sm:text-sm"
+                  ))}
+                  {overflowLinks.length > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => setExtraLinksOpen(true)}
+                      className="inline-flex items-center justify-center rounded-full border border-violet-200 bg-violet-50 px-4 py-2 text-xs font-semibold text-violet-700 transition-colors hover:bg-violet-100 sm:text-sm"
                     >
-                      <span className="truncate">{primaryLinks[1].label}</span>
-                    </a>
+                      Más enlaces
+                    </button>
                   ) : null}
                 </div>
               </div>
-              {links.length > 2 ? (
-                <div className="space-y-1.5 px-4 pb-3">
-                  {links.slice(2).map((link) => (
+            </>
+          ) : null}
+          {extraLinksOpen ? (
+            <div
+              className="absolute inset-0 z-10 flex items-center justify-center bg-black/35 p-4"
+              onClick={() => setExtraLinksOpen(false)}
+            >
+              <div
+                className="w-full max-w-sm rounded-2xl border border-gray-200 bg-white p-4 shadow-xl"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <div className="mb-3 flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-gray-900">Enlaces adicionales</h3>
+                  <button
+                    type="button"
+                    className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 text-gray-500 transition-colors hover:bg-gray-200"
+                    onClick={() => setExtraLinksOpen(false)}
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {overflowLinks.map((link) => (
                     <a
                       key={link.tempId}
                       href={link.url}
@@ -331,8 +357,8 @@ export default function Step5Preview({
                     </a>
                   ))}
                 </div>
-              ) : null}
-            </>
+              </div>
+            </div>
           ) : null}
         </div>
       </div>

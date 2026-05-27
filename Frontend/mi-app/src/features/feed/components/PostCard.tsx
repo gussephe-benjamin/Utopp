@@ -6,8 +6,11 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
+  Loader2,
+  MoreVertical,
   Pencil,
   Star,
+  X,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { listImages, type PostImage } from "../../../api/post-images.api";
@@ -21,6 +24,17 @@ import { TYPE_GRADIENTS } from "../constants/typeGradients";
 import { getDisplayName } from "../lib/display";
 import { PostImageViewerModal } from "./PostImageViewerModal";
 import { UserAvatar } from "./UserAvatar";
+
+function resolvePostImageUrl(rawUrl: string): string {
+  if (!rawUrl) return rawUrl;
+  if (/^(https?:)?\/\//i.test(rawUrl) || rawUrl.startsWith("data:") || rawUrl.startsWith("blob:")) {
+    return rawUrl;
+  }
+  const apiBase = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/+$/, "");
+  if (!apiBase) return rawUrl;
+  const normalizedPath = rawUrl.startsWith("/") ? rawUrl : `/${rawUrl}`;
+  return `${apiBase}${normalizedPath}`;
+}
 
 
 type PostCardProps = {
@@ -44,17 +58,32 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
   const SS_IDX = `utopp:carousel:idx:${post.id}`;
   const SS_IMGS = `utopp:carousel:imgs:${post.id}`;
   const DESCRIPTION_PREVIEW_CHARS = 560;
-  const MIN_MEDIA_ASPECT_RATIO = 0.75;
-  const MAX_MEDIA_ASPECT_RATIO = 1.91;
+  const ULTRA_WIDE_RATIO = 2.5;
+  const WIDE_RATIO = 1.45;
+  const TALL_RATIO = 0.78;
+  const ULTRA_TALL_RATIO = 0.56;
+  const DEFAULT_CARD_MAX_WIDTH = 680;
+  const SWIPE_THRESHOLD_PX = 40;
 
   const [descExpanded, setDescExpanded] = useState(false);
-  const [hasMoreDesc, setHasMoreDesc] = useState(() => post.description.length > DESCRIPTION_PREVIEW_CHARS);
-  const descRef = useRef<HTMLParagraphElement>(null);
   const [currentImageRatio, setCurrentImageRatio] = useState<number | null>(null);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [actionLinks, setActionLinks] = useState<PostActionLink[]>([]);
+  const [extraLinksOpen, setExtraLinksOpen] = useState(false);
+  const touchStartXRef = useRef<number | null>(null);
+  const touchDeltaXRef = useRef<number>(0);
+  const didSwipeRef = useRef(false);
 
-  const primaryLinks = useMemo(() => actionLinks.slice(0, 2), [actionLinks]);
+  const visibleLinks = useMemo(() => actionLinks.slice(0, 3), [actionLinks]);
+  const overflowLinks = useMemo(() => actionLinks.slice(3), [actionLinks]);
+  const canEdit = currentUserId !== null && post.user_id === currentUserId;
+  const showMoreLinksButton = overflowLinks.length > 0;
+  const shouldShowEditButton = canEdit && !showMoreLinksButton;
+  const needsDescriptionToggle = post.description.length > DESCRIPTION_PREVIEW_CHARS;
+  const descriptionText =
+    !descExpanded && needsDescriptionToggle
+      ? `${post.description.slice(0, DESCRIPTION_PREVIEW_CHARS)}…`
+      : post.description;
 
   const getTagStyles = (tag: string) => {
     const lower = tag.toLowerCase();
@@ -140,6 +169,7 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
   }, [post.id]);
 
   const handleSaveToggle = async () => {
+    if (savingPost) return;
     setSavingPost(true);
     try {
       if (isSaved) {
@@ -180,7 +210,11 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
           : [],
     [images, post.image_url, post.images_count],
   );
-  const totalImages = displayImages.length;
+  const resolvedDisplayImages = useMemo(
+    () => displayImages.map((image) => ({ ...image, url: resolvePostImageUrl(image.url) })),
+    [displayImages],
+  );
+  const totalImages = resolvedDisplayImages.length;
 
   useEffect(() => {
     if (totalImages === 0) return;
@@ -198,19 +232,12 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
   }, [totalImages]);
 
   useEffect(() => {
-    if (descRef.current) {
-      const isTruncated = descRef.current.scrollHeight > descRef.current.clientHeight;
-      setHasMoreDesc(isTruncated);
-    }
-  }, [post.description, descExpanded]);
-
-  useEffect(() => {
     if (totalImages === 0) {
       setCurrentImageRatio(null);
       return;
     }
 
-    const currentImage = displayImages[imgIndex];
+    const currentImage = resolvedDisplayImages[imgIndex];
     if (!currentImage?.url) return;
 
     let cancelled = false;
@@ -228,13 +255,123 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
     return () => {
       cancelled = true;
     };
-  }, [displayImages, imgIndex, totalImages]);
+  }, [resolvedDisplayImages, imgIndex, totalImages]);
+
+  useEffect(() => {
+    if (!extraLinksOpen) return;
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setExtraLinksOpen(false);
+    };
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, [extraLinksOpen]);
 
   const prevImg = () => setImgIndexSaved(Math.max(0, imgIndex - 1));
   const nextImg = () => setImgIndexSaved(Math.min(totalImages - 1, imgIndex + 1));
-  const clampedMediaAspectRatio = useMemo(() => {
-    if (!currentImageRatio || !Number.isFinite(currentImageRatio)) return 16 / 9;
-    return Math.min(MAX_MEDIA_ASPECT_RATIO, Math.max(MIN_MEDIA_ASPECT_RATIO, currentImageRatio));
+
+  const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+    if (totalImages <= 1) return;
+    touchStartXRef.current = event.touches[0]?.clientX ?? null;
+    touchDeltaXRef.current = 0;
+    didSwipeRef.current = false;
+  };
+
+  const handleTouchMove = (event: React.TouchEvent<HTMLDivElement>) => {
+    if (touchStartXRef.current === null || totalImages <= 1) return;
+    const currentX = event.touches[0]?.clientX;
+    if (typeof currentX !== "number") return;
+    touchDeltaXRef.current = currentX - touchStartXRef.current;
+  };
+
+  const handleTouchEnd = () => {
+    if (touchStartXRef.current === null || totalImages <= 1) return;
+    const delta = touchDeltaXRef.current;
+    if (Math.abs(delta) >= SWIPE_THRESHOLD_PX) {
+      if (delta < 0 && imgIndex < totalImages - 1) nextImg();
+      if (delta > 0 && imgIndex > 0) prevImg();
+      didSwipeRef.current = true;
+    }
+    touchStartXRef.current = null;
+    touchDeltaXRef.current = 0;
+  };
+
+  const handleMediaClick = () => {
+    if (didSwipeRef.current) {
+      didSwipeRef.current = false;
+      return;
+    }
+    setViewerOpen(true);
+  };
+  const mediaPresentation = useMemo(() => {
+    const ratio = currentImageRatio;
+    if (!ratio || !Number.isFinite(ratio)) {
+      return {
+        objectFit: "contain" as const,
+        mediaAspectRatio: 16 / 9,
+        minMediaHeight: 220,
+        maxMediaHeight: 520,
+        cardMaxWidth: DEFAULT_CARD_MAX_WIDTH,
+      };
+    }
+
+    if (ratio >= ULTRA_WIDE_RATIO) {
+      return {
+        // Ultra panorámicas: mantenemos el modo híbrido con recorte leve para evitar una franja demasiado baja.
+        objectFit: "cover" as const,
+        mediaAspectRatio: 2.2,
+        minMediaHeight: 220,
+        maxMediaHeight: 340,
+        cardMaxWidth: DEFAULT_CARD_MAX_WIDTH,
+      };
+    }
+
+    if (ratio >= WIDE_RATIO) {
+      return {
+        objectFit: "contain" as const,
+        mediaAspectRatio: ratio,
+        minMediaHeight: 220,
+        maxMediaHeight: 460,
+        cardMaxWidth: DEFAULT_CARD_MAX_WIDTH,
+      };
+    }
+
+    if (ratio >= 1) {
+      return {
+        objectFit: "contain" as const,
+        mediaAspectRatio: ratio,
+        minMediaHeight: 250,
+        maxMediaHeight: 620,
+        cardMaxWidth: 640,
+      };
+    }
+
+    if (ratio >= TALL_RATIO) {
+      return {
+        objectFit: "contain" as const,
+        mediaAspectRatio: ratio,
+        minMediaHeight: 300,
+        maxMediaHeight: 760,
+        cardMaxWidth: 610,
+      };
+    }
+
+    if (ratio >= ULTRA_TALL_RATIO) {
+      return {
+        objectFit: "contain" as const,
+        mediaAspectRatio: ratio,
+        minMediaHeight: 360,
+        maxMediaHeight: 900,
+        cardMaxWidth: 560,
+      };
+    }
+
+    return {
+      objectFit: "contain" as const,
+      mediaAspectRatio: ratio,
+      minMediaHeight: 420,
+      maxMediaHeight: 980,
+      cardMaxWidth: 510,
+    };
   }, [currentImageRatio]);
 
   const hasDeadline = Boolean(post.deadline_at);
@@ -269,11 +406,12 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
         initial="hidden"
         whileInView="show"
         viewport={{ once: true, margin: "-50px" }}
-        className={`mx-auto h-auto w-full max-w-[680px] overflow-hidden rounded-[22px] border bg-white shadow-[0_4px_20px_rgba(0,0,0,0.015)] transition-all duration-300 hover:-translate-y-[1px] hover:shadow-[0_8px_30px_rgba(0,0,0,0.03)] ${
+        className={`relative mx-auto h-auto w-full overflow-hidden rounded-[22px] border bg-white shadow-[0_4px_20px_rgba(0,0,0,0.015)] transition-all duration-300 hover:-translate-y-[1px] hover:shadow-[0_8px_30px_rgba(0,0,0,0.03)] ${
           post.is_pinned
             ? "border-amber-200/75 shadow-[0_4px_24px_rgba(245,158,11,0.04)] ring-1 ring-amber-100/30"
             : "border-gray-100"
         }`}
+        style={{ maxWidth: `${mediaPresentation.cardMaxWidth}px` }}
       >
         {post.is_pinned && (
           <div className="px-4 pt-3.5 flex">
@@ -337,20 +475,21 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
               ) : null}
             </div>
             {hasDeadline ? (
-              <div className="mt-2 flex flex-col items-end gap-1">
-                <span className="text-[11px] font-semibold text-gray-500">
-                  Límite: {formatDate(post.deadline_at!)}
-                </span>
+              <div className="mt-6 flex flex-col items-end gap-1">
                 {deadlineExpired ? (
-                  <span className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-600">
-                    Vencido
+                  <span className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-semibold text-red-600">
+                    Venció el {formatDate(post.deadline_at!)}
                   </span>
                 ) : deadlineRemaining ? (
-                  <span className="inline-flex items-center gap-1 rounded-full border border-fuchsia-100 bg-fuchsia-50 px-2 py-0.5 text-xs font-semibold text-fuchsia-600">
+                  <span className="inline-flex items-center gap-1 rounded-full border border-fuchsia-100 bg-fuchsia-50 px-2.5 py-1 text-[11px] font-semibold text-fuchsia-600">
                     <Clock className="h-3 w-3" />
-                    {deadlineRemaining}
+                    <span>{formatDate(post.deadline_at!)} · {deadlineRemaining}</span>
                   </span>
-                ) : null}
+                ) : (
+                  <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-[11px] font-semibold text-gray-600">
+                    Límite: {formatDate(post.deadline_at!)}
+                  </span>
+                )}
               </div>
             ) : null}
           </div>
@@ -362,15 +501,10 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
               {post.title}
             </h3>
           ) : null}
-          <p
-            ref={descRef}
-            className={`mt-1 whitespace-pre-line text-sm font-medium leading-relaxed text-gray-600 ${
-              !descExpanded ? "line-clamp-5" : ""
-            }`}
-          >
-            {post.description}
+          <p className="mt-1 whitespace-pre-line text-sm font-medium leading-relaxed text-gray-600">
+            {descriptionText}
           </p>
-          {hasMoreDesc ? (
+          {needsDescriptionToggle ? (
             <button
               type="button"
               onClick={() => setDescExpanded((v) => !v)}
@@ -392,38 +526,45 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
             <div
               className="group relative w-full overflow-hidden rounded-2xl border border-gray-100/70 bg-gray-50 shadow-sm"
               style={{
-                aspectRatio: String(clampedMediaAspectRatio),
-                minHeight: "220px",
-                maxHeight: "520px",
+                aspectRatio: String(mediaPresentation.mediaAspectRatio),
+                minHeight: `${mediaPresentation.minMediaHeight}px`,
+                maxHeight: `${mediaPresentation.maxMediaHeight}px`,
               }}
-              onClick={() => setViewerOpen(true)}
+              onClick={handleMediaClick}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
             >
               <div
                 className="flex h-full will-change-transform"
                 style={{
                   width: `${totalImages * 100}%`,
                   transform: `translateX(-${(imgIndex / totalImages) * 100}%)`,
-                  transition: "transform 350ms cubic-bezier(0.16, 1, 0.3, 1)",
+                  transition: "transform 520ms cubic-bezier(0.22, 1, 0.36, 1)",
                 }}
               >
-                {displayImages.map((img, i) => {
+                {resolvedDisplayImages.map((img, i) => {
                   const imgData = img as PostImage | { url: string };
                   const objPos =
                     "object_position" in imgData ? (imgData.object_position ?? "center center") : "center center";
                   const sc = "scale" in imgData ? (imgData.scale ?? 1) : 1;
+                  const imageTransform =
+                    mediaPresentation.objectFit === "cover" && Number.isFinite(sc) && sc !== 1
+                      ? `scale(${sc})`
+                      : undefined;
                   return (
-                    <img
-                      key={i}
-                      src={img.url}
-                      alt={`Imagen ${i + 1}`}
-                      className="h-full object-cover"
-                      style={{
-                        width: `${100 / totalImages}%`,
-                        objectPosition: objPos,
-                        transform: `scale(${sc})`,
-                        transformOrigin: objPos,
-                      }}
-                    />
+                    <div key={i} className="h-full flex-none shrink-0" style={{ width: `${100 / totalImages}%` }}>
+                      <img
+                        src={img.url}
+                        alt={`Imagen ${i + 1}`}
+                        className={`h-full w-full ${mediaPresentation.objectFit === "cover" ? "object-cover" : "object-contain"}`}
+                        style={{
+                          objectPosition: objPos,
+                          transform: imageTransform,
+                          transformOrigin: objPos,
+                        }}
+                      />
+                    </div>
                   );
                 })}
               </div>
@@ -431,34 +572,40 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
                 <>
                   <button
                     type="button"
-                    onClick={prevImg}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      prevImg();
+                    }}
                     disabled={imgIndex === 0}
                     aria-label="Imagen anterior"
                     onMouseDown={(event) => event.stopPropagation()}
-                    onClickCapture={(event) => event.stopPropagation()}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/40 hover:bg-black/60 rounded-full flex items-center justify-center text-white transition-all duration-200 disabled:opacity-0 disabled:pointer-events-none opacity-0 group-hover:opacity-100 shadow-md"
+                    className="absolute left-3 top-1/2 z-10 -translate-y-1/2 w-8 h-8 bg-black/45 hover:bg-black/60 rounded-full flex items-center justify-center text-white transition-all duration-200 disabled:opacity-30 disabled:pointer-events-none shadow-md"
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </button>
                   <button
                     type="button"
-                    onClick={nextImg}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      nextImg();
+                    }}
                     disabled={imgIndex === totalImages - 1}
                     aria-label="Imagen siguiente"
                     onMouseDown={(event) => event.stopPropagation()}
-                    onClickCapture={(event) => event.stopPropagation()}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/40 hover:bg-black/60 rounded-full flex items-center justify-center text-white transition-all duration-200 disabled:opacity-0 disabled:pointer-events-none opacity-0 group-hover:opacity-100 shadow-md"
+                    className="absolute right-3 top-1/2 z-10 -translate-y-1/2 w-8 h-8 bg-black/45 hover:bg-black/60 rounded-full flex items-center justify-center text-white transition-all duration-200 disabled:opacity-30 disabled:pointer-events-none shadow-md"
                   >
                     <ChevronRight className="w-5 h-5" />
                   </button>
                   <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 bg-black/20 px-2 py-1 rounded-full backdrop-blur-sm">
-                    {displayImages.map((_, i) => (
+                    {resolvedDisplayImages.map((_, i) => (
                       <button
                         key={i}
                         type="button"
-                        onClick={() => setImgIndexSaved(i)}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setImgIndexSaved(i);
+                        }}
                         onMouseDown={(event) => event.stopPropagation()}
-                        onClickCapture={(event) => event.stopPropagation()}
                         className={`rounded-full transition-all duration-350 ${
                           i === imgIndex ? "w-4 h-1.5 bg-white" : "w-1.5 h-1.5 bg-white/50 hover:bg-white/80"
                         }`}
@@ -489,24 +636,25 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
           <button
             type="button"
             onClick={handleSaveToggle}
-            disabled={savingPost}
             className={`inline-flex h-8 w-8 items-center justify-center transition-colors ${
               isSaved
                 ? "text-[#2f55f6]"
                 : "text-gray-400 hover:text-[#9333EA]"
-            } ${savingPost ? "cursor-not-allowed opacity-60" : ""}`}
+            } ${savingPost ? "opacity-80" : ""} active:scale-95`}
             title={isSaved ? "Quitar de guardados" : "Guardar publicación"}
             aria-label={isSaved ? "Quitar de guardados" : "Guardar publicación"}
           >
-            {isSaved ? (
+            {savingPost ? (
+              <Loader2 className="h-5 w-5 animate-spin" style={{ color: UTOPP_BRAND.blue }} />
+            ) : isSaved ? (
               <BookmarkCheck className="h-5 w-5" style={{ color: UTOPP_BRAND.blue }} />
             ) : (
               <Bookmark className="h-5 w-5" />
             )}
           </button>
 
-          <div className="flex w-1/2 flex-wrap items-center justify-end gap-2">
-            {primaryLinks.map((link, index) => (
+          <div className="flex flex-1 flex-wrap items-center justify-end gap-2">
+            {visibleLinks.map((link, index) => (
               <a
                 key={link.id}
                 href={link.url}
@@ -522,7 +670,18 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
                 <span className="truncate">{link.label}</span>
               </a>
             ))}
-            {currentUserId !== null && post.user_id === currentUserId ? (
+            {showMoreLinksButton ? (
+              <button
+                type="button"
+                onClick={() => setExtraLinksOpen(true)}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 shadow-sm transition-all hover:bg-gray-50 hover:text-gray-900 active:scale-95"
+                title="Ver enlaces adicionales"
+                aria-label="Ver enlaces adicionales"
+              >
+                <MoreVertical className="h-4 w-4" />
+              </button>
+            ) : null}
+            {shouldShowEditButton ? (
               <button
                 type="button"
                 onClick={() => setEditingPost(true)}
@@ -535,11 +694,50 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
             ) : null}
           </div>
         </div>
+        {extraLinksOpen ? (
+          <div
+            className="absolute inset-0 z-20 flex items-center justify-center bg-black/35 p-4"
+            onClick={() => setExtraLinksOpen(false)}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Enlaces adicionales"
+          >
+            <div
+              className="w-full max-w-sm rounded-2xl border border-gray-200 bg-white p-4 shadow-xl"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-sm font-bold text-gray-900">Enlaces adicionales</h3>
+                <button
+                  type="button"
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 text-gray-500 transition-colors hover:bg-gray-200"
+                  onClick={() => setExtraLinksOpen(false)}
+                  aria-label="Cerrar enlaces adicionales"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="space-y-2">
+                {overflowLinks.map((link) => (
+                  <a
+                    key={link.id}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100"
+                  >
+                    <span className="block truncate">{link.label}</span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : null}
       </motion.div>
 
       {viewerOpen ? (
         <PostImageViewerModal
-          images={displayImages.map((image) => {
+          images={resolvedDisplayImages.map((image) => {
             const imageData = image as PostImage | { url: string };
             return {
               url: image.url,

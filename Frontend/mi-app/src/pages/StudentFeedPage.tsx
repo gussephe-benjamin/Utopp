@@ -87,7 +87,7 @@ export default function StudentFeedPage({
           onSaveInterests={handleSaveInterests}
         />
 
-        <div className="w-full min-w-0 max-w-[620px] flex-1 space-y-0 md:space-y-5">
+        <div className="w-full min-w-0 max-w-[700px] flex-1 space-y-0 md:space-y-5">
           <div className="mb-3 block w-full rounded-b-[32px] bg-gradient-to-b from-[#2f55f6] via-[#614bf8] to-[#803ef8] px-6 pb-7 pt-7 text-white shadow-lg md:hidden">
             <h1 className="text-2xl font-bold tracking-tight">Hola, {userName}</h1>
             <p className="mt-0.5 text-xs font-medium text-white/80">Bienvenido a Utopp 🔥</p>
@@ -113,13 +113,15 @@ export default function StudentFeedPage({
               const lastPinnedIdx = posts.reduce((acc, p, i) => (p.is_pinned ? i : acc), -1)
               return posts.map((post, i) => (
                 <div key={post.id} className="mb-4 last:mb-0">
-                  <PostCard
-                    post={post}
-                    currentUserId={currentUserId}
-                    onEdited={(updated) =>
-                      setPosts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))
-                    }
-                  />
+                  <div className="flex justify-center">
+                    <PostCard
+                      post={post}
+                      currentUserId={currentUserId}
+                      onEdited={(updated) =>
+                        setPosts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))
+                      }
+                    />
+                  </div>
                   {i === lastPinnedIdx && posts.length > lastPinnedIdx + 1 && (
                     <div className="flex items-center gap-3 py-1">
                       <div className="h-px flex-1 bg-cyan-200" />
