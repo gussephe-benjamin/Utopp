@@ -66,14 +66,15 @@ export default function OrganizationFeedPage({
 
           <section className="space-y-4">
             {posts.map((post) => (
-              <PostCard
-                key={post.id}
-                post={post}
-                currentUserId={currentUserId}
-                onEdited={(updated) =>
-                  setPosts((prev) => prev.map((item) => (item.id === updated.id ? updated : item)))
-                }
-              />
+              <div key={post.id} className="flex justify-center">
+                <PostCard
+                  post={post}
+                  currentUserId={currentUserId}
+                  onEdited={(updated) =>
+                    setPosts((prev) => prev.map((item) => (item.id === updated.id ? updated : item)))
+                  }
+                />
+              </div>
             ))}
           </section>
 

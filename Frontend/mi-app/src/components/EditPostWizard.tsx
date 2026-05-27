@@ -25,7 +25,6 @@ import {
   countWords,
   isPostDescriptionWordCountValid,
   POST_DESCRIPTION_MAX_WORDS,
-  POST_DESCRIPTION_MIN_WORDS,
 } from '../shared/lib/wordCount'
 
 interface PostItem {
@@ -199,7 +198,7 @@ export default function EditPostWizard({ post, onClose, onSaved }: EditPostWizar
     if (!postId || !post) return
     if (!descriptionWordCountValid) {
       setSaveError(
-        `La descripción debe tener entre ${POST_DESCRIPTION_MIN_WORDS} y ${POST_DESCRIPTION_MAX_WORDS} palabras. Actualmente tiene ${descriptionWordCount}.`,
+        `La descripción debe tener como máximo ${POST_DESCRIPTION_MAX_WORDS} palabras. Actualmente tiene ${descriptionWordCount}.`,
       )
       return
     }
@@ -466,7 +465,7 @@ export default function EditPostWizard({ post, onClose, onSaved }: EditPostWizar
           )}
           {currentStep === 2 && !descriptionWordCountValid ? (
             <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-              La descripción debe tener entre {POST_DESCRIPTION_MIN_WORDS} y {POST_DESCRIPTION_MAX_WORDS} palabras.
+              La descripción debe tener como máximo {POST_DESCRIPTION_MAX_WORDS} palabras.
             </div>
           ) : null}
           {renderStep()}

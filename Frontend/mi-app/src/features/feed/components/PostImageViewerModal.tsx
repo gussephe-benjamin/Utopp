@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactDOM from "react-dom";
 import { ChevronLeft, ChevronRight, Minus, Plus, RotateCcw, X } from "lucide-react";
 
@@ -36,8 +36,7 @@ export function PostImageViewerModal({ images, initialIndex = 0, onClose }: Post
   const pinchStartZoomRef = useRef<number>(1);
 
   const currentImage = images[index];
-  const baseScale = currentImage?.scale ?? 1;
-  const totalScale = baseScale * zoom;
+  const totalScale = zoom;
   const imageTransform = `translate(${offset.x}px, ${offset.y}px) scale(${totalScale})`;
 
   const maxOffset = useMemo(() => {
@@ -56,10 +55,10 @@ export function PostImageViewerModal({ images, initialIndex = 0, onClose }: Post
     y: clamp(next.y, -maxOffset.y, maxOffset.y),
   });
 
-  const resetView = () => {
+  const resetView = useCallback(() => {
     setZoom(1);
     setOffset({ x: 0, y: 0 });
-  };
+  }, []);
 
   const goPrev = () => {
     setIndex((prev) => Math.max(0, prev - 1));
@@ -93,8 +92,7 @@ export function PostImageViewerModal({ images, initialIndex = 0, onClose }: Post
   useEffect(() => {
     setIndex(clamp(initialIndex, 0, Math.max(0, images.length - 1)));
     resetView();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialIndex, images.length]);
+  }, [initialIndex, images.length, resetView]);
 
   const handleMouseDown = (event: React.MouseEvent<HTMLImageElement>) => {
     if (zoom <= 1) return;

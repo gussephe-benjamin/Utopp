@@ -6,8 +6,8 @@ import {
   LINK_TYPE_OPTIONS,
 } from '../types/post.types'
 
-// Máximo de links permitidos por post (los primeros 2 se muestran como botones prominentes,
-// los siguientes en una lista desplegable dentro del post)
+// Máximo de links permitidos por post:
+// primeros 3 visibles como botones, el resto en popup de enlaces adicionales.
 const MAX_LINKS = 5
 
 interface Step3LinksFormProps {
@@ -44,7 +44,8 @@ export default function Step3LinksForm({ links, onChange }: Step3LinksFormProps)
     if (!newLink.label.trim() || !newLink.url.trim() || !isValidUrl(newLink.url)) return
     if (links.length >= MAX_LINKS) return
 
-    // La posición equivale al índice en la lista: 0 = botón principal, 1 = secundario, 2+ = dropdown
+    // La posición equivale al índice en la lista:
+    // 0 = principal, 1 = secundario, 2 = terciario, 3+ = popup de extras.
     const newWizardLink: WizardLink = {
       tempId: crypto.randomUUID(),
       label: newLink.label.trim(),
@@ -75,7 +76,8 @@ export default function Step3LinksForm({ links, onChange }: Step3LinksFormProps)
   const getPositionLabel = (index: number) => {
     if (index === 0) return <span className="inline-flex items-center gap-1"><Star className="w-3 h-3 fill-current" /> Botón principal</span>
     if (index === 1) return 'Botón secundario'
-    return `Enlace adicional ${index - 1}`
+    if (index === 2) return 'Botón terciario'
+    return `Enlace extra ${index - 2}`
   }
 
   return (
@@ -87,7 +89,8 @@ export default function Step3LinksForm({ links, onChange }: Step3LinksFormProps)
         <ul className="list-disc list-inside space-y-1 text-blue-700">
           <li><strong>Posición 1:</strong> Botón principal destacado (siempre visible)</li>
           <li><strong>Posición 2:</strong> Botón secundario (siempre visible)</li>
-          <li><strong>Posición 3+:</strong> Se muestran en una lista expandible</li>
+          <li><strong>Posición 3:</strong> Botón terciario (siempre visible)</li>
+          <li><strong>Posición 4+:</strong> Se muestran en un popup de enlaces adicionales</li>
         </ul>
       </div>
 

@@ -23,7 +23,6 @@ import {
   countWords,
   isPostDescriptionWordCountValid,
   POST_DESCRIPTION_MAX_WORDS,
-  POST_DESCRIPTION_MIN_WORDS,
 } from '../shared/lib/wordCount'
 
 // Estado inicial vacío del formulario
@@ -190,7 +189,7 @@ export default function PublicationWizard({ isOpen, onClose, allowedTypes }: Pub
     if (!formData.post_type || !formData.subtype) return
     if (!descriptionWordCountValid) {
       setPublishError(
-        `La descripción debe tener entre ${POST_DESCRIPTION_MIN_WORDS} y ${POST_DESCRIPTION_MAX_WORDS} palabras. Actualmente tiene ${descriptionWordCount}.`,
+        `La descripción debe tener como máximo ${POST_DESCRIPTION_MAX_WORDS} palabras. Actualmente tiene ${descriptionWordCount}.`,
       )
       return
     }
@@ -389,7 +388,7 @@ export default function PublicationWizard({ isOpen, onClose, allowedTypes }: Pub
           )}
           {currentStep === 4 && !descriptionWordCountValid ? (
             <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-              La descripción debe tener entre {POST_DESCRIPTION_MIN_WORDS} y {POST_DESCRIPTION_MAX_WORDS} palabras.
+              La descripción debe tener como máximo {POST_DESCRIPTION_MAX_WORDS} palabras.
             </div>
           ) : null}
           {renderStep()}

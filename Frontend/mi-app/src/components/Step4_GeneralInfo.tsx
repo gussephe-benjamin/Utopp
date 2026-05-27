@@ -6,7 +6,6 @@ import { INTERESTS } from '../constants/interests'
 import {
   countWords,
   POST_DESCRIPTION_MAX_WORDS,
-  POST_DESCRIPTION_MIN_WORDS,
 } from '../shared/lib/wordCount'
 
 interface Step4GeneralInfoProps {
@@ -131,9 +130,8 @@ export default function Step4GeneralInfo({
   const now = new Date()
   const today = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}T${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`
   const descriptionWordCount = countWords(description)
-  const descriptionTooShort = descriptionWordCount > 0 && descriptionWordCount < POST_DESCRIPTION_MIN_WORDS
   const descriptionTooLong = descriptionWordCount > POST_DESCRIPTION_MAX_WORDS
-  const descriptionInvalid = descriptionTooShort || descriptionTooLong
+  const descriptionInvalid = descriptionTooLong
 
   return (
     <div className="space-y-6">
@@ -171,7 +169,7 @@ export default function Step4GeneralInfo({
             {descriptionWordCount} palabras
           </span>{' '}
           <span className={descriptionInvalid ? 'text-red-500' : 'text-gray-400'}>
-            (mín. {POST_DESCRIPTION_MIN_WORDS}, máx. {POST_DESCRIPTION_MAX_WORDS})
+            (máx. {POST_DESCRIPTION_MAX_WORDS})
           </span>
         </div>
       </div>
@@ -198,7 +196,7 @@ export default function Step4GeneralInfo({
       {onTagsChange && (
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Tags <span className="text-gray-400 font-normal">(opcional, máx. 5)</span>
+            Tags <span className="text-gray-400 font-normal">(opcional, máx. 6)</span>
           </label>
           <div className="flex flex-wrap gap-2">
             {INTERESTS.map(interest => {
@@ -211,18 +209,18 @@ export default function Step4GeneralInfo({
                   onClick={() => {
                     if (active) {
                       onTagsChange(tags.filter(t => t !== interest.id))
-                    } else if (tags.length < 5) {
+                    } else if (tags.length < 6) {
                       onTagsChange([...tags, interest.id])
                     }
                   }}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
                     active
                       ? 'bg-purple-100 text-purple-700 border-purple-300'
-                      : tags.length >= 5
+                      : tags.length >= 6
                         ? 'bg-gray-50 text-gray-300 border-gray-200 cursor-not-allowed'
                         : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100'
                   }`}
-                  disabled={!active && tags.length >= 5}
+                  disabled={!active && tags.length >= 6}
                 >
                   <IconComponent className="w-3.5 h-3.5 shrink-0" />
                   {interest.label}
@@ -231,7 +229,7 @@ export default function Step4GeneralInfo({
             })}
           </div>
           <div className="text-xs text-gray-400 mt-1">
-            {tags.length}/5 seleccionados
+            {tags.length}/6 seleccionados
           </div>
         </div>
       )}
