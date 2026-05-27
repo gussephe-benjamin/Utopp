@@ -4,6 +4,8 @@ import { TW_UTOPP_GRADIENT_BR, TW_UTOPP_GRADIENT_TEXT } from "../constants/brand
 type UtoppBrandMarkProps = {
   /** `header`: barra superior (U + wordmark). `auth`: solo logo U, más grande, centrado. */
   variant?: "header" | "auth";
+  /** Solo icono U (p. ej. barra inferior del feed en móvil). */
+  iconOnly?: boolean;
   className?: string;
   /** Si se define, la marca es un botón (p. ej. recarga o navegación). */
   onClick?: () => void;
@@ -15,11 +17,13 @@ type UtoppBrandMarkProps = {
  */
 export function UtoppBrandMark({
   variant = "header",
+  iconOnly = false,
   className,
   onClick,
   "aria-label": ariaLabel = "Utopp",
 }: UtoppBrandMarkProps) {
   const isAuth = variant === "auth";
+  const showWordmark = !isAuth && !iconOnly;
 
   const markBox = (
     <div
@@ -37,7 +41,7 @@ export function UtoppBrandMark({
     </div>
   );
 
-  const wordmark = !isAuth ? (
+  const wordmark = showWordmark ? (
     <span className={cn("font-bold tracking-tight text-lg", TW_UTOPP_GRADIENT_TEXT)}>utopp</span>
   ) : null;
 

@@ -17,7 +17,20 @@ import {
 import type { FeedPostOut, FeedResponse } from "../types/post.types";
 import { motion } from "framer-motion";
 
-const FILTER_POPOVER_FALLBACK: MenuPopoverAnchor = { top: 64, right: 12, minWidth: 40 };
+const FILTER_POPOVER_FALLBACK: MenuPopoverAnchor = {
+  placement: "above",
+  bottom: 72,
+  right: 12,
+  minWidth: 40,
+  maxHeightPx: 480,
+};
+
+const FILTER_POPOVER_FALLBACK_DESKTOP: MenuPopoverAnchor = {
+  placement: "below",
+  top: 64,
+  right: 12,
+  minWidth: 40,
+};
 
 export type FeedProps = {
   filtersSheetOpen?: boolean;
@@ -297,185 +310,9 @@ export default function Feed({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex justify-center" style={{ overflowAnchor: "none" }}>
-      <div className="w-full max-w-[1320px] mx-auto px-0 md:px-4 flex gap-6 pt-0 md:pt-[80px] pb-8 items-start justify-center">
-        
-        <LeftSidebar
-          userName={userName}
-          avatarUrl={avatarUrl}
-          career={userCareer}
-          cycle={userCycle}
-          postsCount={userPostsCount}
-          followersCount={userFollowersCount}
-          followingCount={userFollowingCount}
-        />
-
-        <div className="flex-1 w-full max-w-[620px] min-w-0 space-y-0 md:space-y-5">
-          {/* Mobile custom header */}
-          <div className="block md:hidden w-full bg-gradient-to-b from-[#2f55f6] via-[#614bf8] to-[#803ef8] rounded-b-[32px] px-6 pt-7 pb-7 text-white relative shadow-lg">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight">
-                  Hola, {userName}
-                </h1>
-                <p className="text-xs font-medium text-white/80 mt-0.5">Esto es para ti hoy</p>
-              </div>
-              
-              <button className="relative flex items-center justify-center w-10 h-10 bg-white/15 hover:bg-white/20 text-white rounded-full border border-white/20 active:scale-95 transition-all shadow-sm">
-                <Bell className="w-4.5 h-4.5" />
-                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-fuchsia-500 text-[9px] font-extrabold text-white ring-2 ring-[#2f55f6]">3</span>
-              </button>
-            </div>
-
-            <div className="mt-5 relative flex items-center">
-              <input
-                type="text"
-                placeholder="Buscar oportunidades..."
-                className="block w-full py-2.5 pl-4 pr-10 rounded-2xl bg-white/15 text-white placeholder-white/60 border border-white/20 focus:outline-none focus:ring-2 focus:ring-white/40 focus:bg-white/20 text-xs transition-all"
-              />
-              <div className="absolute right-3.5 flex items-center pointer-events-none text-white/80">
-                <SlidersHorizontal className="w-4.5 h-4.5 stroke-[2.5]" />
-              </div>
-            </div>
-          </div>
-
-          {/* Sección "🔥 No te pierdas" */}
-          <div className="block md:hidden w-full pt-6 pb-2">
-            <div className="flex items-center justify-between px-4 mb-3">
-              <div className="flex items-center gap-1.5">
-                <Flame className="w-4 h-4 text-orange-500" />
-                <h2 className="text-base font-bold text-gray-900">No te pierdas</h2>
-              </div>
-              <button className="text-xs font-semibold text-violet-600 hover:text-violet-700 flex items-center gap-1">
-                Ver todo →
-              </button>
-            </div>
-            
-            {/* Carousel de Tarjetas */}
-            <div className="flex gap-3.5 px-4 overflow-x-auto no-scrollbar pb-3 scroll-smooth snap-x snap-mandatory">
-              {/* Tarjeta 1: Beca Europa */}
-              <div className="flex-shrink-0 w-[150px] bg-white rounded-2xl border border-gray-100/90 shadow-sm overflow-hidden flex flex-col snap-start">
-                <div className="h-[95px] w-full overflow-hidden relative bg-gray-100">
-                  <img 
-                    src="https://images.unsplash.com/photo-1467269204594-9661b134dd2b?auto=format&fit=crop&w=300&q=80" 
-                    alt="Beca Europa" 
-                    className="w-full h-full object-cover"
-                    onError={(e) => { e.currentTarget.src = 'https://picsum.photos/seed/erasmus/300/200'; }}
-                  />
-                </div>
-                <div className="p-2.5 flex-1 flex flex-col justify-between">
-                  <div>
-                    <span className="text-[9px] font-bold text-fuchsia-500 uppercase tracking-wider block">Beca</span>
-                    <h3 className="text-xs font-bold text-gray-900 leading-snug mt-0.5 line-clamp-2">Beca Europa — Erasmus+</h3>
-                  </div>
-                  <p className="text-[9px] font-semibold text-violet-600/80 mt-2">En 5 días</p>
-                </div>
-              </div>
-
-              {/* Tarjeta 2: Festival Cultural UTEC */}
-              <div className="flex-shrink-0 w-[150px] bg-white rounded-2xl border border-gray-100/90 shadow-sm overflow-hidden flex flex-col snap-start">
-                <div className="h-[95px] w-full overflow-hidden relative bg-gray-100">
-                  <img 
-                    src="https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=300&q=80" 
-                    alt="Festival Cultural" 
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="p-2.5 flex-1 flex flex-col justify-between">
-                  <div>
-                    <span className="text-[9px] font-bold text-[#8b4af6] uppercase tracking-wider flex items-center gap-0.5">
-                      <Music className="w-2.5 h-2.5" /> Festival
-                    </span>
-                    <h3 className="text-xs font-bold text-gray-900 leading-snug mt-0.5 line-clamp-2">Festival Cultural UTEC</h3>
-                  </div>
-                  <p className="text-[9px] font-semibold text-violet-600/80 mt-2">En 2 días</p>
-                </div>
-              </div>
-
-              {/* Tarjeta 3: Hackathon Lima Tech 2025 */}
-              <div className="flex-shrink-0 w-[150px] bg-white rounded-2xl border border-gray-100/90 shadow-sm overflow-hidden flex flex-col snap-start">
-                <div className="h-[95px] w-full overflow-hidden relative bg-gray-100">
-                  <img 
-                    src="https://images.unsplash.com/photo-1515187029135-18ee286d815b?auto=format&fit=crop&w=300&q=80" 
-                    alt="Hackathon Lima Tech" 
-                    className="w-full h-full object-cover"
-                    onError={(e) => { e.currentTarget.src = 'https://picsum.photos/seed/hackathon/300/200'; }}
-                  />
-                </div>
-                <div className="p-2.5 flex-1 flex flex-col justify-between">
-                  <div>
-                    <span className="text-[9px] font-bold text-[#8b4af6] uppercase tracking-wider flex items-center gap-0.5">
-                      <Trophy className="w-2.5 h-2.5" /> Hackathon
-                    </span>
-                    <h3 className="text-xs font-bold text-gray-900 leading-snug mt-0.5 line-clamp-2">Hackathon Lima Tech 2025</h3>
-                  </div>
-                  <p className="text-[9px] font-semibold text-violet-600/80 mt-2">Cierra en 7 días</p>
-                </div>
-              </div>
-
-              {/* Tarjeta 4: Intercambio PUCP */}
-              <div className="flex-shrink-0 w-[150px] bg-white rounded-2xl border border-gray-100/90 shadow-sm overflow-hidden flex flex-col snap-start">
-                <div className="h-[95px] w-full overflow-hidden relative bg-gray-100">
-                  <img 
-                    src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=300&q=80" 
-                    alt="Intercambio PUCP" 
-                    className="w-full h-full object-cover"
-                    onError={(e) => { e.currentTarget.src = 'https://picsum.photos/seed/intercambio/300/200'; }}
-                  />
-                </div>
-                <div className="p-2.5 flex-1 flex flex-col justify-between">
-                  <div>
-                    <span className="text-[9px] font-bold text-blue-500 uppercase tracking-wider flex items-center gap-0.5">
-                      <Plane className="w-2.5 h-2.5" /> Intercambio
-                    </span>
-                    <h3 className="text-xs font-bold text-gray-900 leading-snug mt-0.5 line-clamp-2">Intercambio PUCP — Canadá</h3>
-                  </div>
-                  <p className="text-[9px] font-semibold text-violet-600/80 mt-2">En 10 días</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Mobile category navigation pills */}
-          <div className="block md:hidden w-full py-2.5 px-4 overflow-x-auto no-scrollbar flex items-center gap-2">
-            <button className="flex-shrink-0 flex items-center gap-1 px-3 py-2 bg-[#f1f3f7] text-[#5c6b73] font-semibold text-[11px] rounded-full hover:bg-gray-200 active:scale-95 transition-all whitespace-nowrap">
-              <GraduationCap className="w-3.5 h-3.5 shrink-0" /> Académicos
-            </button>
-            <button className="flex-shrink-0 flex items-center gap-1 px-3 py-2 bg-[#2f55f6] text-white font-semibold text-[11px] rounded-full shadow-[0_4px_12px_rgba(47,85,246,0.25)] hover:brightness-105 active:scale-95 transition-all whitespace-nowrap">
-              <Clock className="w-3.5 h-3.5 shrink-0" /> Mi disponibilidad
-            </button>
-            <button className="flex-shrink-0 flex items-center gap-1 px-3 py-2 bg-[#f1f3f7] text-[#5c6b73] font-semibold text-[11px] rounded-full hover:bg-gray-200 active:scale-95 transition-all whitespace-nowrap">
-              <Building2 className="w-3.5 h-3.5 shrink-0" /> Mis orgs
-            </button>
-          </div>
-
-          <div className="hidden md:block">
-            <FeedWelcomeBanner userName={userName} newOpportunitiesCount={3} />
-          </div>
-          
-          <div className="hidden md:block">
-            <FeedQuickCreate avatarUrl={avatarUrl} onOpenWizard={onOpenCreate} />
-          </div>
-          
-          <div className="hidden md:block pt-2">
-            <FeedHorizontalFilters
-              statusFilter={statusFilter}
-              setStatusFilter={setStatusFilter}
-              sortOrder={sortOrder}
-              setSortOrder={setSortOrder}
-              selectedTags={selectedTags}
-              setSelectedTags={setSelectedTags}
-            />
-          </div>
-
-          <motion.div 
-            initial="hidden"
-            animate="show"
-            variants={{
-              show: { transition: { staggerChildren: 0.1 } }
-            }}
-            className="w-full space-y-4 pt-4 px-4 md:px-0"
-          >
+    <div className="min-h-screen bg-gray-50" style={{ overflowAnchor: "none" }}>
+      <div className="w-full max-w-[550px] mx-auto p-4 space-y-4">
+        <div className="pt-4 sm:pt-12">
           {(() => {
             const lastPinnedIdx = posts.reduce((acc, p, i) => (p.is_pinned ? i : acc), -1);
             return posts.map((post, i) => (
@@ -528,11 +365,18 @@ export default function Feed({
             aria-hidden
           />
           <div
-            className="fixed z-[66] flex min-w-0 flex-col overflow-hidden rounded-xl border border-gray-200/90 bg-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-150"
-            style={getClampedRightPopoverStyle(filterPopoverAnchor ?? FILTER_POPOVER_FALLBACK, {
-              maxWidth: 480,
-              margin: 8,
-            })}
+            className={`fixed z-[66] flex min-w-0 flex-col overflow-hidden rounded-xl border border-gray-200/90 bg-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] animate-in fade-in zoom-in-95 duration-150 ${
+              (filterPopoverAnchor ?? FILTER_POPOVER_FALLBACK).placement === "above"
+                ? "slide-in-from-bottom-1"
+                : "slide-in-from-top-1"
+            }`}
+            style={getClampedRightPopoverStyle(
+              filterPopoverAnchor ??
+                (typeof window !== "undefined" && window.matchMedia("(min-width: 640px)").matches
+                  ? FILTER_POPOVER_FALLBACK_DESKTOP
+                  : FILTER_POPOVER_FALLBACK),
+              { maxWidth: 480, margin: 8 },
+            )}
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
