@@ -1,4 +1,4 @@
-import { Check, Clock, Zap, Coffee, Briefcase, Target } from 'lucide-react';
+import { Check, Scale, Zap, Coffee, Rocket, Star } from 'lucide-react';
 import type { OnboardingData } from '../Onboarding';
 import React from 'react';
 
@@ -10,10 +10,10 @@ interface AvailabilityStepProps {
 
 const hoursOptions = [
   { id: 0, hours: '1-3', label: 'Poco tiempo', description: 'Solo lo esencial', icon: Coffee, gradient: 'from-slate-500 to-gray-500', emoji: '☕' },
-  { id: 1, hours: '4-6', label: 'Moderado', description: 'Balance perfecto', icon: Target, gradient: 'from-cyan-500 to-blue-500', emoji: '⚖️' },
+  { id: 1, hours: '4-6', label: 'Moderado', description: 'Balance perfecto', icon: Scale, gradient: 'from-cyan-500 to-blue-500', emoji: '⚖️' },
   { id: 2, hours: '7-10', label: 'Disponible', description: 'Tiempo para explorar', icon: Zap, gradient: 'from-violet-500 to-fuchsia-500', emoji: '⚡' },
-  { id: 3, hours: '11-15', label: 'Muy flexible', description: 'Abierto a todo', icon: Briefcase, gradient: 'from-amber-500 to-orange-500', emoji: '🚀' },
-  { id: 4, hours: '15+', label: 'Máxima disponibilidad', description: '¡Aprovecha al máximo!', icon: Clock, gradient: 'from-emerald-500 to-teal-500', emoji: '🌟' },
+  { id: 3, hours: '11-15', label: 'Muy flexible', description: 'Abierto a todo', icon: Rocket, gradient: 'from-amber-500 to-orange-500', emoji: '🚀' },
+  { id: 4, hours: '15+', label: 'Máxima disponibilidad', description: '¡Aprovecha al máximo!', icon: Star, gradient: 'from-emerald-500 to-teal-500', emoji: '🌟' },
 ];
 
 export default function AvailabilityStep({ data, setData }: AvailabilityStepProps) {
@@ -52,9 +52,9 @@ export default function AvailabilityStep({ data, setData }: AvailabilityStepProp
               }`}
               style={{ animationDelay: `${index * 50}ms` }}
             >
-              {/* Emoji/Icono */}
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl ${isSelected ? 'bg-white/20' : 'bg-white/10'}`}>
-                {option.emoji}
+              {/* Icono */}
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${isSelected ? 'bg-white/20' : 'bg-white/10'}`}>
+                <option.icon className={`w-6 h-6 ${isSelected ? 'text-white' : 'text-violet-300'}`} />
               </div>
 
               {/* Contenido */}

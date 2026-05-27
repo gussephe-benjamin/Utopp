@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import ReactDOM from 'react-dom'
-import { X, Bookmark, ChevronLeft, ChevronRight, Calendar, ExternalLink } from 'lucide-react'
+import { X, Bookmark, ChevronLeft, ChevronRight, Calendar, ExternalLink, Link } from 'lucide-react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { getPost } from '../api/posts.api'
 import { unsavePost } from '../api/saved-posts.api'
@@ -82,7 +83,10 @@ export default function PostDetailModal({ postId, onClose, onUnsaved }: PostDeta
   const [descExpanded, setDescExpanded] = useState(false)
 
   useEffect(() => {
-    if (!postId) { setPost(null); return }
+    if (!postId) {
+      // Do not clear post immediately to preserve data during exit animation
+      return
+    }
     let cancelled = false
     setLoading(true)
     setImgIdx(0)
@@ -112,8 +116,6 @@ export default function PostDetailModal({ postId, onClose, onUnsaved }: PostDeta
     finally { setUnsaving(false) }
   }
 
-  if (!postId) return null
-
   const sortedImages = post ? [...post.images].sort((a, b) => a.position - b.position) : []
   const sortedLinks  = post ? [...post.links].sort((a, b) => a.position - b.position) : []
   const totalImgs    = sortedImages.length
@@ -122,7 +124,7 @@ export default function PostDetailModal({ postId, onClose, onUnsaved }: PostDeta
   const nextImg = () => setImgIdx(i => Math.min(totalImgs - 1, i + 1))
 
   const typeLabel = post ? POST_TYPE_LABELS[post.post_type as keyof typeof POST_TYPE_LABELS] : ''
-  const typeIcon  = post ? POST_TYPE_ICONS[post.post_type as keyof typeof POST_TYPE_ICONS]  : ''
+  const TypeIcon  = post ? POST_TYPE_ICONS[post.post_type as keyof typeof POST_TYPE_ICONS]  : null
 
   const mainLink    = sortedLinks[0]
   const secondLink  = sortedLinks[1]
@@ -134,21 +136,30 @@ export default function PostDetailModal({ postId, onClose, onUnsaved }: PostDeta
   const userName = post?.user?.full_name || post?.user?.email || 'Usuario'
 
   return ReactDOM.createPortal(
-    <div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[75] flex items-center justify-center p-4"
-      onClick={onClose}
-    >
-      <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-[550px] max-h-[90vh] flex flex-col overflow-hidden"
-        onClick={e => e.stopPropagation()}
-      >
+    <AnimatePresence>
+      {postId && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[75] flex items-center justify-center p-4"
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.95, opacity: 0 }}
+            transition={{ type: "spring", duration: 0.5, bounce: 0.3 }}
+            className="bg-white w-full max-w-2xl rounded-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-gray-100 shrink-0">
           <div className="flex items-center gap-2 flex-wrap">
             {post && (
               <>
-                <span className="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full font-medium">
-                  {typeIcon} {typeLabel}
+                <span className="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full font-medium inline-flex items-center gap-1">
+                  {TypeIcon && <TypeIcon className="w-3.5 h-3.5 text-gray-500" />} {typeLabel}
                 </span>
                 {post.subtype && (
                   <span className="text-xs bg-purple-100 text-purple-700 px-2.5 py-1 rounded-full font-medium">
@@ -361,7 +372,7 @@ export default function PostDetailModal({ postId, onClose, onUnsaved }: PostDeta
                           rel="noopener noreferrer"
                           className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
                         >
-                          <span className="text-base">🔗</span>
+                          <Link className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                           <span className="truncate">{link.label}</span>
                         </a>
                       ))}
@@ -374,8 +385,10 @@ export default function PostDetailModal({ postId, onClose, onUnsaved }: PostDeta
             </div>
           )}
         </div>
-      </div>
-    </div>,
-    document.body,
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>,
+    document.body
   )
 }

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Star } from 'lucide-react'
 import {
   type WizardLink,
   type PostLinkType,
@@ -72,7 +73,7 @@ export default function Step3LinksForm({ links, onChange }: Step3LinksFormProps)
 
   /** Etiqueta de posición para mostrar al usuario */
   const getPositionLabel = (index: number) => {
-    if (index === 0) return '⭐ Botón principal'
+    if (index === 0) return <span className="inline-flex items-center gap-1"><Star className="w-3 h-3 fill-current" /> Botón principal</span>
     if (index === 1) return 'Botón secundario'
     return `Enlace adicional ${index - 1}`
   }

@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { register } from "../../api/auth.api";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
-import { User, Mail, Lock, Eye, EyeOff, CheckCircle2, XCircle, AlertCircle, ShieldCheck, Loader2 } from "lucide-react";
+import { User, Mail, Lock, Eye, EyeOff, CheckCircle2, XCircle, AlertCircle, ShieldCheck, Loader2, Lightbulb } from "lucide-react";
 import GoogleRegister from "../../auth/GoogleRegister";
 import { checkUsername, checkEmail } from "../../api/users.api";
 import { AuthScreenLayout } from "../../shared/layout/AuthScreenLayout";
@@ -320,8 +320,9 @@ export default function Register() {
                     )}
                   </div>
                   {zxcvbnFeedback && (
-                    <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 leading-snug">
-                      💡 {zxcvbnFeedback}
+                    <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 leading-snug flex items-start gap-1.5">
+                      <Lightbulb className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                      {zxcvbnFeedback}
                     </p>
                   )}
                 </div>

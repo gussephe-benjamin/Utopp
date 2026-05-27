@@ -1,5 +1,6 @@
 import { useReducer, useState, useEffect } from 'react'
 import { Pin } from 'lucide-react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { useRole, ROLE_ADMIN, ROLE_ROOT, ROLE_OFICINA } from '../hooks/useRole'
 import {
   type PostType,
@@ -329,11 +330,22 @@ export default function PublicationWizard({ isOpen, onClose, allowedTypes }: Pub
     }
   }
 
-  if (!isOpen) return null
-
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className={`relative isolate bg-white rounded-2xl shadow-2xl max-w-4xl w-full flex flex-col ${currentStep === PREVIEW_STEP ? 'max-h-[95vh]' : 'max-h-[90vh]'}`}>
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+        >
+          <motion.div 
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.95, opacity: 0 }}
+            transition={{ type: "spring", duration: 0.5, bounce: 0.3 }}
+            className={`relative isolate bg-white rounded-2xl shadow-2xl max-w-4xl w-full flex flex-col ${currentStep === PREVIEW_STEP ? 'max-h-[95vh]' : 'max-h-[90vh]'}`}
+          >
 
         {/* Encabezado con título y stepper */}
         <div className={`pt-3 pb-1 px-6 border-b border-gray-100 ${showConfirmClose ? 'pointer-events-none select-none' : ''}`}>
@@ -365,11 +377,11 @@ export default function PublicationWizard({ isOpen, onClose, allowedTypes }: Pub
 
         {/* Botones de navegación */}
         <div className={`px-6 py-4 border-t border-gray-200 ${showConfirmClose ? 'pointer-events-none select-none' : ''}`}>
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center gap-2 sm:gap-4">
             <button
               onClick={handlePrevious}
               disabled={currentStep === 1}
-              className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-3 py-2 sm:px-6 sm:py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base font-medium"
             >
               Anterior
             </button>
@@ -379,15 +391,15 @@ export default function PublicationWizard({ isOpen, onClose, allowedTypes }: Pub
               <button
                 type="button"
                 onClick={() => setIsPinned(v => !v)}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border transition-all ${
+                className={`flex items-center justify-center gap-1.5 px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg text-[10px] sm:text-xs font-semibold border transition-all min-w-max ${
                   isPinned
                     ? 'bg-amber-500 text-white border-amber-500 shadow-md'
                     : 'bg-white text-gray-500 border-gray-200 hover:border-amber-400 hover:text-amber-600'
                 }`}
                 title="Prioridad máxima: siempre aparece primero en el feed"
               >
-                <Pin className="w-3.5 h-3.5" />
-                {isPinned ? 'Prioritario' : 'Prioridad máxima'}
+                <Pin className="w-3.5 h-3.5 shrink-0" />
+                <span className="whitespace-nowrap">{isPinned ? 'Prioritario' : 'Prioridad máxima'}</span>
               </button>
             )}
 
@@ -396,7 +408,7 @@ export default function PublicationWizard({ isOpen, onClose, allowedTypes }: Pub
               <button
                 onClick={handlePublish}
                 disabled={isPublishing || formData.images.some(img => img.status === 'uploading')}
-                className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed min-w-[140px]"
+                className="px-3 py-2 sm:px-6 sm:py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed sm:min-w-[140px] text-sm sm:text-base font-medium whitespace-nowrap"
               >
                 {isPublishing ? (publishProgress ?? 'Publicando...') : 'Publicar'}
               </button>
@@ -404,7 +416,7 @@ export default function PublicationWizard({ isOpen, onClose, allowedTypes }: Pub
               <button
                 onClick={handleNext}
                 disabled={!canAdvance()}
-                className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 sm:px-6 sm:py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base font-medium"
               >
                 Siguiente
               </button>
@@ -444,7 +456,9 @@ export default function PublicationWizard({ isOpen, onClose, allowedTypes }: Pub
             </div>
           </div>
         )}
-      </div>
-    </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 }

@@ -1,15 +1,21 @@
 import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
-import { X } from "lucide-react";
+import { X, SlidersHorizontal, Bell, Flame, Clock, Timer, GraduationCap, Building2, Inbox, Music, Trophy, Plane, Star } from "lucide-react";
 import { getFeed } from "../api/feed.api";
 import { getMyProfile } from "../api/users.api";
 import { INTERESTS } from "../constants/interests";
 import { TW_AUTH_FOOTER_LINK, TW_UTOPP_GRADIENT_R } from "../shared/constants/brand";
 import { PostCard } from "../features/feed/components/PostCard";
+import { LeftSidebar } from "../features/feed/components/LeftSidebar";
+import { RightSidebar } from "../features/feed/components/RightSidebar";
+import { FeedWelcomeBanner } from "../features/feed/components/FeedWelcomeBanner";
+import { FeedQuickCreate } from "../features/feed/components/FeedQuickCreate";
+import { FeedHorizontalFilters } from "../features/feed/components/FeedHorizontalFilters";
 import {
   getClampedRightPopoverStyle,
   type MenuPopoverAnchor,
 } from "../features/dashboard/popoverAnchor";
 import type { FeedPostOut, FeedResponse } from "../types/post.types";
+import { motion } from "framer-motion";
 
 const FILTER_POPOVER_FALLBACK: MenuPopoverAnchor = {
   placement: "above",
@@ -33,6 +39,8 @@ export type FeedProps = {
   filterPopoverAnchor?: MenuPopoverAnchor | null;
   /** Notifica si hay al menos una categoría seleccionada (para resaltar el botón en la barra). */
   onCategoryFiltersActiveChange?: (active: boolean) => void;
+  /** Callback para abrir el wizard de creación */
+  onOpenCreate?: () => void;
 };
 
 type FeedFiltersPanelProps = {
@@ -92,20 +100,21 @@ function FeedFiltersPanel({
         <div className="w-full flex justify-center items-center gap-2 flex-wrap py-0.5 px-1">
           {(
             [
-              { value: "recent" as const, label: "🕐 Recientes" },
-              { value: "urgency" as const, label: "⌛ Urgencia" },
+              { value: "recent"  as const, label: "Recientes", Icon: Clock },
+              { value: "urgency" as const, label: "Urgencia",  Icon: Timer },
             ] as const
           ).map((opt) => (
             <button
               key={opt.value}
               type="button"
               onClick={() => setSortOrder(opt.value)}
-              className={`px-3.5 py-1.5 text-xs font-semibold rounded-full border transition-all ${
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-full border transition-all ${
                 sortOrder === opt.value
                   ? `${TW_UTOPP_GRADIENT_R} text-white border-transparent shadow-sm`
                   : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
               }`}
             >
+              <opt.Icon className="w-3 h-3 shrink-0" />
               {opt.label}
             </button>
           ))}
@@ -128,6 +137,7 @@ function FeedFiltersPanel({
             {selectedTags.map((tagId) => {
               const info = INTERESTS.find((x) => x.id === tagId);
               if (!info) return null;
+              const InfoIcon = info.icon;
               return (
                 <button
                   key={tagId}
@@ -136,7 +146,7 @@ function FeedFiltersPanel({
                   className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${TW_UTOPP_GRADIENT_R} text-white border-transparent shadow-sm`}
                   title="Quitar filtro"
                 >
-                  <span>{info.icon}</span>
+                  <InfoIcon className="w-3 h-3 shrink-0" />
                   {info.label}
                   <span className="ml-1 opacity-90">×</span>
                 </button>
@@ -151,6 +161,7 @@ function FeedFiltersPanel({
         <div className="flex flex-wrap gap-1.5">
           {INTERESTS.map((interest) => {
             const active = selectedTags.includes(interest.id);
+            const IconComponent = interest.icon;
             return (
               <button
                 key={interest.id}
@@ -160,13 +171,13 @@ function FeedFiltersPanel({
                     active ? prev.filter((t) => t !== interest.id) : [...prev, interest.id],
                   )
                 }
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
                   active
                     ? `${TW_UTOPP_GRADIENT_R} text-white border-transparent shadow-sm`
                     : "bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100"
                 }`}
               >
-                <span>{interest.icon}</span>
+                <IconComponent className="w-3.5 h-3.5 shrink-0" />
                 {interest.label}
               </button>
             );
@@ -186,6 +197,7 @@ export default function Feed({
   onCloseFiltersSheet = () => {},
   filterPopoverAnchor = null,
   onCategoryFiltersActiveChange,
+  onOpenCreate = () => {},
 }: FeedProps) {
   const [posts, setPosts] = useState<FeedPostOut[]>([]);
   const [page, setPage] = useState(1);
@@ -193,6 +205,13 @@ export default function Feed({
   const [loading, setLoading] = useState(false);
   const loadingRef = useRef(false);
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  const [userName, setUserName] = useState<string>("Usuario");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [userCareer, setUserCareer] = useState<string | null>(null);
+  const [userCycle, setUserCycle] = useState<number | null>(null);
+  const [userPostsCount, setUserPostsCount] = useState<number>(0);
+  const [userFollowersCount, setUserFollowersCount] = useState<number>(0);
+  const [userFollowingCount, setUserFollowingCount] = useState<number>(0);
   const loaderRef = useRef<HTMLDivElement | null>(null);
 
   const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
@@ -205,7 +224,25 @@ export default function Feed({
 
   useEffect(() => {
     getMyProfile()
-      .then((d: { id: number }) => setCurrentUserId(d.id))
+      .then((d: {
+        id: number;
+        full_name?: string;
+        profile_image_url?: string;
+        career?: string;
+        cycle?: number;
+        posts_count?: number;
+        followers_count?: number;
+        following_count?: number;
+      }) => {
+        setCurrentUserId(d.id);
+        if (d.full_name) setUserName(d.full_name.split(" ")[0]);
+        if (d.profile_image_url) setAvatarUrl(d.profile_image_url);
+        if (d.career) setUserCareer(d.career);
+        if (d.cycle) setUserCycle(d.cycle);
+        setUserPostsCount(d.posts_count ?? 0);
+        setUserFollowersCount(d.followers_count ?? 0);
+        setUserFollowingCount(d.following_count ?? 0);
+      })
       .catch(() => {});
   }, []);
 
@@ -299,11 +336,13 @@ export default function Feed({
               </div>
             ));
           })()}
-        </div>
+        </motion.div>
 
         {!loading && posts.length === 0 && (
           <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-            <p className="text-4xl mb-3">📭</p>
+            <div className="flex justify-center mb-3">
+              <Inbox className="w-12 h-12 text-gray-300" />
+            </div>
             <p className="font-medium text-gray-700">Aún no hay publicaciones</p>
             <p className="text-sm text-gray-400 mt-1">Sé el primero en crear una publicación</p>
           </div>
@@ -313,6 +352,9 @@ export default function Feed({
           <div className="text-center py-4 text-sm text-gray-400">Cargando más...</div>
         )}
         <div ref={loaderRef} />
+        </div>
+
+        <RightSidebar />
       </div>
 
       {filtersSheetOpen && (

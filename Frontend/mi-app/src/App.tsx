@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom"
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import { AuthProvider } from "./auth/AuthContext"
 import ProtectedRoute from "./auth/ProtectedRoute"
 import AppRoute from "./auth/AppRoute"
@@ -67,6 +67,9 @@ function App() {
             }
           />
           
+          {/* Ruta comodín para capturar cualquier ruta inexistente y redirigir a la raíz */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+
         </Routes>
       </BrowserRouter>
     </AuthProvider>
@@ -74,3 +77,4 @@ function App() {
 }
 
 export default App
+

@@ -1,5 +1,6 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { Home, Plus, User, MoreVertical } from 'lucide-react'
 import PublicationWizard from '../components/PublicationWizard'
 import { useAuth } from '../auth/useAuth'
 import { getMe } from '../api/auth.api'
@@ -315,6 +316,7 @@ export default function DashboardLayout() {
             }}
             filterPopoverAnchor={filterPopoverAnchor}
             onCategoryFiltersActiveChange={onCategoryFiltersActiveChange}
+            onOpenCreate={() => setShowWizard(true)}
           />
         </div>
         <div
@@ -327,11 +329,77 @@ export default function DashboardLayout() {
           <Profile viewUserId={profileViewId} />
         </div>
         {!isFeedActive && !isProfileActive && (
-          <div className="absolute inset-0 overflow-y-auto pb-6 bg-gray-50">
+          <div className="absolute inset-0 overflow-y-auto pb-24 md:pb-6 bg-gray-50">
             <Outlet />
           </div>
         )}
       </main>
+
+      {/* Barra de Navegación Inferior (Móvil) */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/95 backdrop-blur-md border-t border-gray-100/80 shadow-[0_-4px_20px_rgba(0,0,0,0.03)] z-50 flex items-center justify-around px-4">
+        <button
+          onClick={() => {
+            if (isFeedActive) {
+              window.location.assign(`${window.location.origin}/app/inicio`)
+              return
+            }
+            navigate('/app/inicio')
+          }}
+          className="flex flex-col items-center justify-center w-12 h-12 active:scale-95 transition-transform"
+        >
+          <div className="w-11 h-11 rounded-2xl bg-[#5f38ff] flex items-center justify-center text-white font-extrabold text-lg shadow-[0_4px_12px_rgba(95,56,255,0.25)]">
+            u
+          </div>
+        </button>
+        
+        <button
+          onClick={() => {
+            if (isFeedActive) {
+              window.scrollTo({ top: 0, behavior: 'smooth' })
+            } else {
+              navigate('/app/inicio')
+            }
+          }}
+          className="flex flex-col items-center justify-center w-12 h-12 active:scale-95 transition-transform"
+        >
+          <div className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${isFeedActive ? 'bg-[#f3efff] text-[#5f38ff] shadow-sm' : 'bg-transparent text-gray-400'}`}>
+            <Home className="w-5.5 h-5.5 stroke-[2]" />
+          </div>
+        </button>
+
+        <div className="relative w-12 h-12 flex items-center justify-center">
+          <button
+            type="button"
+            onClick={() => setShowWizard(true)}
+            className="absolute -top-[22px] w-[54px] h-[54px] rounded-full bg-gradient-to-br from-[#2f55f6] to-[#ba4ef8] text-white flex items-center justify-center shadow-[0_6px_20px_rgba(47,85,246,0.35)] border-4 border-white active:scale-95 transition-all"
+          >
+            <Plus className="w-5.5 h-5.5 stroke-[3.5]" />
+          </button>
+        </div>
+
+        <button
+          onClick={() => navigate('/app/perfil')}
+          className="flex flex-col items-center justify-center w-12 h-12 active:scale-95 transition-transform"
+        >
+          <div className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${isProfileActive ? 'bg-[#f3efff] text-[#5f38ff] shadow-sm' : 'bg-transparent text-gray-400'}`}>
+            <User className="w-5.5 h-5.5 stroke-[2]" />
+          </div>
+        </button>
+
+        <button
+          onClick={() => {
+            setShowFeedFiltersSheet(false)
+            setFilterPopoverAnchor(null)
+            setAccountMenuAnchor(FALLBACK_MENU_ANCHOR)
+            setShowOptionsModal(true)
+          }}
+          className="flex flex-col items-center justify-center w-12 h-12 active:scale-95 transition-transform"
+        >
+          <div className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${showOptionsModal ? 'bg-[#f3efff] text-[#5f38ff] shadow-sm' : 'bg-transparent text-gray-400'}`}>
+            <MoreVertical className="w-5.5 h-5.5 stroke-[2]" />
+          </div>
+        </button>
+      </div>
 
       <PublicationWizard isOpen={showWizard} onClose={() => setShowWizard(false)} allowedTypes={allowedTypes} />
 

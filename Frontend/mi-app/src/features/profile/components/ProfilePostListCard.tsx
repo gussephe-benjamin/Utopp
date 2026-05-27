@@ -95,14 +95,18 @@ export function ProfilePostListCard({
       )}
 
       <div
-        className={`bg-white border rounded-2xl p-4 space-y-3 shadow-sm overflow-hidden transition-all hover:shadow-md ${isArchived ? 'opacity-60' : ''} ${onCardClick ? 'cursor-pointer' : ''}`}
+        className={`bg-white md:bg-white border-b border-gray-150 md:border md:rounded-[22px] -mx-4 px-4 py-5 md:mx-0 md:p-4 space-y-3 shadow-none md:shadow-[0_4px_20px_rgba(0,0,0,0.015)] overflow-hidden transition-all md:hover:shadow-[0_8px_30px_rgba(0,0,0,0.03)] ${isArchived ? 'opacity-60' : ''} ${onCardClick ? 'cursor-pointer' : ''}`}
         onClick={onCardClick}
       >
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-1">
-              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                {POST_TYPE_ICONS[post.post_type as keyof typeof POST_TYPE_ICONS]} {POST_TYPE_LABELS[post.post_type as keyof typeof POST_TYPE_LABELS]}
+              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                {(() => {
+                  const TypeIcon = POST_TYPE_ICONS[post.post_type as keyof typeof POST_TYPE_ICONS]
+                  return TypeIcon ? <TypeIcon className="w-3 h-3 text-gray-500" /> : null
+                })()}
+                {POST_TYPE_LABELS[post.post_type as keyof typeof POST_TYPE_LABELS]}
               </span>
               {post.subtype && (
                 <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">

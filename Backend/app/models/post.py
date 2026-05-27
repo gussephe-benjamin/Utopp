@@ -1,6 +1,7 @@
 import enum
 from datetime import datetime
 from sqlalchemy import BigInteger, Boolean, DateTime, Enum, ForeignKey, Index, JSON, SmallInteger, String, Text, func, text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.base import Base, BIGINT_PK
@@ -147,12 +148,12 @@ class Post(Base):
     )
 
     specific_fields: Mapped[dict] = mapped_column(
-        JSON,
+        JSONB,
         server_default=text("'{}'"),
         nullable=False
     )
     
-    tags: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
+    tags: Mapped[list[str] | None] = mapped_column(JSONB, nullable=True)
 
     legacy_source: Mapped[str | None] = mapped_column(String(50), nullable=True)
     

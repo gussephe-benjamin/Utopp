@@ -1,10 +1,8 @@
 import type { RefObject } from "react";
-import { ListFilter, Plus } from "lucide-react";
+import { ListFilter, Plus, Search, Bell } from "lucide-react";
 import { UtoppBrandMark } from "../../../shared/brand/UtoppBrandMark";
 import {
-  TW_UTOPP_GRADIENT_BR,
   TW_UTOPP_GRADIENT_R,
-  TW_UTOPP_RING_PROFILE,
 } from "../../../shared/constants/brand";
 
 // ─── Barra superior (dashboard): marca, crear, filtros (feed), avatar ───────
@@ -64,7 +62,19 @@ export function AppTopBar({
           aria-label="Ir a inicio y recargar"
         />
 
-        <div className="flex-1 min-w-[1rem] hidden sm:block" aria-hidden />
+        {/* Barra de Búsqueda (Centro) */}
+        <div className="flex-1 max-w-[600px] hidden md:flex items-center px-4">
+          <div className="relative w-full">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <Search className="h-4 w-4 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              placeholder="Buscar oportunidades, organizaciones, eventos..."
+              className="block w-full pl-10 pr-4 py-2.5 border border-gray-100 rounded-full leading-5 bg-gray-50/80 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-300 focus:border-violet-300 text-sm transition-colors"
+            />
+          </div>
+        </div>
 
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           {canCreate && (
@@ -72,9 +82,9 @@ export function AppTopBar({
               type="button"
               onClick={onOpenCreate}
               title="Crear oportunidad"
-              className={`w-10 h-10 p-0 rounded-full sm:w-auto sm:h-auto sm:px-4 sm:py-2.5 flex items-center justify-center gap-1.5 sm:gap-2 ${TW_UTOPP_GRADIENT_R} text-white text-xs sm:text-sm font-semibold shadow-md hover:shadow-lg hover:brightness-[1.03] active:scale-[0.98] transition-all whitespace-nowrap`}
+              className={`w-10 h-10 p-0 rounded-full sm:w-auto sm:h-auto sm:px-5 sm:py-2 flex items-center justify-center gap-1.5 sm:gap-2 ${TW_UTOPP_GRADIENT_R} text-white text-xs sm:text-sm font-semibold shadow-sm hover:shadow-md hover:brightness-[1.03] active:scale-[0.98] transition-all whitespace-nowrap`}
             >
-              <Plus className="w-4 h-4 shrink-0 stroke-[2.5]" stroke="currentColor" aria-hidden />
+              <Plus className="w-4 h-4 shrink-0 stroke-[3]" stroke="currentColor" aria-hidden />
               <span className="hidden sm:inline">Crear oportunidad</span>
             </button>
           )}
@@ -107,14 +117,24 @@ export function AppTopBar({
             </button>
           )}
 
+          {/* Campana de Notificaciones [Data Sintética] */}
+          <button
+            type="button"
+            className="relative flex items-center justify-center w-10 h-10 bg-violet-50 text-violet-600 hover:bg-violet-100 rounded-full transition-colors shrink-0"
+            aria-label="Notificaciones"
+          >
+            <Bell className="w-5 h-5" />
+            <span className="absolute top-0 right-0 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-fuchsia-500 text-[8px] font-bold text-white ring-2 ring-white">3</span>
+          </button>
+
           <button
             ref={accountMenuTriggerRef}
             type="button"
             onClick={onOpenAccountMenu}
-            className={`rounded-full p-0.5 shrink-0 transition-shadow ${
+            className={`rounded-full p-[2px] shrink-0 transition-shadow bg-gradient-to-br from-blue-600 to-fuchsia-500 shadow-sm ${
               isProfileRoute
-                ? TW_UTOPP_RING_PROFILE
-                : "ring-0 hover:ring-2 hover:ring-fuchsia-200/60 ring-offset-2"
+                ? "ring-2 ring-violet-200"
+                : "hover:brightness-110"
             }`}
             aria-label="Menú de cuenta"
             title={displayName}
@@ -123,10 +143,10 @@ export function AppTopBar({
               <img
                 src={avatarUrl}
                 alt={displayName}
-                className="w-9 h-9 rounded-full object-cover bg-gray-100"
+                className="w-9 h-9 rounded-full object-cover border-2 border-white bg-white"
               />
             ) : (
-              <div className={`w-9 h-9 rounded-full ${TW_UTOPP_GRADIENT_BR} flex items-center justify-center text-white text-sm font-bold`}>
+              <div className="w-9 h-9 rounded-full border-2 border-white flex items-center justify-center bg-violet-100 text-violet-700 font-bold text-sm">
                 {avatarInitial}
               </div>
             )}

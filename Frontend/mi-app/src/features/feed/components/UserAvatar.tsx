@@ -26,24 +26,26 @@ export function UserAvatar({
     if (!userId) return;
     navigate(userId === currentUserId ? "/app/perfil" : `/app/perfil/${userId}`);
   };
-  if (avatarUrl) {
-    return (
-      <button type="button" onClick={handleClick} className="shrink-0 rounded-full focus:outline-none">
-        <img
-          src={avatarUrl}
-          alt={userName ?? "Usuario"}
-          className="w-10 h-10 rounded-full object-cover border border-gray-200 hover:opacity-90 transition-opacity"
-        />
-      </button>
-    );
-  }
   return (
     <button
       type="button"
       onClick={handleClick}
-      className={`w-10 h-10 ${gradient} rounded-full flex items-center justify-center text-white font-semibold text-sm shrink-0 hover:opacity-90 transition-opacity focus:outline-none`}
+      className="shrink-0 focus:outline-none relative p-[2px] rounded-full bg-gradient-to-tr from-[#2f55f6] to-[#ba4ef8] hover:scale-105 active:scale-95 transition-all duration-300 shadow-sm"
     >
-      {initial}
+      <div className="rounded-full bg-white p-[1.5px] flex items-center justify-center">
+        {avatarUrl ? (
+          <img
+            src={avatarUrl}
+            alt={userName ?? "Usuario"}
+            className="w-8 h-8 rounded-full object-cover"
+          />
+        ) : (
+          <div className={`w-8 h-8 ${gradient} rounded-full flex items-center justify-center text-white font-bold text-sm`}>
+            {initial}
+          </div>
+        )}
+      </div>
     </button>
   );
 }
+
