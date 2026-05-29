@@ -30,6 +30,7 @@ export default function OrganizationProfilePage({ viewedUserId }: OrganizationPr
   const [savedPosts, setSavedPosts] = useState<FeedPostOut[]>([])
   const [loading, setLoading] = useState(true)
 
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null)
   const [isFollowing, setIsFollowing] = useState(false)
   const [followSaving, setFollowSaving] = useState(false)
   const [savingProfile, setSavingProfile] = useState(false)
@@ -45,8 +46,14 @@ export default function OrganizationProfilePage({ viewedUserId }: OrganizationPr
         let profile: ProfileUserData | null = null
         let savedRaw: SavedPostRaw[] = []
 
+        // Always try to fetch current user's profile to resolve currentUserId
+        const myProfile = await getMyProfile().catch(() => null)
+        if (myProfile && mounted) {
+          setCurrentUserId(myProfile.id)
+        }
+
         if (isMe) {
-          profile = await getMyProfile()
+          profile = myProfile
           savedRaw = await getSavedPosts().catch(() => [] as SavedPostRaw[])
         } else if (viewedUserId) {
           profile = await getUserProfile(viewedUserId)
@@ -220,6 +227,7 @@ export default function OrganizationProfilePage({ viewedUserId }: OrganizationPr
       isFollowing={isFollowing}
       followSaving={followSaving}
       onFollowToggle={handleFollowToggle}
+      currentUserId={currentUserId}
     />
   )
 }

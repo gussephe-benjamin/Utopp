@@ -17,6 +17,8 @@ export interface ProfileUserData {
   profile_image_url?: string
   description?: string
   contacts?: Record<string, string>
+  satisfaction_score?: number
+  avg_students_per_event?: number
 }
 
 export interface StudentSharedProps {

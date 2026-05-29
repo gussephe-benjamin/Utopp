@@ -38,7 +38,7 @@ export function EditProfileModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       {/* Backdrop */}
       <motion.div
-        className="absolute inset-0 bg-black/40"
+      className="absolute inset-0 bg-black/40"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -94,7 +94,7 @@ export function EditProfileModal({
             >
               {AVAILABILITY_OPTIONS.map((option) => (
                 <option key={option.id} value={option.id}>
-                  {option.emoji} {option.label} ({option.description})
+                  {option.label} ({option.description})
                 </option>
               ))}
             </select>

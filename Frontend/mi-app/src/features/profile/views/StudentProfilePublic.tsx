@@ -63,11 +63,6 @@ export function StudentProfilePublic({
                 </div>
               )}
             </div>
-
-            {/* Badge FP */}
-            <div className="absolute -left-2 bottom-0 inline-flex h-6 px-2 items-center justify-center rounded-full bg-gray-200 border border-gray-300 text-[10px] font-bold text-gray-700 shadow-sm select-none">
-              FP
-            </div>
           </div>
 
           {/* Name & Details */}
@@ -111,7 +106,7 @@ export function StudentProfilePublic({
             />
             <MetricCard
               label="Disponibilidad"
-              value={`${availabilityEmoji} ${availabilityLabel}`}
+              value={availabilityLabel}
               icon={<Clock className="h-5 w-5 text-amber-500" />}
               iconBg="bg-amber-50"
               textColor="text-amber-700"

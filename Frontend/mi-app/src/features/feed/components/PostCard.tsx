@@ -11,11 +11,15 @@ import {
   Pencil,
   Star,
   X,
+  Calendar,
+  ChevronDown,
+  Check,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { listImages, type PostImage } from "../../../api/post-images.api";
 import { listLinks } from "../../../api/post-links.api";
 import { savePost, unsavePost } from "../../../api/saved-posts.api";
+import { participate, updateParticipation, cancelParticipation } from "../../../api/participants.api";
 import EditPostWizard from "../../../components/EditPostWizard";
 import { POST_TYPE_LABELS, SUBTYPE_LABELS, type FeedPostOut } from "../../../types/post.types";
 import { formatDate, isExpired, timeAgo, timeRemaining } from "../../../shared/lib/date";
@@ -132,6 +136,54 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
   const [isSaved, setIsSaved] = useState(post.is_saved);
   const [savingPost, setSavingPost] = useState(false);
   const [editingPost, setEditingPost] = useState(false);
+
+  const [participationStatus, setParticipationStatus] = useState<string | null>(
+    post.participation_status ?? null
+  );
+  const [participationLoading, setParticipationLoading] = useState(false);
+  const [participationMenuOpen, setParticipationMenuOpen] = useState(false);
+  const participationRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!participationMenuOpen) return;
+
+    const handleClose = (e: MouseEvent | TouchEvent) => {
+      if (participationRef.current && !participationRef.current.contains(e.target as Node)) {
+        setParticipationMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClose);
+    document.addEventListener("touchstart", handleClose);
+    return () => {
+      document.removeEventListener("mousedown", handleClose);
+      document.removeEventListener("touchstart", handleClose);
+    };
+  }, [participationMenuOpen]);
+
+  const handleParticipationSelect = async (newStatus: "going" | "interested" | "cancel") => {
+    if (!currentUserId || participationLoading) return;
+    setParticipationLoading(true);
+    setParticipationMenuOpen(false);
+
+    try {
+      if (newStatus === "cancel") {
+        await cancelParticipation(post.id);
+        setParticipationStatus(null);
+      } else {
+        if (participationStatus) {
+          await updateParticipation(post.id, newStatus);
+        } else {
+          await participate(post.id, newStatus);
+        }
+        setParticipationStatus(newStatus);
+      }
+    } catch (err) {
+      console.error("Error setting participation:", err);
+    } finally {
+      setParticipationLoading(false);
+    }
+  };
 
   const gradient = TYPE_GRADIENTS[post.post_type] ?? TYPE_GRADIENTS.simple_post;
 
@@ -406,7 +458,7 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
         initial="hidden"
         whileInView="show"
         viewport={{ once: true, margin: "-50px" }}
-        className={`relative mx-auto h-auto w-full overflow-hidden rounded-[22px] border bg-white shadow-[0_4px_20px_rgba(0,0,0,0.015)] transition-all duration-300 hover:-translate-y-[1px] hover:shadow-[0_8px_30px_rgba(0,0,0,0.03)] ${
+        className={`relative mx-auto h-auto w-full overflow-visible rounded-[22px] border bg-white shadow-[0_4px_20px_rgba(0,0,0,0.015)] transition-all duration-300 hover:-translate-y-[1px] hover:shadow-[0_8px_30px_rgba(0,0,0,0.03)] ${
           post.is_pinned
             ? "border-amber-200/75 shadow-[0_4px_24px_rgba(245,158,11,0.04)] ring-1 ring-amber-100/30"
             : "border-gray-100"
@@ -633,25 +685,28 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
         <div className="border-t border-gray-100/80 w-full" />
 
         <div className="flex items-center justify-between gap-4 bg-white px-4 py-3.5">
-          <button
-            type="button"
-            onClick={handleSaveToggle}
-            className={`inline-flex h-8 w-8 items-center justify-center transition-colors ${
-              isSaved
-                ? "text-[#2f55f6]"
-                : "text-gray-400 hover:text-[#9333EA]"
-            } ${savingPost ? "opacity-80" : ""} active:scale-95`}
-            title={isSaved ? "Quitar de guardados" : "Guardar publicación"}
-            aria-label={isSaved ? "Quitar de guardados" : "Guardar publicación"}
-          >
-            {savingPost ? (
-              <Loader2 className="h-5 w-5 animate-spin" style={{ color: UTOPP_BRAND.blue }} />
-            ) : isSaved ? (
-              <BookmarkCheck className="h-5 w-5" style={{ color: UTOPP_BRAND.blue }} />
-            ) : (
-              <Bookmark className="h-5 w-5" />
-            )}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleSaveToggle}
+              className={`inline-flex h-8 w-8 items-center justify-center transition-colors ${
+                isSaved
+                  ? "text-[#2f55f6]"
+                  : "text-gray-400 hover:text-[#9333EA]"
+              } ${savingPost ? "opacity-80" : ""} active:scale-95`}
+              title={isSaved ? "Quitar de guardados" : "Guardar publicación"}
+              aria-label={isSaved ? "Quitar de guardados" : "Guardar publicación"}
+            >
+              {savingPost ? (
+                <Loader2 className="h-5 w-5 animate-spin" style={{ color: UTOPP_BRAND.blue }} />
+              ) : isSaved ? (
+                <BookmarkCheck className="h-5 w-5" style={{ color: UTOPP_BRAND.blue }} />
+              ) : (
+                <Bookmark className="h-5 w-5" />
+              )}
+            </button>
+
+          </div>
 
           <div className="flex flex-1 flex-wrap items-center justify-end gap-2">
             {visibleLinks.map((link, index) => (

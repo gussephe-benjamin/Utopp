@@ -121,12 +121,12 @@ export default function StudentProfilePage({ viewedUserId }: StudentProfilePageP
       setOrgError(null)
       try {
         await followUser(orgId)
-        const refreshed = await getMyFollowingOrganizations().catch(() => null)
-        if (refreshed) {
-          setFollowingOrganizations(refreshed)
-        } else {
-          const org = allOrganizations.find((item) => item.id === orgId)
-          if (org) setFollowingOrganizations((prev) => [...prev, org])
+        const org = allOrganizations.find((item) => item.id === orgId)
+        if (org) {
+          setFollowingOrganizations((prev) => {
+            if (prev.some((o) => o.id === orgId)) return prev
+            return [...prev, org]
+          })
         }
       } catch (error) {
         const message = extractApiError(error, "No se pudo seguir la organización")
@@ -136,7 +136,7 @@ export default function StudentProfilePage({ viewedUserId }: StudentProfilePageP
         setOrgActionId(null)
       }
     },
-    [allOrganizations, followingOrganizations.length],
+    [allOrganizations],
   )
 
   const handleUnfollowOrganization = useCallback(async (orgId: number) => {
@@ -144,13 +144,21 @@ export default function StudentProfilePage({ viewedUserId }: StudentProfilePageP
     setOrgError(null)
     try {
       await unfollowUser(orgId)
-      setFollowingOrganizations((prev) => prev.filter((org) => org.id !== orgId))
+      // Do not filter followingOrganizations here; deferred until modal closes
     } catch (error) {
       const message = extractApiError(error, "No se pudo dejar de seguir la organización")
       console.error(message, error)
       setOrgError(message)
     } finally {
       setOrgActionId(null)
+    }
+  }, [])
+
+  const handleCloseOrganizationsManager = useCallback((unfollowedIds?: Set<number>) => {
+    if (unfollowedIds && unfollowedIds.size > 0) {
+      setFollowingOrganizations((prev) =>
+        prev.filter((org) => !unfollowedIds.has(org.id))
+      )
     }
   }, [])
 
@@ -187,12 +195,22 @@ export default function StudentProfilePage({ viewedUserId }: StudentProfilePageP
   )
 
   const handleSavedPostEdited = useCallback((updated: FeedPostOut) => {
-    setEventSavedPosts((prev) => prev.map((post) => (post.id === updated.id ? { ...post, ...updated } : post)))
+    setEventSavedPosts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))
   }, [])
 
   const handleSavedPostUnsaved = useCallback((postId: number) => {
-    setEventSavedPosts((prev) => prev.filter((post) => post.id !== postId))
+    setEventSavedPosts((prev) => prev.filter((p) => p.id !== postId))
   }, [])
+
+  const sharedProps = useMemo(() => {
+    return {
+      user: user!,
+      avatarUrl,
+      postsCount: 0,
+      followersCount: 0,
+      followingCount: 0,
+    }
+  }, [user, avatarUrl])
 
   const content = useMemo(() => {
     if (loading || !user) {
@@ -206,14 +224,14 @@ export default function StudentProfilePage({ viewedUserId }: StudentProfilePageP
     if (isMe) {
       return (
         <StudentProfileSelf
-          user={user}
-          avatarUrl={avatarUrl}
+          {...sharedProps}
           eventSavedPosts={eventSavedPosts}
           followingOrganizations={followingOrganizations}
           allOrganizations={allOrganizations}
           onSaveProfile={handleSaveProfile}
           onFollowOrganization={handleFollowOrganization}
           onUnfollowOrganization={handleUnfollowOrganization}
+          onCloseOrganizationsManager={handleCloseOrganizationsManager}
           profileSaving={profileSaving}
           avatarSaving={avatarSaving}
           avatarError={avatarError}
@@ -246,6 +264,7 @@ export default function StudentProfilePage({ viewedUserId }: StudentProfilePageP
     handleSaveProfile,
     handleFollowOrganization,
     handleUnfollowOrganization,
+    handleCloseOrganizationsManager,
     profileSaving,
     avatarSaving,
     avatarError,

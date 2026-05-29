@@ -6,7 +6,6 @@ import Login from "./pages/auth/Login"
 import DashboardLayout from "./pages/Dashboard"
 import Onboarding from "./features/onboarding/Onboarding"
 import RegisterOG from "./pages/auth/RegisterOG"
-import Schedule from "./pages/Schedule"
 import TermsAcceptance from "./pages/TermsAcceptance"
 import TermsPublic from "./pages/TermsPublic"
 import PrivacyPublic from "./pages/PrivacyPublic"
@@ -43,7 +42,6 @@ function App() {
               </ProtectedRoute>
             }
           >
-            <Route path="horario" element={<Schedule />} />
             <Route path="*" element={null} />
           </Route>
 

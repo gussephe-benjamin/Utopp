@@ -234,7 +234,7 @@ export default function DashboardLayout() {
       />
 
       <main className="flex-1 relative overflow-hidden pt-0 md:pt-14">
-        <div className={`absolute inset-0 overflow-y-auto no-scrollbar pb-24 md:pb-6 bg-gray-50${isFeedActive ? '' : ' hidden'}`}>
+        <div className={`absolute inset-x-0 bottom-0 top-0 md:top-14 overflow-y-auto no-scrollbar pb-24 md:pb-6 bg-gray-50${isFeedActive ? '' : ' hidden'}`}>
           <FeedModeResolver
             filtersSheetOpen={showFeedFiltersSheet}
             onCloseFiltersSheet={() => {
@@ -246,11 +246,11 @@ export default function DashboardLayout() {
             onOpenCreate={() => setShowWizard(true)}
           />
         </div>
-        <div className={`absolute inset-0 overflow-y-auto no-scrollbar pb-24 md:pb-6 bg-gray-50${isProfileActive ? '' : ' hidden'}`}>
+        <div className={`absolute inset-x-0 bottom-0 top-0 md:top-14 overflow-y-auto no-scrollbar pb-24 md:pb-6 bg-gray-50${isProfileActive ? '' : ' hidden'}`}>
           <Profile viewUserId={profileViewId} />
         </div>
         {!isFeedActive && !isProfileActive && (
-          <div className="absolute inset-0 overflow-y-auto no-scrollbar pb-24 md:pb-6 bg-gray-50">
+          <div className="absolute inset-x-0 bottom-0 top-0 md:top-14 overflow-y-auto no-scrollbar pb-24 md:pb-6 bg-gray-50">
             <Outlet />
           </div>
         )}

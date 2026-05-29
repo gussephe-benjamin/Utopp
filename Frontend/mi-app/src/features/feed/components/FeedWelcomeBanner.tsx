@@ -10,7 +10,7 @@ export function FeedWelcomeBanner({ userName }: FeedWelcomeBannerProps) {
           Hola {userName}
         </h2>
         <p className="text-sm sm:text-base text-gray-500 mt-1 break-words">
-          Bienvenido a Utopp 🔥
+          Bienvenido a Utopp
         </p>
       </div>
     </div>

@@ -46,7 +46,7 @@ export default function OrganizationFeedPage({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="mx-auto flex w-full max-w-[1320px] gap-6 px-4 pb-8 pt-0 md:pt-[80px]">
+      <div className="mx-auto flex w-full max-w-[1320px] gap-6 px-4 pb-8 pt-0 md:pt-6">
         <div className="w-full min-w-0 max-w-[720px] flex-1 space-y-4">
           <section className="rounded-2xl border border-violet-100 bg-white p-5 shadow-sm">
             <div className="flex items-start gap-3">

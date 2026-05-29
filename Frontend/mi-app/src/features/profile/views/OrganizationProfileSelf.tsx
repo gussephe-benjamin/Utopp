@@ -1,4 +1,5 @@
-import { type ChangeEvent, useMemo, useRef, useState } from "react"
+import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react"
+import { useSearchParams } from "react-router-dom"
 import { AnimatePresence, motion } from "framer-motion"
 import {
   Check,
@@ -95,6 +96,33 @@ export function OrganizationProfileSelf({
   const [activeTab, setActiveTab] = useState<TabType>("posts")
   const avatarInputRef = useRef<HTMLInputElement>(null)
 
+  const [searchParams] = useSearchParams()
+  const highlightPostId = searchParams.get("postId")
+  const [activeHighlightId, setActiveHighlightId] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (highlightPostId) {
+      setActiveHighlightId(highlightPostId)
+      setActiveTab("posts") // Ensure we are on the posts tab
+
+      const scrollTimer = setTimeout(() => {
+        const element = document.getElementById(`post-${highlightPostId}`)
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "center" })
+        }
+      }, 400)
+
+      const fadeTimer = setTimeout(() => {
+        setActiveHighlightId(null)
+      }, 3500)
+
+      return () => {
+        clearTimeout(scrollTimer)
+        clearTimeout(fadeTimer)
+      }
+    }
+  }, [highlightPostId, posts])
+
   const copyEmail = async () => {
     if (!user.email) return
     await navigator.clipboard.writeText(user.email)
@@ -171,11 +199,6 @@ export function OrganizationProfileSelf({
                   <Camera className="h-4 w-4 text-[#C026D3]" />
                 )}
               </button>
-
-              {/* Badge FP */}
-              <div className="absolute -left-2 bottom-0 inline-flex h-6 px-2 items-center justify-center rounded-full bg-gray-200 border border-gray-300 text-[10px] font-bold text-gray-700 shadow-sm select-none">
-                FP
-              </div>
             </div>
             <input
               ref={avatarInputRef}
@@ -251,8 +274,15 @@ export function OrganizationProfileSelf({
           label="Cantidad de publicaciones"
           value={`${posts.filter((p) => p.status === "published" || !p.status).length}`}
         />
-        <MetricCard label="Promedio de satisfacción" value="4.8 ★" />
-        <MetricCard label="# promedio de alumnos por evento" value="PROM" subValue="24 alumnos" />
+        <MetricCard
+          label="Promedio de satisfacción"
+          value={user.satisfaction_score !== undefined && user.satisfaction_score !== null ? `${user.satisfaction_score} ★` : "4.5 ★"}
+        />
+        <MetricCard
+          label="# promedio de alumnos por evento"
+          value={user.avg_students_per_event !== undefined && user.avg_students_per_event !== null ? `${user.avg_students_per_event}` : "0"}
+          subValue={user.avg_students_per_event === 1 ? "alumno" : "alumnos"}
+        />
       </section>
 
       {/* ─── Dos Columnas ─── */}
@@ -364,15 +394,27 @@ export function OrganizationProfileSelf({
               </div>
             ) : (
               <div className="flex flex-col gap-4">
-                {filteredPosts.map((post) => (
-                  <PostCard
-                    key={post.id}
-                    post={post}
-                    currentUserId={user.id}
-                    onEdited={onPostEdited}
-                    onDeleted={onPostDeleted}
-                  />
-                ))}
+                 {filteredPosts.map((post) => {
+                  const isHighlighted = String(post.id) === activeHighlightId
+                  return (
+                    <div
+                      key={post.id}
+                      id={`post-${post.id}`}
+                      className={`transition-all duration-1000 rounded-[22px] ${
+                        isHighlighted
+                          ? "ring-4 ring-violet-500/80 ring-offset-2 scale-[1.01] shadow-[0_0_20px_rgba(139,92,246,0.25)]"
+                          : ""
+                      }`}
+                    >
+                      <PostCard
+                        post={post}
+                        currentUserId={user.id}
+                        onEdited={onPostEdited}
+                        onDeleted={onPostDeleted}
+                      />
+                    </div>
+                  )
+                })}
               </div>
             )}
           </div>

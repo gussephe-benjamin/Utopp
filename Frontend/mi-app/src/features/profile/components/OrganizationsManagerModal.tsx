@@ -10,7 +10,7 @@ interface OrganizationsManagerModalProps {
   orgActionId: number | null
   onFollow: (orgId: number) => Promise<void>
   onUnfollow: (orgId: number) => Promise<void>
-  onClose: () => void
+  onClose: (unfollowedIds?: Set<number>) => void
 }
 
 /**
@@ -28,14 +28,19 @@ export function OrganizationsManagerModal({
   onClose,
 }: OrganizationsManagerModalProps) {
   const [query, setQuery] = useState("")
+  const [unfollowedIds, setUnfollowedIds] = useState<Set<number>>(new Set())
+
+  const handleClose = () => {
+    onClose(unfollowedIds)
+  }
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose()
+      if (event.key === "Escape") handleClose()
     }
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
-  }, [onClose])
+  }, [onClose, unfollowedIds])
 
   const normalizedQuery = query.trim().toLowerCase()
 
@@ -46,6 +51,44 @@ export function OrganizationsManagerModal({
     )
   }, [followingOrganizations, normalizedQuery])
 
+  const discoverOrganizations = useMemo(() => {
+    const followingIds = new Set(followingOrganizations.map((o) => o.id))
+    return allOrganizations.filter((org) => !followingIds.has(org.id))
+  }, [allOrganizations, followingOrganizations])
+
+  const filteredDiscover = useMemo(() => {
+    if (!normalizedQuery) return discoverOrganizations
+    return discoverOrganizations.filter((org) =>
+      (org.full_name ?? "").toLowerCase().includes(normalizedQuery),
+    )
+  }, [discoverOrganizations, normalizedQuery])
+
+  const handleUnfollowClick = async (orgId: number) => {
+    try {
+      await onUnfollow(orgId)
+      setUnfollowedIds((prev) => {
+        const next = new Set(prev)
+        next.add(orgId)
+        return next
+      })
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  const handleFollowClick = async (orgId: number) => {
+    try {
+      await onFollow(orgId)
+      setUnfollowedIds((prev) => {
+        const next = new Set(prev)
+        next.delete(orgId)
+        return next
+      })
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       {/* Backdrop */}
@@ -54,7 +97,7 @@ export function OrganizationsManagerModal({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        onClick={onClose}
+        onClick={handleClose}
       />
 
       {/* Modal Container */}
@@ -70,12 +113,12 @@ export function OrganizationsManagerModal({
           <div>
             <h2 className="text-base font-bold text-gray-900">Gestionar organizaciones</h2>
             <p className="text-xs text-gray-500">
-              Sigue o deja de seguir organizaciones. Los cambios se reflejan al instante.
+              Sigue o deja de seguir organizaciones. Los cambios se confirman al cerrar el modal.
             </p>
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
             aria-label="Cerrar"
           >
@@ -97,13 +140,14 @@ export function OrganizationsManagerModal({
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-4">
+          {/* Mis Organizaciones */}
           <section>
             <div className="mb-2 flex items-baseline justify-between">
               <h3 className="text-xs font-bold uppercase tracking-wide text-violet-700">
                 Mis organizaciones
               </h3>
               <span className="text-xs font-semibold text-gray-400">
-                {followingOrganizations.length} seguidas
+                {followingOrganizations.filter((o) => !unfollowedIds.has(o.id)).length} seguidas
               </span>
             </div>
             {filteredFollowing.length === 0 ? (
@@ -114,34 +158,85 @@ export function OrganizationsManagerModal({
               </p>
             ) : (
               <ul className="grid gap-2">
-                {filteredFollowing.map((org) => (
+                {filteredFollowing.map((org) => {
+                  const isUnfollowed = unfollowedIds.has(org.id)
+                  return (
+                    <li
+                      key={`followed-${org.id}`}
+                      className={`flex items-center justify-between gap-3 rounded-lg border px-3 py-2 transition-colors ${
+                        isUnfollowed
+                          ? "border-gray-100 bg-gray-50/50 opacity-60"
+                          : "border-violet-100 bg-violet-50/40"
+                      }`}
+                    >
+                      <OrgRow org={org} />
+                      {isUnfollowed ? (
+                        <button
+                          type="button"
+                          disabled={orgActionId === org.id}
+                          onClick={() => handleFollowClick(org.id)}
+                          className="inline-flex shrink-0 items-center gap-1 rounded-full border border-violet-600 bg-violet-600 px-3 py-1 text-xs font-semibold text-white hover:bg-violet-700 disabled:opacity-50 shadow-sm"
+                        >
+                          <Plus className="h-3 w-3" />
+                          Seguir
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={orgActionId === org.id}
+                          onClick={() => handleUnfollowClick(org.id)}
+                          className="inline-flex shrink-0 items-center gap-1 rounded-full border border-violet-200 px-3 py-1 text-xs font-semibold text-violet-700 hover:bg-white disabled:opacity-50"
+                        >
+                          <Check className="h-3 w-3" />
+                          Siguiendo
+                        </button>
+                      )}
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+          </section>
+
+          {/* Descubrir Organizaciones */}
+          <section className="mt-6 border-t border-gray-100 pt-6">
+            <div className="mb-2">
+              <h3 className="text-xs font-bold uppercase tracking-wide text-gray-500">
+                Descubrir organizaciones
+              </h3>
+            </div>
+            {filteredDiscover.length === 0 ? (
+              <p className="text-xs text-gray-400 italic">
+                No hay más organizaciones para descubrir por el momento.
+              </p>
+            ) : (
+              <ul className="grid gap-2">
+                {filteredDiscover.map((org) => (
                   <li
-                    key={`followed-${org.id}`}
-                    className="flex items-center justify-between gap-3 rounded-lg border border-violet-100 bg-violet-50/40 px-3 py-2"
+                    key={`discover-${org.id}`}
+                    className="flex items-center justify-between gap-3 rounded-lg border border-gray-100 bg-gray-50/50 px-3 py-2"
                   >
                     <OrgRow org={org} />
                     <button
                       type="button"
                       disabled={orgActionId === org.id}
-                      onClick={() => onUnfollow(org.id)}
-                      className="inline-flex shrink-0 items-center gap-1 rounded-full border border-violet-200 px-3 py-1 text-xs font-semibold text-violet-700 hover:bg-white disabled:opacity-50"
+                      onClick={() => onFollow(org.id)}
+                      className="inline-flex shrink-0 items-center gap-1 rounded-full border border-violet-600 bg-violet-600 px-3 py-1 text-xs font-semibold text-white hover:bg-violet-700 disabled:opacity-50 shadow-sm"
                     >
-                      <Check className="h-3 w-3" />
-                      Siguiendo
+                      <Plus className="h-3 w-3" />
+                      Seguir
                     </button>
                   </li>
                 ))}
               </ul>
             )}
           </section>
-
-          {/* List of followed organizations */}
         </div>
 
         <footer className="border-t border-gray-100 px-6 py-3">
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="ml-auto block rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
           >
             Cerrar
@@ -172,7 +267,9 @@ function OrgRow({ org }: { org: OrganizationSummary }) {
         <p className="truncate text-sm font-semibold text-gray-900">
           {org.full_name ?? `Org ${org.id}`}
         </p>
-        <p className="text-xs text-gray-500">{org.followers_count} seguidores</p>
+        <p className="text-xs text-gray-500">
+          {org.followers_count ?? 0} {org.followers_count === 1 ? "seguidor" : "seguidores"}
+        </p>
       </div>
     </div>
   )

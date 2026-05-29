@@ -1,4 +1,5 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useSearchParams } from "react-router-dom"
 import {
   Check,
   Copy,
@@ -27,6 +28,7 @@ interface OrganizationProfilePublicProps {
   isFollowing: boolean
   followSaving: boolean
   onFollowToggle: () => Promise<void>
+  currentUserId?: number | null
 }
 
 function getContactIcon(key: string) {
@@ -63,6 +65,7 @@ export function OrganizationProfilePublic({
   isFollowing,
   followSaving,
   onFollowToggle,
+  currentUserId = null,
 }: OrganizationProfilePublicProps) {
   const [emailCopied, setEmailCopied] = useState(false)
 
@@ -75,6 +78,32 @@ export function OrganizationProfilePublic({
 
   const avatarInitial = (user.full_name ?? "O").charAt(0).toUpperCase()
   const publishedPosts = posts.filter((p) => p.status === "published" || !p.status)
+
+  const [searchParams] = useSearchParams()
+  const highlightPostId = searchParams.get("postId")
+  const [activeHighlightId, setActiveHighlightId] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (highlightPostId) {
+      setActiveHighlightId(highlightPostId)
+
+      const scrollTimer = setTimeout(() => {
+        const element = document.getElementById(`post-${highlightPostId}`)
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "center" })
+        }
+      }, 400)
+
+      const fadeTimer = setTimeout(() => {
+        setActiveHighlightId(null)
+      }, 3500)
+
+      return () => {
+        clearTimeout(scrollTimer)
+        clearTimeout(fadeTimer)
+      }
+    }
+  }, [highlightPostId, publishedPosts])
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-6 md:px-6">
@@ -121,11 +150,6 @@ export function OrganizationProfilePublic({
                     {avatarInitial}
                   </div>
                 )}
-              </div>
-
-              {/* Badge FP */}
-              <div className="absolute -left-2 bottom-0 inline-flex h-6 px-2 items-center justify-center rounded-full bg-gray-200 border border-gray-300 text-[10px] font-bold text-gray-700 shadow-sm select-none">
-                FP
               </div>
             </div>
           </div>
@@ -195,8 +219,15 @@ export function OrganizationProfilePublic({
       <section className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
         <MetricCard label="Alumnos Siguiendo Totales" value={`${user.followers_count ?? 0}`} />
         <MetricCard label="Cantidad de publicaciones" value={`${publishedPosts.length}`} />
-        <MetricCard label="Promedio de satisfacción" value="4.8 ★" />
-        <MetricCard label="# promedio de alumnos por evento" value="PROM" subValue="24 alumnos" />
+        <MetricCard
+          label="Promedio de satisfacción"
+          value={user.satisfaction_score !== undefined && user.satisfaction_score !== null ? `${user.satisfaction_score} ★` : "4.5 ★"}
+        />
+        <MetricCard
+          label="# promedio de alumnos por evento"
+          value={user.avg_students_per_event !== undefined && user.avg_students_per_event !== null ? `${user.avg_students_per_event}` : "0"}
+          subValue={user.avg_students_per_event === 1 ? "alumno" : "alumnos"}
+        />
       </section>
 
       {/* ─── Dos Columnas ─── */}
@@ -283,13 +314,25 @@ export function OrganizationProfilePublic({
               </div>
             ) : (
               <div className="flex flex-col gap-4">
-                {publishedPosts.map((post) => (
-                  <PostCard
-                    key={post.id}
-                    post={post}
-                    currentUserId={0} // Read-only view
-                  />
-                ))}
+                 {publishedPosts.map((post) => {
+                  const isHighlighted = String(post.id) === activeHighlightId
+                  return (
+                    <div
+                      key={post.id}
+                      id={`post-${post.id}`}
+                      className={`transition-all duration-1000 rounded-[22px] ${
+                        isHighlighted
+                          ? "ring-4 ring-violet-500/80 ring-offset-2 scale-[1.01] shadow-[0_0_20px_rgba(139,92,246,0.25)]"
+                          : ""
+                      }`}
+                    >
+                      <PostCard
+                        post={post}
+                        currentUserId={currentUserId}
+                      />
+                    </div>
+                  )
+                })}
               </div>
             )}
           </div>

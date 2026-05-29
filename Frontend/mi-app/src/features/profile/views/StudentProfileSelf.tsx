@@ -36,6 +36,7 @@ interface StudentProfileSelfProps {
   onSaveProfile: (payload: { cycle: number; availability: number }) => Promise<void>
   onFollowOrganization: (orgId: number) => Promise<void>
   onUnfollowOrganization: (orgId: number) => Promise<void>
+  onCloseOrganizationsManager?: (unfollowedIds?: Set<number>) => void
   profileSaving: boolean
   avatarSaving: boolean
   avatarError: string | null
@@ -57,6 +58,7 @@ export function StudentProfileSelf({
   onSaveProfile,
   onFollowOrganization,
   onUnfollowOrganization,
+  onCloseOrganizationsManager,
   profileSaving,
   avatarSaving,
   avatarError,
@@ -130,7 +132,12 @@ export function StudentProfileSelf({
             orgActionId={orgActionId}
             onFollow={onFollowOrganization}
             onUnfollow={onUnfollowOrganization}
-            onClose={() => setManagingOrgs(false)}
+            onClose={(unfollowedIds) => {
+              setManagingOrgs(false)
+              if (unfollowedIds) {
+                onCloseOrganizationsManager?.(unfollowedIds)
+              }
+            }}
           />
         )}
       </AnimatePresence>
@@ -172,11 +179,6 @@ export function StudentProfileSelf({
                     <Camera className="h-4 w-4 text-[#C026D3]" />
                   )}
                 </button>
-
-                {/* Badge FP */}
-                <div className="absolute -left-2 bottom-0 inline-flex h-6 px-2 items-center justify-center rounded-full bg-gray-200 border border-gray-300 text-[10px] font-bold text-gray-700 shadow-sm select-none">
-                  FP
-                </div>
               </div>
               <input
                 ref={avatarInputRef}
@@ -237,7 +239,7 @@ export function StudentProfileSelf({
                 />
                 <MetricCard
                   label="Disponibilidad"
-                  value={`${availabilityEmoji} ${availabilityLabel}`}
+                  value={availabilityLabel}
                   icon={<Clock className="h-5 w-5 text-amber-500" />}
                   iconBg="bg-amber-50"
                   textColor="text-amber-700"

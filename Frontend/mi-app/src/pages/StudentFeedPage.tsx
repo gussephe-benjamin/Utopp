@@ -73,7 +73,7 @@ export default function StudentFeedPage({
 
   return (
     <div className="flex min-h-screen justify-center bg-gray-50" style={{ overflowAnchor: "none" }}>
-      <div className="mx-auto flex w-full max-w-[1320px] items-start justify-center gap-6 px-0 pb-8 pt-0 md:px-4 md:pt-[80px]">
+      <div className="mx-auto flex w-full max-w-[1320px] items-start justify-center gap-6 px-0 pb-8 pt-0 md:px-4 md:pt-6">
         <LeftSidebar
           userName={userName}
           avatarUrl={avatarUrl}
@@ -91,7 +91,7 @@ export default function StudentFeedPage({
         <div className="w-full min-w-0 max-w-[700px] flex-1 space-y-0 md:space-y-5">
           <div className="mb-3 block w-full rounded-b-[32px] bg-gradient-to-b from-[#2f55f6] via-[#614bf8] to-[#803ef8] px-6 pb-7 pt-7 text-white shadow-lg md:hidden">
             <h1 className="text-2xl font-bold tracking-tight">Hola, {userName}</h1>
-            <p className="mt-0.5 text-xs font-medium text-white/80">Bienvenido a Utopp 🔥</p>
+            <p className="mt-0.5 text-xs font-medium text-white/80">Bienvenido a Utopp</p>
           </div>
 
           <div className="block px-4 pb-2 md:hidden">

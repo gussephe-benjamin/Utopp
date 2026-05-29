@@ -23,6 +23,7 @@ export interface OrganizationSummary {
   full_name?: string
   profile_image_url?: string
   followers_count: number
+  posts_count?: number
 }
 
 /**
