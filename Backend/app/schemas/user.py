@@ -59,12 +59,16 @@ class UserOut(BaseModel):
     cycle: Optional[int] = None
     interests: Optional[List[str]] = None
     availability: Optional[int] = None
+    description: Optional[str] = None
+    contacts: Optional[dict] = None
     is_onboarding_completed: bool = False
     created_at: datetime
     followers_count: int = 0
     following_count: int = 0
     posts_count: int = 0
     profile_image_url: Optional[str] = None
+    satisfaction_score: Optional[float] = None
+    avg_students_per_event: Optional[float] = None
 
     class Config:
         from_attributes = True
@@ -78,10 +82,14 @@ class UserPublicOut(BaseModel):
     cycle: Optional[int] = None
     interests: Optional[List[str]] = None
     availability: Optional[int] = None
+    description: Optional[str] = None
+    contacts: Optional[dict] = None
     followers_count: int = 0
     following_count: int = 0
     posts_count: int = 0
     profile_image_url: Optional[str] = None
+    satisfaction_score: Optional[float] = None
+    avg_students_per_event: Optional[float] = None
 
     class Config:
         from_attributes = True
@@ -94,6 +102,8 @@ class UserUpdate(BaseModel):
     cycle: Optional[int] = Field(None, ge=1, le=12)
     interests: Optional[List[str]] = None
     availability: Optional[int] | None = None
+    description: Optional[str] = Field(None, max_length=1000)
+    contacts: Optional[dict] = None
 
 
 class FollowOut(BaseModel):
@@ -124,6 +134,8 @@ class OrganizationSummaryOut(BaseModel):
     full_name: Optional[str] = None
     profile_image_url: Optional[str] = None
     followers_count: int = 0
+    posts_count: int = 0
+    interaction_score: int = 0
 
     class Config:
         from_attributes = True

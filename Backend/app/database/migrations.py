@@ -357,4 +357,28 @@ def run_migrations(engine: Engine) -> None:
             ON users (last_accepted_privacy_document_id);
         """))
 
+        # 15. Agregar columnas description y contacts a users
+        conn.execute(text("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name = 'users' AND column_name = 'description'
+                ) THEN
+                    ALTER TABLE users ADD COLUMN description VARCHAR(1000);
+                END IF;
+            END$$;
+        """))
+        conn.execute(text("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name = 'users' AND column_name = 'contacts'
+                ) THEN
+                    ALTER TABLE users ADD COLUMN contacts JSON DEFAULT '{}'::json;
+                END IF;
+            END$$;
+        """))
+
         conn.commit()
