@@ -1,5 +1,6 @@
 import ReactDOM from 'react-dom'
 import { AlertTriangle } from 'lucide-react'
+import { motion } from 'framer-motion'
 
 export function ConfirmModal({
   title,
@@ -15,8 +16,23 @@ export function ConfirmModal({
   danger?: boolean
 }) {
   return ReactDOM.createPortal(
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <motion.div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onCancel}
+      />
+      {/* Modal Container */}
+      <motion.div
+        className="relative bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 z-10"
+        initial={{ opacity: 0, scale: 0.95, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 10 }}
+        transition={{ type: "spring", duration: 0.3 }}
+      >
         <div className="flex items-center gap-3 mb-4">
           <div className={`w-10 h-10 rounded-full flex items-center justify-center ${danger ? 'bg-red-100' : 'bg-yellow-100'}`}>
             <AlertTriangle className={`w-5 h-5 ${danger ? 'text-red-500' : 'text-yellow-500'}`} />
@@ -35,7 +51,7 @@ export function ConfirmModal({
             Confirmar
           </button>
         </div>
-      </div>
+      </motion.div>
     </div>,
     document.body,
   )

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { Inbox, X } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
 import { PostCard } from "../features/feed/components/PostCard"
 import { LeftSidebar } from "../features/feed/components/LeftSidebar"
 import { RightSidebar } from "../features/feed/components/RightSidebar"
@@ -153,50 +154,59 @@ export default function StudentFeedPage({
         <RightSidebar showTrending={false} />
       </div>
 
-      {filtersSheetOpen ? (
-        <>
-          <div
-            className="fixed inset-0 z-[65] bg-black/10"
-            onClick={() => onCloseFiltersSheet()}
-            aria-hidden
-          />
-          <div
-            className="fixed z-[66] flex min-w-0 flex-col overflow-hidden rounded-xl border border-gray-200/90 bg-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-150"
-            style={getClampedRightPopoverStyle(filterPopoverAnchor ?? FILTER_POPOVER_FALLBACK, {
-              maxWidth: 480,
-              margin: 8,
-            })}
-            onClick={(e) => e.stopPropagation()}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="feed-filters-title"
-          >
-            <div className="shrink-0 flex items-center justify-between gap-3 border-b border-gray-100 px-3 py-2.5">
-              <h2 id="feed-filters-title" className="text-base font-bold text-gray-900">
-                Filtros
-              </h2>
-              <button
-                type="button"
-                onClick={() => onCloseFiltersSheet()}
-                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 transition-colors hover:bg-gray-50"
-                aria-label="Cerrar filtros"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="min-h-0 w-full min-w-0 space-y-3 overflow-y-auto bg-violet-50/30 p-3 pb-5">
-              <FeedFiltersPanel
-                statusFilter={statusFilter}
-                setStatusFilter={setStatusFilter}
-                sortOrder={sortOrder}
-                setSortOrder={setSortOrder}
-                selectedTags={selectedTags}
-                setSelectedTags={setSelectedTags}
-              />
-            </div>
-          </div>
-        </>
-      ) : null}
+      <AnimatePresence>
+        {filtersSheetOpen && (
+          <>
+            <motion.div
+              className="fixed inset-0 z-[65] bg-black/10"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => onCloseFiltersSheet()}
+              aria-hidden
+            />
+            <motion.div
+              className="fixed z-[66] flex min-w-0 flex-col overflow-hidden rounded-xl border border-gray-200/90 bg-white shadow-[0_8px_30px_rgba(0,0,0,0.12)]"
+              style={getClampedRightPopoverStyle(filterPopoverAnchor ?? FILTER_POPOVER_FALLBACK, {
+                maxWidth: 480,
+                margin: 8,
+              })}
+              initial={{ opacity: 0, scale: 0.95, y: -8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: -8 }}
+              transition={{ type: "spring", duration: 0.3 }}
+              onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="feed-filters-title"
+            >
+              <div className="shrink-0 flex items-center justify-between gap-3 border-b border-gray-100 px-3 py-2.5">
+                <h2 id="feed-filters-title" className="text-base font-bold text-gray-900">
+                  Filtros
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => onCloseFiltersSheet()}
+                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 transition-colors hover:bg-gray-50"
+                  aria-label="Cerrar filtros"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="min-h-0 w-full min-w-0 space-y-3 overflow-y-auto bg-violet-50/30 p-3 pb-5">
+                <FeedFiltersPanel
+                  statusFilter={statusFilter}
+                  setStatusFilter={setStatusFilter}
+                  sortOrder={sortOrder}
+                  setSortOrder={setSortOrder}
+                  selectedTags={selectedTags}
+                  setSelectedTags={setSelectedTags}
+                />
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

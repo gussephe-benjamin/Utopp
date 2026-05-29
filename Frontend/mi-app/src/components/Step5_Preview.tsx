@@ -12,7 +12,7 @@ import {
 } from '../types/post.types'
 import { isExpired, timeRemaining } from '../shared/lib/date'
 import { PostImageViewerModal } from '../features/feed/components/PostImageViewerModal'
-import { UTOPP_BRAND } from '../shared/constants/brand'
+import { UTOPP_BRAND, TW_UTOPP_GRADIENT_R } from '../shared/constants/brand'
 
 interface Step5PreviewProps {
   postType: PostType
@@ -200,7 +200,7 @@ export default function Step5Preview({
                   {needsTrunc ? (
                     <button
                       onClick={() => setDescExpanded((v) => !v)}
-                      className="mt-1 text-xs font-semibold text-[#2f55f6] transition-colors hover:text-[#ba4ef8]"
+                      className="mt-1 text-xs font-semibold text-blue-600 transition-colors hover:text-purple-600"
                     >
                       {descExpanded ? 'Ver menos' : 'Ver más'}
                     </button>
@@ -304,7 +304,7 @@ export default function Step5Preview({
                       rel="noopener noreferrer"
                       className={
                         index === 0
-                          ? 'inline-flex max-w-[160px] items-center justify-center truncate rounded-full bg-gradient-to-r from-[#2f55f6] to-[#ba4ef8] px-4 py-2 text-xs font-bold text-white shadow-[0_4px_14px_rgba(47,85,246,0.25)] transition-all duration-300 hover:brightness-110 hover:shadow-[0_6px_20px_rgba(186,78,248,0.35)] sm:text-sm'
+                          ? `inline-flex max-w-[160px] items-center justify-center truncate rounded-full ${TW_UTOPP_GRADIENT_R} px-4 py-2 text-xs font-bold text-white shadow-[0_4px_14px_rgba(47,85,246,0.25)] transition-all duration-300 hover:brightness-110 hover:shadow-[0_6px_20px_rgba(186,78,248,0.35)] sm:text-sm`
                           : 'inline-flex max-w-[160px] items-center justify-center truncate rounded-full border border-gray-200 bg-gray-100 px-4 py-2 text-xs font-semibold text-gray-700 transition-colors hover:bg-gray-200 sm:text-sm'
                       }
                     >

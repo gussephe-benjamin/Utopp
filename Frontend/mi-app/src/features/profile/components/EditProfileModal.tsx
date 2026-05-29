@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { X } from "lucide-react"
 import { AVAILABILITY_OPTIONS } from "../constants/profileOptions"
+import { motion } from "framer-motion"
 
 interface EditProfileModalProps {
   initialCycle: number
@@ -34,8 +35,24 @@ export function EditProfileModal({
   }, [initialAvailability])
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+      {/* Backdrop */}
+      <motion.div
+        className="absolute inset-0 bg-black/40"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+      />
+
+      {/* Modal Container */}
+      <motion.div
+        className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-xl z-10"
+        initial={{ opacity: 0, scale: 0.95, y: 15 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 15 }}
+        transition={{ type: "spring", duration: 0.4 }}
+      >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-bold text-gray-900">Editar perfil</h2>
           <button
@@ -105,7 +122,7 @@ export function EditProfileModal({
             {saving ? "Guardando..." : "Guardar cambios"}
           </button>
         </div>
-      </div>
+      </motion.div>
     </div>
   )
 }

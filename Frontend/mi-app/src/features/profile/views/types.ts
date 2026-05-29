@@ -15,6 +15,8 @@ export interface ProfileUserData {
   following_count?: number
   posts_count?: number
   profile_image_url?: string
+  description?: string
+  contacts?: Record<string, string>
 }
 
 export interface StudentSharedProps {

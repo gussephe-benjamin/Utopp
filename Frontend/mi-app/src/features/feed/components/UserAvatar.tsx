@@ -2,6 +2,7 @@
 // Mantiene hover opacity + transition como en el feed monolítico.
 
 import { useNavigate } from "react-router-dom";
+import { TW_UTOPP_GRADIENT_BR } from "../../../shared/constants/brand";
 
 type UserAvatarProps = {
   userName?: string;
@@ -30,7 +31,7 @@ export function UserAvatar({
     <button
       type="button"
       onClick={handleClick}
-      className="shrink-0 focus:outline-none relative p-[2px] rounded-full bg-gradient-to-tr from-[#2f55f6] to-[#ba4ef8] hover:scale-105 active:scale-95 transition-all duration-300 shadow-sm"
+      className={`shrink-0 focus:outline-none relative p-[2px] rounded-full ${TW_UTOPP_GRADIENT_BR} hover:scale-105 active:scale-95 transition-all duration-300 shadow-sm`}
     >
       <div className="rounded-full bg-white p-[1.5px] flex items-center justify-center">
         {avatarUrl ? (

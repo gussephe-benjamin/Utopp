@@ -1,5 +1,6 @@
 import { Calendar as CalendarIcon, Flame, Trophy } from "lucide-react";
 import { SyntheticBadge } from "../../../components/ui/SyntheticBadge";
+import { TW_UTOPP_GRADIENT_R } from "../../../shared/constants/brand";
 
 type RightSidebarProps = {
   showTrending?: boolean
@@ -73,7 +74,7 @@ export function RightSidebar({ showTrending = true }: RightSidebarProps) {
                 </div>
               </div>
               
-              <button className="px-3.5 py-1.5 rounded-full bg-gradient-to-r from-[#2f55f6] to-[#ba4ef8] hover:brightness-105 text-white text-[10px] font-bold shadow-sm transition-all active:scale-95 shrink-0">
+              <button className={`px-3.5 py-1.5 rounded-full ${TW_UTOPP_GRADIENT_R} hover:brightness-105 text-white text-[10px] font-bold shadow-sm transition-all active:scale-95 shrink-0`}>
                 Seguir
               </button>
             </div>

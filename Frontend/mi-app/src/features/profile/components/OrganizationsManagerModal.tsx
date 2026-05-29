@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { X, Plus, Check, Search } from "lucide-react"
 import type { OrganizationSummary } from "../../../api/users.api"
+import { motion } from "framer-motion"
 
 interface OrganizationsManagerModalProps {
   followingOrganizations: OrganizationSummary[]
@@ -36,13 +37,7 @@ export function OrganizationsManagerModal({
     return () => window.removeEventListener("keydown", onKey)
   }, [onClose])
 
-  const followedIds = useMemo(
-    () => new Set(followingOrganizations.map((org) => org.id)),
-    [followingOrganizations],
-  )
-
   const normalizedQuery = query.trim().toLowerCase()
-  const reachedFollowLimit = followingOrganizations.length >= 5
 
   const filteredFollowing = useMemo(() => {
     if (!normalizedQuery) return followingOrganizations
@@ -51,25 +46,24 @@ export function OrganizationsManagerModal({
     )
   }, [followingOrganizations, normalizedQuery])
 
-  const filteredAvailable = useMemo(() => {
-    const candidates = allOrganizations.filter(
-      (org) => !followedIds.has(org.id) && org.id !== currentUserId,
-    )
-    if (!normalizedQuery) return candidates
-    return candidates.filter((org) =>
-      (org.full_name ?? "").toLowerCase().includes(normalizedQuery),
-    )
-  }, [allOrganizations, followedIds, currentUserId, normalizedQuery])
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 backdrop-blur-sm"
-      role="dialog"
-      aria-modal="true"
-      onClick={onClose}
-    >
-      <div
-        className="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+      {/* Backdrop */}
+      <motion.div
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+      />
+
+      {/* Modal Container */}
+      <motion.div
+        className="relative flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl z-10"
+        initial={{ opacity: 0, scale: 0.95, y: 15 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 15 }}
+        transition={{ type: "spring", duration: 0.4 }}
         onClick={(event) => event.stopPropagation()}
       >
         <header className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
@@ -141,50 +135,7 @@ export function OrganizationsManagerModal({
             )}
           </section>
 
-          <section className="mt-6">
-            <div className="mb-2 flex items-baseline justify-between">
-              <h3 className="text-xs font-bold uppercase tracking-wide text-gray-700">
-                Quizá te interesen
-              </h3>
-              <span className="text-xs font-semibold text-gray-400">
-                {filteredAvailable.length} disponibles
-              </span>
-            </div>
-            {filteredAvailable.length === 0 ? (
-              <p className="rounded-lg border border-dashed border-gray-200 bg-gray-50 px-3 py-3 text-xs text-gray-500">
-                {allOrganizations.length === 0
-                  ? "Aún no hay organizaciones registradas en la plataforma."
-                  : normalizedQuery
-                    ? "No hay resultados para tu búsqueda."
-                    : "Ya sigues todas las organizaciones disponibles."}
-              </p>
-            ) : (
-              <ul className="grid gap-2">
-                {filteredAvailable.map((org) => (
-                  <li
-                    key={`available-${org.id}`}
-                    className="flex min-w-0 flex-col gap-3 rounded-lg border border-gray-100 bg-white px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <OrgRow org={org} />
-                    <button
-                      type="button"
-                      disabled={orgActionId === org.id || reachedFollowLimit}
-                      onClick={() => onFollow(org.id)}
-                      className="inline-flex w-full items-center justify-center gap-1 rounded-full bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet-700 disabled:cursor-not-allowed disabled:bg-gray-300 sm:w-auto sm:shrink-0 sm:justify-start sm:py-1"
-                    >
-                      <Plus className="h-3 w-3" />
-                      {reachedFollowLimit ? "Límite alcanzado" : "Seguir"}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-            {reachedFollowLimit ? (
-              <p className="mt-2 text-xs text-amber-700">
-                Alcanzaste el máximo de 5 organizaciones seguidas. Deja de seguir una para agregar otra.
-              </p>
-            ) : null}
-          </section>
+          {/* List of followed organizations */}
         </div>
 
         <footer className="border-t border-gray-100 px-6 py-3">
@@ -196,7 +147,7 @@ export function OrganizationsManagerModal({
             Cerrar
           </button>
         </footer>
-      </div>
+      </motion.div>
     </div>
   )
 }

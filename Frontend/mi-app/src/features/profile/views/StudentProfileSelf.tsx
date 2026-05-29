@@ -1,6 +1,8 @@
 import { type ChangeEvent, useMemo, useRef, useState } from "react"
+import { AnimatePresence, motion } from "framer-motion"
 import {
   Check,
+  Copy,
   Pencil,
   Mail,
   GraduationCap,
@@ -11,12 +13,17 @@ import {
   AlertCircle,
   Camera,
   Loader2,
+  BarChart3,
+  Clock,
+  FileText,
+  Trophy,
 } from "lucide-react"
 import { AVAILABILITY_OPTIONS, CAREER_OPTIONS } from "../constants/profileOptions"
 import type { OrganizationSummary } from "../../../api/users.api"
 import type { FeedPostOut } from "../../../types/post.types"
 import type { ProfileUserData } from "./types"
 import { PostCard } from "../../feed/components/PostCard"
+import { TW_UTOPP_GRADIENT_R } from "../../../shared/constants/brand"
 import { EditProfileModal } from "../components/EditProfileModal"
 import { OrganizationsManagerModal } from "../components/OrganizationsManagerModal"
 
@@ -41,20 +48,6 @@ interface StudentProfileSelfProps {
   onSavedPostUnsaved: (postId: number) => void
 }
 
-/**
- * Vista de perfil interno para alumno (propietario).
- *
- * Layout:
- *  - Banner con avatar superpuesto (centrado en móvil, izquierda en desktop).
- *    Nombre y carrera se ubican debajo (móvil) o a la derecha (desktop) del
- *    avatar, sin colisión con el botón "Editar perfil".
- *  - Grid 2 columnas en desktop bajo el banner:
- *      - Columna izquierda: Información personal + Métricas + Mis organizaciones.
- *      - Columna derecha: Eventos guardados (formato PostCard del feed).
- *    En móvil todo se apila verticalmente.
- *  - La sección de "Mis organizaciones" tiene botón "Ver más" que abre un
- *    modal con buscador para seguir/dejar de seguir desde un solo lugar.
- */
 export function StudentProfileSelf({
   user,
   avatarUrl,
@@ -81,8 +74,7 @@ export function StudentProfileSelf({
   const avatarInputRef = useRef<HTMLInputElement>(null)
 
   const careerLabel = useMemo(
-    () =>
-      CAREER_OPTIONS.find((career) => career.id === user.career)?.label ?? user.career ?? "No definida",
+    () => CAREER_OPTIONS.find((career) => career.id === user.career)?.label ?? user.career ?? "No definida",
     [user.career],
   )
 
@@ -91,14 +83,14 @@ export function StudentProfileSelf({
     [user.availability],
   )
   const availabilityLabel = availabilityOption?.label ?? "No definida"
-  const availabilityEmoji = availabilityOption?.emoji ?? ""
-  const roleLabel = user.role_name ?? "Alumno"
+  const availabilityEmoji = availabilityOption?.emoji ?? "⏰"
+  const roleLabel = user.role_name ?? "Estudiante"
 
   const copyEmail = async () => {
     if (!user.email) return
     await navigator.clipboard.writeText(user.email)
     setEmailCopied(true)
-    setTimeout(() => setEmailCopied(false), 1500)
+    setTimeout(() => setEmailCopied(false), 2000)
   }
 
   const handleSubmitEdit = async (payload: { cycle: number; availability: number }) => {
@@ -116,302 +108,314 @@ export function StudentProfileSelf({
   const avatarInitial = (user.full_name ?? "U").charAt(0).toUpperCase()
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-6 md:px-6">
-      {editing ? (
-        <EditProfileModal
-          initialCycle={user.cycle ?? 1}
-          initialAvailability={user.availability ?? 0}
-          saving={profileSaving}
-          onClose={() => setEditing(false)}
-          onSubmit={handleSubmitEdit}
-        />
-      ) : null}
+    <div className="mx-auto w-full max-w-6xl px-4 py-6 md:px-6 space-y-6">
+      <AnimatePresence>
+        {editing && (
+          <EditProfileModal
+            initialCycle={user.cycle ?? 1}
+            initialAvailability={user.availability ?? 0}
+            saving={profileSaving}
+            onClose={() => setEditing(false)}
+            onSubmit={handleSubmitEdit}
+          />
+        )}
+      </AnimatePresence>
 
-      {managingOrgs ? (
-        <OrganizationsManagerModal
-          followingOrganizations={followingOrganizations}
-          allOrganizations={allOrganizations}
-          currentUserId={user.id}
-          orgActionId={orgActionId}
-          onFollow={onFollowOrganization}
-          onUnfollow={onUnfollowOrganization}
-          onClose={() => setManagingOrgs(false)}
-        />
-      ) : null}
+      <AnimatePresence>
+        {managingOrgs && (
+          <OrganizationsManagerModal
+            followingOrganizations={followingOrganizations}
+            allOrganizations={allOrganizations}
+            currentUserId={user.id}
+            orgActionId={orgActionId}
+            onFollow={onFollowOrganization}
+            onUnfollow={onUnfollowOrganization}
+            onClose={() => setManagingOrgs(false)}
+          />
+        )}
+      </AnimatePresence>
 
-      {/* ─── Cabecera con banner ─────────────────────────────── */}
-      <section className="rounded-2xl border border-violet-100 bg-white shadow-sm">
-        <div className="relative h-44 w-full rounded-t-2xl bg-gradient-to-r from-[#6f46ff] via-[#8d5dff] to-[#aa7cff] md:h-56">
-          {/* Avatar: centrado en móvil, izquierda en desktop. Mismo posicionamiento absoluto. */}
-          <div className="absolute -bottom-14 left-1/2 -translate-x-1/2 md:left-10 md:translate-x-0">
-            <div className="h-28 w-28 overflow-hidden rounded-full border-4 border-white bg-gray-100 shadow-md md:h-32 md:w-32">
-              {avatarUrl ? (
-                <img src={avatarUrl} alt="avatar" className="h-full w-full object-cover" />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center text-3xl font-bold text-violet-300">
-                  {avatarInitial}
+      <section className="rounded-[22px] border border-violet-100 bg-white shadow-[0_4px_20px_rgba(0,0,0,0.015)] overflow-hidden">
+        {/* Banner */}
+        <div className={`relative h-44 w-full ${TW_UTOPP_GRADIENT_R} md:h-56`} />
+
+        {/* Content Container with Padding */}
+        <div className="px-6 pb-6 pt-4">
+          {/* Two-Column Grid matching the mockup */}
+          <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-6 items-start">
+            
+            {/* Left Column: Avatar & Profile Info */}
+            <div className="flex flex-col items-center md:items-start text-center md:text-left relative px-2">
+              {/* Avatar (overlapping the banner) */}
+              <div className="relative -mt-20 mb-4 md:-mt-24 md:mb-5 h-28 w-28 md:h-32 md:w-32 rounded-full bg-white p-1 ring-4 ring-[#C026D3] shadow-lg z-10">
+                <div className="h-full w-full overflow-hidden rounded-full bg-gray-50 flex items-center justify-center">
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt="avatar" className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="text-4xl font-bold text-[#C026D3] select-none">
+                      {avatarInitial}
+                    </div>
+                  )}
+                </div>
+
+                {/* Botón cambiar foto de perfil */}
+                <button
+                  type="button"
+                  disabled={avatarSaving}
+                  onClick={() => avatarInputRef.current?.click()}
+                  className="absolute right-0 bottom-0 inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-150 bg-white text-gray-600 shadow-md hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60 transition-all active:scale-90"
+                  title="Cambiar foto de perfil"
+                >
+                  {avatarSaving ? (
+                    <Loader2 className="h-4.5 w-4.5 animate-spin text-[#C026D3]" />
+                  ) : (
+                    <Camera className="h-4 w-4 text-[#C026D3]" />
+                  )}
+                </button>
+
+                {/* Badge FP */}
+                <div className="absolute -left-2 bottom-0 inline-flex h-6 px-2 items-center justify-center rounded-full bg-gray-200 border border-gray-300 text-[10px] font-bold text-gray-700 shadow-sm select-none">
+                  FP
+                </div>
+              </div>
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarFileChange}
+              />
+
+              {/* Name & Details */}
+              <h1 className="text-2xl font-black tracking-tight text-gray-900 md:text-3xl uppercase leading-none break-words w-full">
+                {user.full_name ?? "Estudiante"}
+              </h1>
+              <p className="mt-2 text-xs md:text-sm font-semibold text-gray-600 leading-snug">
+                {careerLabel} {user.cycle ? `· Ciclo ${user.cycle}` : ""} · UTEC
+              </p>
+
+              {user.email && (
+                <div className="mt-3 flex items-center justify-center md:justify-start gap-1.5 text-xs md:text-sm text-gray-500 font-medium">
+                  <Mail className="h-4 w-4 text-gray-400 shrink-0" />
+                  <span className="truncate max-w-[200px]">{user.email}</span>
+                  <button
+                    onClick={copyEmail}
+                    className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+                    title="Copiar correo"
+                  >
+                    {emailCopied ? (
+                      <Check className="h-3.5 w-3.5 text-emerald-500" />
+                    ) : (
+                      <Copy className="h-3.5 w-3.5" />
+                    )}
+                  </button>
                 </div>
               )}
-            </div>
-            <button
-              type="button"
-              disabled={avatarSaving}
-              onClick={() => avatarInputRef.current?.click()}
-              className="absolute -right-1 -bottom-1 inline-flex h-9 w-9 items-center justify-center rounded-full border-2 border-white bg-violet-600 text-white shadow-md transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-60"
-              title="Cambiar foto de perfil"
-              aria-label="Cambiar foto de perfil"
-            >
-              {avatarSaving ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Camera className="h-4 w-4" />
-              )}
-            </button>
-            <input
-              ref={avatarInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleAvatarFileChange}
-            />
-          </div>
-        </div>
 
-        {/* Cuerpo del header con padding superior que reserva espacio para el avatar */}
-        <div className="px-4 pt-16 pb-5 text-center md:px-6 md:pt-5 md:text-left">
-          <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between md:gap-4 md:pl-[160px]">
-            <div>
-              <h1 className="text-2xl font-bold leading-tight text-gray-900 md:text-3xl">
-                {user.full_name ?? "Usuario"}
-              </h1>
-              <p className="mt-1 text-sm text-gray-600">{careerLabel}</p>
-            </div>
-            <div className="flex justify-center md:justify-end md:pb-1">
+              {/* Botón Editar Perfil */}
               <button
                 type="button"
                 onClick={() => setEditing(true)}
-                className="inline-flex items-center gap-1.5 rounded-full border border-violet-200 bg-white px-3.5 py-1.5 text-xs font-bold text-violet-700 shadow-sm hover:bg-violet-50"
+                className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-violet-200 bg-white px-4 py-1.5 text-xs font-bold text-violet-700 shadow-sm hover:bg-violet-50 transition-all active:scale-95 w-full justify-center md:w-auto"
               >
                 <Pencil className="h-3.5 w-3.5" />
                 Editar perfil
               </button>
             </div>
-          </div>
-        </div>
-      </section>
 
-      {orgError ? (
-        <div className="mt-4 flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
-          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-          <div className="flex-1">{orgError}</div>
-          <button
-            type="button"
-            onClick={onDismissOrgError}
-            className="rounded p-0.5 hover:bg-rose-100"
-            aria-label="Cerrar"
-          >
-            <X className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      ) : null}
+            {/* Right Column: Cards, Orgs */}
+            <div className="space-y-6">
+              {/* Fila de Métricas */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <MetricCard
+                  label="Asistencia"
+                  value="12"
+                  subValue="Eventos este ciclo"
+                  icon={<BarChart3 className="h-5 w-5 text-violet-500" />}
+                  iconBg="bg-violet-50"
+                  textColor="text-violet-700"
+                />
+                <MetricCard
+                  label="Disponibilidad"
+                  value={`${availabilityEmoji} ${availabilityLabel}`}
+                  icon={<Clock className="h-5 w-5 text-amber-500" />}
+                  iconBg="bg-amber-50"
+                  textColor="text-amber-700"
+                />
+                <MetricCard
+                  grayPlaceholder
+                  placeholderText="Publicaciones"
+                />
+                <MetricCard
+                  grayPlaceholder
+                  placeholderText="Funcionalidad Extra"
+                />
+              </div>
 
-      {avatarError ? (
-        <div className="mt-4 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-          <div className="flex-1">{avatarError}</div>
-          <button
-            type="button"
-            onClick={onDismissAvatarError}
-            className="rounded p-0.5 hover:bg-amber-100"
-            aria-label="Cerrar"
-          >
-            <X className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      ) : null}
-
-      {/* ─── Layout principal: izquierda (info) | derecha (publicaciones) ─── */}
-      <section className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)]">
-        {/* Columna izquierda: información, métricas y organizaciones */}
-        <div className="flex min-w-0 w-full flex-col gap-4">
-          <article className="w-full rounded-2xl border border-violet-100 bg-white p-4 shadow-sm sm:p-5">
-            <h2 className="mb-4 text-sm font-bold uppercase tracking-wide text-gray-500">
-              Información
-            </h2>
-            <ul className="space-y-3 text-sm">
-              <li className="flex items-start gap-2">
-                <Mail className="mt-0.5 h-4 w-4 shrink-0 text-violet-500" />
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-semibold uppercase text-gray-400">Correo</p>
+              {/* Mis Organizaciones */}
+              <section className={`rounded-[22px] ${TW_UTOPP_GRADIENT_R} p-6 shadow-md text-white`}>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-bold tracking-tight">Mis organizaciones</h2>
                   <button
                     type="button"
-                    onClick={copyEmail}
-                    className="group mt-0.5 inline-flex max-w-full items-center gap-1 rounded-md px-1 py-0.5 text-left text-gray-900 transition hover:bg-violet-50"
-                    title="Haz clic para copiar el correo"
+                    onClick={() => setManagingOrgs(true)}
+                    className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/10 hover:bg-white/20 px-3 py-1 text-xs font-semibold text-white transition-all active:scale-95"
                   >
-                    <span className="truncate underline-offset-2 group-hover:underline">
-                      {user.email ?? "Sin correo"}
-                    </span>
-                    {emailCopied ? <Check className="h-3.5 w-3.5 shrink-0 text-emerald-600" /> : null}
+                    <Settings2 className="h-3.5 w-3.5" />
+                    Ver todas
                   </button>
                 </div>
-              </li>
-              <li className="flex items-start gap-2">
-                <User className="mt-0.5 h-4 w-4 shrink-0 text-violet-500" />
-                <div>
-                  <p className="text-xs font-semibold uppercase text-gray-400">Rol</p>
-                  <p className="text-gray-900">{roleLabel}</p>
-                </div>
-              </li>
-              <li className="flex items-start gap-2">
-                <GraduationCap className="mt-0.5 h-4 w-4 shrink-0 text-violet-500" />
-                <div>
-                  <p className="text-xs font-semibold uppercase text-gray-400">Carrera</p>
-                  <p className="text-gray-900">{careerLabel}</p>
-                </div>
-              </li>
-              <li className="flex items-start gap-2">
-                <BookOpen className="mt-0.5 h-4 w-4 shrink-0 text-violet-500" />
-                <div>
-                  <p className="text-xs font-semibold uppercase text-gray-400">Ciclo</p>
-                  <p className="text-gray-900">Ciclo {user.cycle ?? "-"}</p>
-                </div>
-              </li>
-            </ul>
-          </article>
 
-          <article className="w-full rounded-2xl border border-violet-100 bg-white p-4 shadow-sm sm:p-5">
-            <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-gray-500 sm:mb-4">
-              Métricas
-            </h2>
-            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 sm:gap-3">
-              <MetricCard
-                label="Disponibilidad"
-                value={`${availabilityEmoji} ${availabilityLabel}`.trim()}
-              />
-              <MetricCard label="Próxima métrica" value="—" />
-              <MetricCard label="Próxima métrica" value="—" />
-              <MetricCard label="Próxima métrica" value="—" />
-            </div>
-          </article>
-
-          <article className="w-full overflow-hidden rounded-2xl border border-violet-100 bg-white p-4 shadow-sm sm:p-5">
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-              <h2 className="text-sm font-bold uppercase tracking-wide text-gray-500">
-                Mis organizaciones
-              </h2>
-              <button
-                type="button"
-                onClick={() => setManagingOrgs(true)}
-                className="inline-flex items-center gap-1 rounded-full border border-violet-200 bg-white px-2.5 py-1 text-xs font-semibold text-violet-700 hover:bg-violet-50"
-              >
-                <Settings2 className="h-3 w-3" />
-                Ver más
-              </button>
-            </div>
-            {followingOrganizations.length === 0 ? (
-              <button
-                type="button"
-                onClick={() => setManagingOrgs(true)}
-                className="block w-full rounded-lg border border-dashed border-violet-200 bg-violet-50/40 px-3 py-4 text-center text-sm text-violet-700 hover:bg-violet-50"
-              >
-                Aún no sigues organizaciones. Haz clic para gestionarlas.
-              </button>
-            ) : (
-              <ul className="grid gap-2.5">
-                {followingOrganizations.slice(0, 5).map((org) => (
-                  <li
-                    key={org.id}
-                    className="flex min-w-0 items-center justify-between gap-3 overflow-hidden rounded-lg border border-gray-100 bg-gray-50 px-3 py-2"
+                {followingOrganizations.length === 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => setManagingOrgs(true)}
+                    className="block w-full rounded-[18px] border border-dashed border-white/30 bg-white/5 px-3 py-6 text-center text-sm text-white hover:bg-white/10 transition-colors"
                   >
-                    <div className="flex min-w-0 flex-1 items-center gap-3">
-                      <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-white">
-                        {org.profile_image_url ? (
-                          <img
-                            src={org.profile_image_url}
-                            alt={org.full_name ?? "org"}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center text-sm font-bold text-violet-400">
-                            {(org.full_name ?? "O").charAt(0).toUpperCase()}
-                          </div>
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-semibold text-gray-900">
-                          {org.full_name ?? `Org ${org.id}`}
-                        </p>
-                        <p className="text-xs text-gray-500">{org.followers_count} seguidores</p>
-                      </div>
-                    </div>
-                    <div className="ml-2 shrink-0">
-                      <button
-                        type="button"
-                        disabled={orgActionId === org.id}
-                        onClick={() => onUnfollowOrganization(org.id)}
-                        className="inline-flex items-center gap-1 rounded-full border border-gray-200 px-2 py-1 text-xs font-semibold text-gray-600 hover:bg-white disabled:opacity-50"
-                        title="Quitar organización"
+                    Aún no sigues organizaciones. Haz clic para gestionarlas.
+                  </button>
+                ) : (
+                  <div className="flex flex-wrap gap-4 pt-2">
+                    {followingOrganizations.map((org) => (
+                      <div
+                        key={org.id}
+                        onClick={() => setManagingOrgs(true)}
+                        className="flex flex-col items-center gap-2 group cursor-pointer"
                       >
-                        <X className="h-3 w-3" />
-                        Quitar
-                      </button>
-                    </div>
-                  </li>
-                ))}
-                {followingOrganizations.length > 5 ? (
-                  <li>
-                    <button
-                      type="button"
-                      onClick={() => setManagingOrgs(true)}
-                      className="block w-full rounded-lg border border-dashed border-violet-200 bg-white px-3 py-2 text-xs font-semibold text-violet-700 hover:bg-violet-50"
-                    >
-                      Ver todas ({followingOrganizations.length})
-                    </button>
-                  </li>
-                ) : null}
-              </ul>
-            )}
-          </article>
-        </div>
+                        {/* Círculo Blanco con logo/iniciales */}
+                        <div className="h-20 w-20 rounded-full bg-white p-1 shadow-md transition-transform group-hover:scale-105 duration-200 flex items-center justify-center overflow-hidden">
+                          {org.profile_image_url ? (
+                            <img
+                              src={org.profile_image_url}
+                              alt={org.full_name ?? "org"}
+                              className="h-full w-full object-cover rounded-full"
+                            />
+                          ) : (
+                            <div className="text-2xl font-black text-violet-600 select-none">
+                              {(org.full_name ?? "O").charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                        </div>
+                        {/* Nombre de la Organización */}
+                        <span className="text-xs font-bold text-white/90 truncate max-w-[96px] text-center">
+                          {org.full_name ?? `Org ${org.id}`}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
 
-        {/* Columna derecha: Eventos guardados */}
-        <div className="min-w-0 w-full">
-          <div className="mx-auto w-full max-w-[700px] lg:max-w-[680px]">
-            <h2 className="mb-3 text-lg font-semibold text-gray-900">Eventos guardados</h2>
+              {/* Eventos Guardados */}
+              <section className="space-y-4 pt-6 border-t border-gray-100">
+                <h2 className="text-lg font-bold text-gray-900">Eventos guardados</h2>
+                {eventSavedPosts.length === 0 ? (
+                  <div className="rounded-[22px] border border-dashed border-gray-200 bg-gray-50/50 p-8 text-center text-sm text-gray-500">
+                    No tienes eventos guardados por ahora. Los eventos que guardes desde el feed aparecerán aquí.
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-4">
+                    {eventSavedPosts.map((post) => (
+                      <PostCard
+                        key={post.id}
+                        post={post}
+                        currentUserId={user.id}
+                        onEdited={onSavedPostEdited}
+                        onDeleted={onSavedPostUnsaved}
+                      />
+                    ))}
+                  </div>
+                )}
+              </section>
+            </div>
+
           </div>
-          {eventSavedPosts.length === 0 ? (
-            <div className="mx-auto w-full max-w-[700px] rounded-2xl border border-dashed border-gray-200 bg-white p-6 text-center text-sm text-gray-500 lg:max-w-[680px]">
-              No tienes eventos guardados por ahora. Los eventos que guardes desde el feed aparecerán aquí.
-            </div>
-          ) : (
-            <div className="mx-auto flex w-full max-w-[700px] flex-col gap-4 lg:max-w-[680px]">
-              {eventSavedPosts.map((post) => (
-                <PostCard
-                  key={post.id}
-                  post={post}
-                  currentUserId={user.id}
-                  onEdited={onSavedPostEdited}
-                  onDeleted={onSavedPostUnsaved}
-                />
-              ))}
-            </div>
-          )}
         </div>
       </section>
+
+      {/* Alertas de error (abajo) */}
+      <div className="space-y-3">
+        {orgError && (
+          <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <div className="flex-1">{orgError}</div>
+            <button
+              type="button"
+              onClick={onDismissOrgError}
+              className="rounded p-0.5 hover:bg-rose-100"
+              aria-label="Cerrar"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
+
+        {avatarError && (
+          <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <div className="flex-1">{avatarError}</div>
+            <button
+              type="button"
+              onClick={onDismissAvatarError}
+              className="rounded p-0.5 hover:bg-amber-100"
+              aria-label="Cerrar"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
 
-function MetricCard({ label, value }: { label: string; value: string }) {
+function MetricCard({
+  label,
+  value,
+  subValue,
+  icon,
+  iconBg = "bg-purple-50",
+  textColor = "text-purple-600",
+  grayPlaceholder,
+  placeholderText,
+}: {
+  label?: string
+  value?: string
+  subValue?: string
+  icon?: React.ReactNode
+  iconBg?: string
+  textColor?: string
+  grayPlaceholder?: boolean
+  placeholderText?: string
+}) {
+  if (grayPlaceholder) {
+    return (
+      <div className="flex items-center justify-center rounded-xl border border-gray-200 bg-gray-50 p-4 text-center aspect-square shadow-[0_4px_20px_rgba(0,0,0,0.005)]">
+        <span className="text-xs font-bold text-gray-400 leading-snug">
+          {placeholderText}
+        </span>
+      </div>
+    )
+  }
+
   return (
-    <div className="flex min-w-0 flex-col items-center rounded-xl border border-gray-100 bg-gray-50 p-2.5 text-center sm:p-3">
-      <p className="w-full break-words text-[10px] font-semibold uppercase tracking-wide text-gray-500">
-        {label}
-      </p>
-      <p className="mt-1 w-full break-words text-xs font-bold leading-snug text-gray-900 sm:mt-1.5 sm:text-sm">
-        {value}
-      </p>
+    <div className="flex flex-col items-start justify-between rounded-xl border border-gray-200 bg-white p-4 aspect-square shadow-[0_4px_20px_rgba(0,0,0,0.005)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.015)] transition-shadow duration-300">
+      <div className={`p-1.5 ${iconBg} rounded-lg mb-2`}>
+        {icon}
+      </div>
+      <div className="flex-1 flex flex-col justify-end w-full">
+        <span className="text-[9px] font-bold uppercase tracking-wider text-gray-400 leading-none mb-1">
+          {label}
+        </span>
+        <span className={`text-sm md:text-base font-black ${textColor} leading-tight break-words max-w-full`}>
+          {value}
+        </span>
+        {subValue && (
+          <span className="mt-1 text-[9px] font-semibold text-gray-400 leading-none">
+            {subValue}
+          </span>
+        )}
+      </div>
     </div>
   )
 }

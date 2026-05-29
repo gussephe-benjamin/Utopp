@@ -11,6 +11,7 @@ import { AppTopBar } from '../features/dashboard/components/AppTopBar'
 import { AccountOptionsSheet } from '../features/dashboard/components/AccountOptionsSheet'
 import { measureMenuAnchor, type MenuPopoverAnchor } from '../features/dashboard/popoverAnchor'
 import FeedModeResolver from '../features/feed/FeedModeResolver'
+import { TW_UTOPP_GRADIENT_BR } from '../shared/constants/brand'
 
 const FALLBACK_MENU_ANCHOR: MenuPopoverAnchor = { top: 64, right: 12, minWidth: 40 }
 
@@ -293,7 +294,7 @@ export default function DashboardLayout() {
               <button
                 type="button"
                 onClick={() => setShowWizard(true)}
-                className="absolute -top-[22px] w-[54px] h-[54px] rounded-full bg-gradient-to-br from-[#2f55f6] to-[#ba4ef8] text-white flex items-center justify-center shadow-[0_6px_20px_rgba(47,85,246,0.35)] border-4 border-white active:scale-95 transition-all"
+                className={`absolute -top-[22px] w-[54px] h-[54px] rounded-full ${TW_UTOPP_GRADIENT_BR} text-white flex items-center justify-center shadow-[0_6px_20px_rgba(47,85,246,0.35)] border-4 border-white active:scale-95 transition-all`}
               >
                 <Plus className="w-5.5 h-5.5 stroke-[3.5]" />
               </button>

@@ -6,6 +6,7 @@ import { POST_TYPE_ICONS, POST_TYPE_LABELS, SUBTYPE_LABELS } from '../../../type
 import { STATUS_BADGE } from '../constants/profileOptions'
 import type { PostItem } from '../types'
 import { ConfirmModal } from './ConfirmModal'
+import { AnimatePresence } from 'framer-motion'
 
 export function ProfilePostListCard({
   post,
@@ -76,23 +77,27 @@ export function ProfilePostListCard({
 
   return (
     <>
-      {confirm === 'archive' && (
-        <ConfirmModal
-          title="Archivar publicación"
-          message="El post dejará de aparecer en el feed y no podrás editarlo. ¿Continuar?"
-          onConfirm={handleArchive}
-          onCancel={() => setConfirm(null)}
-        />
-      )}
-      {confirm === 'delete' && (
-        <ConfirmModal
-          title="Eliminar publicación"
-          message="Esta acción es permanente. El post se eliminará completamente. ¿Estás seguro?"
-          onConfirm={handleDelete}
-          onCancel={() => setConfirm(null)}
-          danger
-        />
-      )}
+      <AnimatePresence>
+        {confirm === 'archive' && (
+          <ConfirmModal
+            title="Archivar publicación"
+            message="El post dejará de aparecer en el feed y no podrás editarlo. ¿Continuar?"
+            onConfirm={handleArchive}
+            onCancel={() => setConfirm(null)}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {confirm === 'delete' && (
+          <ConfirmModal
+            title="Eliminar publicación"
+            message="Esta acción es permanente. El post se eliminará completamente. ¿Estás seguro?"
+            onConfirm={handleDelete}
+            onCancel={() => setConfirm(null)}
+            danger
+          />
+        )}
+      </AnimatePresence>
 
       <div
         className={`bg-white md:bg-white border-b border-gray-150 md:border md:rounded-[22px] -mx-4 px-4 py-5 md:mx-0 md:p-4 space-y-3 shadow-none md:shadow-[0_4px_20px_rgba(0,0,0,0.015)] overflow-hidden transition-all md:hover:shadow-[0_8px_30px_rgba(0,0,0,0.03)] ${isArchived ? 'opacity-60' : ''} ${onCardClick ? 'cursor-pointer' : ''}`}
