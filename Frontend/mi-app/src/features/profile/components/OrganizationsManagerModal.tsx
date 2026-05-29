@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react"
 import { X, Plus, Check, Search } from "lucide-react"
 import type { OrganizationSummary } from "../../../api/users.api"
 import { motion } from "framer-motion"
+import { useNavigate } from "react-router-dom"
 
 interface OrganizationsManagerModalProps {
   followingOrganizations: OrganizationSummary[]
@@ -169,7 +170,7 @@ export function OrganizationsManagerModal({
                           : "border-violet-100 bg-violet-50/40"
                       }`}
                     >
-                      <OrgRow org={org} />
+                      <OrgRow org={org} onClose={handleClose} />
                       {isUnfollowed ? (
                         <button
                           type="button"
@@ -216,7 +217,7 @@ export function OrganizationsManagerModal({
                     key={`discover-${org.id}`}
                     className="flex items-center justify-between gap-3 rounded-lg border border-gray-100 bg-gray-50/50 px-3 py-2"
                   >
-                    <OrgRow org={org} />
+                    <OrgRow org={org} onClose={handleClose} />
                     <button
                       type="button"
                       disabled={orgActionId === org.id}
@@ -247,9 +248,16 @@ export function OrganizationsManagerModal({
   )
 }
 
-function OrgRow({ org }: { org: OrganizationSummary }) {
+function OrgRow({ org, onClose }: { org: OrganizationSummary; onClose: () => void }) {
+  const navigate = useNavigate()
   return (
-    <div className="flex min-w-0 flex-1 items-center gap-3">
+    <div
+      onClick={() => {
+        navigate(`/app/perfil/${org.id}`)
+        onClose()
+      }}
+      className="flex min-w-0 flex-1 items-center gap-3 cursor-pointer hover:opacity-70 transition-opacity"
+    >
       <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-gray-100">
         {org.profile_image_url ? (
           <img
@@ -264,7 +272,7 @@ function OrgRow({ org }: { org: OrganizationSummary }) {
         )}
       </div>
       <div className="min-w-0">
-        <p className="truncate text-sm font-semibold text-gray-900">
+        <p className="truncate text-sm font-semibold text-gray-900 hover:text-violet-600 transition-colors">
           {org.full_name ?? `Org ${org.id}`}
         </p>
         <p className="text-xs text-gray-500">

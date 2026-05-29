@@ -17,6 +17,7 @@ import {
   Clock,
   FileText,
   Trophy,
+  Bookmark,
 } from "lucide-react"
 import { AVAILABILITY_OPTIONS, CAREER_OPTIONS } from "../constants/profileOptions"
 import type { OrganizationSummary } from "../../../api/users.api"
@@ -26,6 +27,7 @@ import { PostCard } from "../../feed/components/PostCard"
 import { TW_UTOPP_GRADIENT_R } from "../../../shared/constants/brand"
 import { EditProfileModal } from "../components/EditProfileModal"
 import { OrganizationsManagerModal } from "../components/OrganizationsManagerModal"
+import { INTERESTS } from "../../../constants/interests"
 
 interface StudentProfileSelfProps {
   user: ProfileUserData
@@ -110,7 +112,7 @@ export function StudentProfileSelf({
   const avatarInitial = (user.full_name ?? "U").charAt(0).toUpperCase()
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-6 md:px-6 space-y-6">
+    <div className="mx-auto w-full max-w-6xl px-4 py-6 md:px-6">
       <AnimatePresence>
         {editing && (
           <EditProfileModal
@@ -142,53 +144,52 @@ export function StudentProfileSelf({
         )}
       </AnimatePresence>
 
+      {/* ─── Cabecera con banner y avatar ─────────────────────────────── */}
       <section className="rounded-[22px] border border-violet-100 bg-white shadow-[0_4px_20px_rgba(0,0,0,0.015)] overflow-hidden">
         {/* Banner */}
-        <div className={`relative h-44 w-full ${TW_UTOPP_GRADIENT_R} md:h-56`} />
-
-        {/* Content Container with Padding */}
-        <div className="px-6 pb-6 pt-4">
-          {/* Two-Column Grid matching the mockup */}
-          <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-6 items-start">
-            
-            {/* Left Column: Avatar & Profile Info */}
-            <div className="flex flex-col items-center md:items-start text-center md:text-left relative px-2">
-              {/* Avatar (overlapping the banner) */}
-              <div className="relative -mt-20 mb-4 md:-mt-24 md:mb-5 h-28 w-28 md:h-32 md:w-32 rounded-full bg-white p-1 ring-4 ring-[#C026D3] shadow-lg z-10">
-                <div className="h-full w-full overflow-hidden rounded-full bg-gray-50 flex items-center justify-center">
-                  {avatarUrl ? (
-                    <img src={avatarUrl} alt="avatar" className="h-full w-full object-cover" />
-                  ) : (
-                    <div className="text-4xl font-bold text-[#C026D3] select-none">
-                      {avatarInitial}
-                    </div>
-                  )}
-                </div>
-
-                {/* Botón cambiar foto de perfil */}
-                <button
-                  type="button"
-                  disabled={avatarSaving}
-                  onClick={() => avatarInputRef.current?.click()}
-                  className="absolute right-0 bottom-0 inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-150 bg-white text-gray-600 shadow-md hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60 transition-all active:scale-90"
-                  title="Cambiar foto de perfil"
-                >
-                  {avatarSaving ? (
-                    <Loader2 className="h-4.5 w-4.5 animate-spin text-[#C026D3]" />
-                  ) : (
-                    <Camera className="h-4 w-4 text-[#C026D3]" />
-                  )}
-                </button>
+        <div className={`relative h-44 w-full ${TW_UTOPP_GRADIENT_R} md:h-56`}>
+          {/* Avatar con borde de color de marca fucsia */}
+          <div className="absolute -bottom-14 left-1/2 -translate-x-1/2 md:left-10 md:translate-x-0">
+            <div className="relative h-28 w-28 rounded-full bg-white p-1 ring-4 ring-[#C026D3] shadow-lg md:h-32 md:w-32">
+              <div className="h-full w-full overflow-hidden rounded-full bg-gray-50 flex items-center justify-center">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="avatar" className="h-full w-full object-cover" />
+                ) : (
+                  <div className="text-4xl font-bold text-[#C026D3] select-none">
+                    {avatarInitial}
+                  </div>
+                )}
               </div>
-              <input
-                ref={avatarInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleAvatarFileChange}
-              />
 
-              {/* Name & Details */}
+              {/* Botón cambiar foto de perfil */}
+              <button
+                type="button"
+                disabled={avatarSaving}
+                onClick={() => avatarInputRef.current?.click()}
+                className="absolute right-0 bottom-0 inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-150 bg-white text-gray-600 shadow-md hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60 transition-all active:scale-90"
+                title="Cambiar foto de perfil"
+              >
+                {avatarSaving ? (
+                  <Loader2 className="h-4.5 w-4.5 animate-spin text-[#C026D3]" />
+                ) : (
+                  <Camera className="h-4 w-4 text-[#C026D3]" />
+                )}
+              </button>
+            </div>
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleAvatarFileChange}
+            />
+          </div>
+        </div>
+
+        {/* Nombre, carrera y correo */}
+        <div className="px-6 pt-16 pb-5 text-center md:pt-4 md:text-left">
+          <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between md:pl-[152px]">
+            <div className="min-w-0 flex-1">
               <h1 className="text-2xl font-black tracking-tight text-gray-900 md:text-3xl uppercase leading-none break-words w-full">
                 {user.full_name ?? "Estudiante"}
               </h1>
@@ -197,9 +198,9 @@ export function StudentProfileSelf({
               </p>
 
               {user.email && (
-                <div className="mt-3 flex items-center justify-center md:justify-start gap-1.5 text-xs md:text-sm text-gray-500 font-medium">
+                <div className="mt-1.5 flex items-center justify-center md:justify-start gap-1.5 text-sm text-gray-600">
                   <Mail className="h-4 w-4 text-gray-400 shrink-0" />
-                  <span className="truncate max-w-[200px]">{user.email}</span>
+                  <span className="font-medium truncate max-w-[250px]">{user.email}</span>
                   <button
                     onClick={copyEmail}
                     className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
@@ -213,211 +214,245 @@ export function StudentProfileSelf({
                   </button>
                 </div>
               )}
+            </div>
 
-              {/* Botón Editar Perfil */}
+            {/* Botón Editar Perfil */}
+            <div className="mt-3 md:mt-0 flex justify-center md:justify-end md:pb-1 shrink-0">
               <button
                 type="button"
                 onClick={() => setEditing(true)}
-                className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-violet-200 bg-white px-4 py-1.5 text-xs font-bold text-violet-700 shadow-sm hover:bg-violet-50 transition-all active:scale-95 w-full justify-center md:w-auto"
+                className="inline-flex items-center gap-1.5 rounded-full border border-violet-200 bg-white px-3.5 py-1.5 text-xs font-bold text-violet-700 shadow-sm hover:bg-violet-50 transition-all active:scale-95"
               >
                 <Pencil className="h-3.5 w-3.5" />
                 Editar perfil
               </button>
             </div>
-
-            {/* Right Column: Cards, Orgs */}
-            <div className="space-y-6">
-              {/* Fila de Métricas */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <MetricCard
-                  label="Asistencia"
-                  value="12"
-                  subValue="Eventos este ciclo"
-                  icon={<BarChart3 className="h-5 w-5 text-violet-500" />}
-                  iconBg="bg-violet-50"
-                  textColor="text-violet-700"
-                />
-                <MetricCard
-                  label="Disponibilidad"
-                  value={availabilityLabel}
-                  icon={<Clock className="h-5 w-5 text-amber-500" />}
-                  iconBg="bg-amber-50"
-                  textColor="text-amber-700"
-                />
-                <MetricCard
-                  grayPlaceholder
-                  placeholderText="Publicaciones"
-                />
-                <MetricCard
-                  grayPlaceholder
-                  placeholderText="Funcionalidad Extra"
-                />
-              </div>
-
-              {/* Mis Organizaciones */}
-              <section className={`rounded-[22px] ${TW_UTOPP_GRADIENT_R} p-6 shadow-md text-white`}>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-bold tracking-tight">Mis organizaciones</h2>
-                  <button
-                    type="button"
-                    onClick={() => setManagingOrgs(true)}
-                    className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/10 hover:bg-white/20 px-3 py-1 text-xs font-semibold text-white transition-all active:scale-95"
-                  >
-                    <Settings2 className="h-3.5 w-3.5" />
-                    Ver todas
-                  </button>
-                </div>
-
-                {followingOrganizations.length === 0 ? (
-                  <button
-                    type="button"
-                    onClick={() => setManagingOrgs(true)}
-                    className="block w-full rounded-[18px] border border-dashed border-white/30 bg-white/5 px-3 py-6 text-center text-sm text-white hover:bg-white/10 transition-colors"
-                  >
-                    Aún no sigues organizaciones. Haz clic para gestionarlas.
-                  </button>
-                ) : (
-                  <div className="flex flex-wrap gap-4 pt-2">
-                    {followingOrganizations.map((org) => (
-                      <div
-                        key={org.id}
-                        onClick={() => setManagingOrgs(true)}
-                        className="flex flex-col items-center gap-2 group cursor-pointer"
-                      >
-                        {/* Círculo Blanco con logo/iniciales */}
-                        <div className="h-20 w-20 rounded-full bg-white p-1 shadow-md transition-transform group-hover:scale-105 duration-200 flex items-center justify-center overflow-hidden">
-                          {org.profile_image_url ? (
-                            <img
-                              src={org.profile_image_url}
-                              alt={org.full_name ?? "org"}
-                              className="h-full w-full object-cover rounded-full"
-                            />
-                          ) : (
-                            <div className="text-2xl font-black text-violet-600 select-none">
-                              {(org.full_name ?? "O").charAt(0).toUpperCase()}
-                            </div>
-                          )}
-                        </div>
-                        {/* Nombre de la Organización */}
-                        <span className="text-xs font-bold text-white/90 truncate max-w-[96px] text-center">
-                          {org.full_name ?? `Org ${org.id}`}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </section>
-
-              {/* Eventos Guardados */}
-              <section className="space-y-4 pt-6 border-t border-gray-100">
-                <h2 className="text-lg font-bold text-gray-900">Eventos guardados</h2>
-                {eventSavedPosts.length === 0 ? (
-                  <div className="rounded-[22px] border border-dashed border-gray-200 bg-gray-50/50 p-8 text-center text-sm text-gray-500">
-                    No tienes eventos guardados por ahora. Los eventos que guardes desde el feed aparecerán aquí.
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-4">
-                    {eventSavedPosts.map((post) => (
-                      <PostCard
-                        key={post.id}
-                        post={post}
-                        currentUserId={user.id}
-                        onEdited={onSavedPostEdited}
-                        onDeleted={onSavedPostUnsaved}
-                      />
-                    ))}
-                  </div>
-                )}
-              </section>
-            </div>
-
           </div>
         </div>
       </section>
 
-      {/* Alertas de error (abajo) */}
-      <div className="space-y-3">
-        {orgError && (
-          <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-            <div className="flex-1">{orgError}</div>
-            <button
-              type="button"
-              onClick={onDismissOrgError}
-              className="rounded p-0.5 hover:bg-rose-100"
-              aria-label="Cerrar"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        )}
+      {/* Alertas de error */}
+      {avatarError && (
+        <div className="mt-4 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <div className="flex-1">{avatarError}</div>
+          <button
+            type="button"
+            onClick={onDismissAvatarError}
+            className="rounded p-0.5 hover:bg-amber-100"
+            aria-label="Cerrar"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
 
-        {avatarError && (
-          <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-            <div className="flex-1">{avatarError}</div>
-            <button
-              type="button"
-              onClick={onDismissAvatarError}
-              className="rounded p-0.5 hover:bg-amber-100"
-              aria-label="Cerrar"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
+      {/* ─── Métricas ─── */}
+      <section className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
+        <MetricCard
+          label="Asistencia"
+          value="12"
+          subValue="Eventos este ciclo"
+        />
+        <MetricCard
+          label="Disponibilidad"
+          value={availabilityLabel}
+          subValue={availabilityEmoji}
+        />
+        <MetricCard
+          label="Organizaciones seguidas"
+          value={`${followingOrganizations.length}`}
+        />
+        <MetricCard
+          label="Eventos guardados"
+          value={`${eventSavedPosts.length}`}
+        />
+      </section>
+
+      {/* ─── Dos Columnas ─── */}
+      <div className="mt-6 grid gap-6 lg:grid-cols-[380px_1fr]">
+        {/* Columna Izquierda (Sidebar) */}
+        <div className="space-y-6">
+          {/* Mis Organizaciones */}
+          <article className="rounded-[22px] border border-violet-100 bg-white p-5 shadow-[0_4px_20px_rgba(0,0,0,0.015)]">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400">
+                Mis organizaciones
+              </h2>
+              <button
+                type="button"
+                onClick={() => setManagingOrgs(true)}
+                className="inline-flex items-center gap-1 rounded-full border border-violet-200 bg-white hover:bg-violet-50 px-3 py-1 text-xs font-bold text-violet-700 transition-all active:scale-95 shadow-sm"
+              >
+                <Settings2 className="h-3.5 w-3.5" />
+                Ver todas
+              </button>
+            </div>
+
+            {followingOrganizations.length === 0 ? (
+              <button
+                type="button"
+                onClick={() => setManagingOrgs(true)}
+                className="block w-full rounded-[18px] border border-dashed border-gray-200 bg-gray-50/50 px-3 py-6 text-center text-sm text-gray-500 hover:bg-gray-50 transition-colors"
+              >
+                Aún no sigues organizaciones. Haz clic para gestionarlas.
+              </button>
+            ) : (
+              <div className="flex flex-wrap gap-4 pt-2 justify-center sm:justify-start">
+                {followingOrganizations.map((org) => (
+                  <div
+                    key={org.id}
+                    onClick={() => setManagingOrgs(true)}
+                    className="flex flex-col items-center gap-2 group cursor-pointer"
+                  >
+                    {/* Círculo con logo/iniciales */}
+                    <div className="h-16 w-16 rounded-full bg-white p-0.5 border border-gray-100 shadow-sm transition-transform group-hover:scale-105 duration-200 flex items-center justify-center overflow-hidden">
+                      {org.profile_image_url ? (
+                        <img
+                          src={org.profile_image_url}
+                          alt={org.full_name ?? "org"}
+                          className="h-full w-full object-cover rounded-full"
+                        />
+                      ) : (
+                        <div className="text-xl font-black text-violet-600 select-none">
+                          {(org.full_name ?? "O").charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+                    {/* Nombre de la Organización */}
+                    <span className="text-[11px] font-bold text-gray-600 group-hover:text-violet-600 transition-colors truncate max-w-[80px] text-center">
+                      {org.full_name ?? `Org ${org.id}`}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </article>
+
+          {/* Intereses */}
+          <article className="rounded-[22px] border border-violet-100 bg-white p-5 shadow-[0_4px_20px_rgba(0,0,0,0.015)]">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">
+              Intereses
+            </h2>
+            {(!user.interests || user.interests.length === 0) ? (
+              <p className="text-xs text-gray-400 italic">Sin intereses seleccionados.</p>
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {user.interests.map((interestId) => {
+                  const item = INTERESTS.find((i) => i.id === interestId)
+                  if (!item) return null
+                  return (
+                    <span
+                      key={interestId}
+                      className="inline-flex items-center gap-1 rounded-full bg-violet-50 border border-violet-100/50 px-2.5 py-1 text-xs font-semibold text-violet-700"
+                    >
+                      <item.icon className="h-3 w-3" />
+                      {item.label}
+                    </span>
+                  )
+                })}
+              </div>
+            )}
+          </article>
+        </div>
+
+        {/* Columna Derecha (Eventos Guardados) */}
+        <div className="space-y-4">
+          <div className="border-b border-gray-150 pb-2">
+            <nav className="flex gap-4">
+              <TabButton
+                id="saved"
+                active={true}
+                onClick={() => {}}
+                label="Eventos Guardados"
+                icon={<Bookmark className="h-4 w-4" />}
+              />
+            </nav>
           </div>
-        )}
+
+          <div className="space-y-4">
+            {eventSavedPosts.length === 0 ? (
+              <div className="rounded-[22px] border border-dashed border-gray-200 bg-white p-8 text-center text-sm text-gray-500">
+                No tienes eventos guardados por ahora. Los eventos que guardes desde el feed aparecerán aquí.
+              </div>
+            ) : (
+              <div className="flex flex-col gap-4">
+                {eventSavedPosts.map((post) => (
+                  <PostCard
+                    key={post.id}
+                    post={post}
+                    currentUserId={user.id}
+                    onEdited={onSavedPostEdited}
+                    onDeleted={onSavedPostUnsaved}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
+
+      {orgError && (
+        <div className="mt-4 flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <div className="flex-1">{orgError}</div>
+          <button
+            type="button"
+            onClick={onDismissOrgError}
+            className="rounded p-0.5 hover:bg-rose-100"
+            aria-label="Cerrar"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
     </div>
   )
 }
 
-function MetricCard({
-  label,
-  value,
-  subValue,
-  icon,
-  iconBg = "bg-purple-50",
-  textColor = "text-purple-600",
-  grayPlaceholder,
-  placeholderText,
-}: {
-  label?: string
-  value?: string
-  subValue?: string
-  icon?: React.ReactNode
-  iconBg?: string
-  textColor?: string
-  grayPlaceholder?: boolean
-  placeholderText?: string
-}) {
-  if (grayPlaceholder) {
-    return (
-      <div className="flex items-center justify-center rounded-xl border border-gray-200 bg-gray-50 p-4 text-center aspect-square shadow-[0_4px_20px_rgba(0,0,0,0.005)]">
-        <span className="text-xs font-bold text-gray-400 leading-snug">
-          {placeholderText}
-        </span>
-      </div>
-    )
-  }
-
+function MetricCard({ label, value, subValue }: { label: string; value: string; subValue?: string }) {
   return (
-    <div className="flex flex-col items-start justify-between rounded-xl border border-gray-200 bg-white p-4 aspect-square shadow-[0_4px_20px_rgba(0,0,0,0.005)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.015)] transition-shadow duration-300">
-      <div className={`p-1.5 ${iconBg} rounded-lg mb-2`}>
-        {icon}
-      </div>
-      <div className="flex-1 flex flex-col justify-end w-full">
-        <span className="text-[9px] font-bold uppercase tracking-wider text-gray-400 leading-none mb-1">
-          {label}
+    <div className="flex flex-col items-center justify-center rounded-[18px] border border-gray-150 bg-gray-50/50 p-4 text-center shadow-[0_2px_8px_rgba(0,0,0,0.005)]">
+      <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 leading-tight">
+        {label}
+      </span>
+      <span className="mt-2 text-2xl font-black text-gray-900 leading-none">
+        {value}
+      </span>
+      {subValue && (
+        <span className="mt-1 text-xs font-semibold text-gray-500">
+          {subValue}
         </span>
-        <span className={`text-sm md:text-base font-black ${textColor} leading-tight break-words max-w-full`}>
-          {value}
-        </span>
-        {subValue && (
-          <span className="mt-1 text-[9px] font-semibold text-gray-400 leading-none">
-            {subValue}
-          </span>
-        )}
-      </div>
+      )}
     </div>
+  )
+}
+
+interface TabButtonProps {
+  id: string
+  active: boolean
+  onClick: () => void
+  label: string
+  icon: React.ReactNode
+}
+
+function TabButton({ id, active, onClick, label, icon }: TabButtonProps) {
+  return (
+    <button
+      onClick={onClick}
+      className={`relative flex items-center gap-1.5 py-2 px-1 text-sm font-semibold transition-colors ${
+        active ? "text-violet-600" : "text-gray-500 hover:text-gray-800"
+      }`}
+    >
+      {icon}
+      <span>{label}</span>
+      {active && (
+        <motion.div
+          layoutId="studentActiveTabLine"
+          className="absolute bottom-0 left-0 right-0 h-0.5 bg-violet-600"
+          transition={{ type: "spring", stiffness: 380, damping: 30 }}
+        />
+      )}
+    </button>
   )
 }
