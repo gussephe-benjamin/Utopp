@@ -74,7 +74,7 @@ export function LeftSidebar({
   }
 
   return (
-    <aside className="hidden lg:flex w-72 flex-col gap-4 sticky top-[80px] h-[calc(100vh-80px)] overflow-y-auto pb-6 no-scrollbar">
+    <aside className="hidden xl:flex w-72 flex-col gap-4 sticky top-[80px] h-[calc(100vh-80px)] overflow-y-auto pb-6 no-scrollbar">
       
       {/* Widget Perfil */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">

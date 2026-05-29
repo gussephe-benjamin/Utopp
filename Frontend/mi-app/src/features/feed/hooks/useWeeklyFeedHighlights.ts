@@ -55,17 +55,10 @@ export function useWeeklyFeedHighlights() {
         const weekMs = 7 * 24 * 60 * 60 * 1000
         const withDeadline = sortByDeadline(feed.items ?? [])
 
-        const thisWeek = withDeadline.filter((p) => {
-          const t = new Date(p.deadline_at!).getTime()
-          return t >= now && t <= now + weekMs
-        })
-
         const upcoming = withDeadline.filter((p) => new Date(p.deadline_at!).getTime() >= now)
 
         if (mounted) {
-          if (thisWeek.length > 0) {
-            setDeadlinePosts(thisWeek)
-          } else if (upcoming.length > 0) {
+          if (upcoming.length > 0) {
             setDeadlinePosts(upcoming)
           } else {
             setDeadlinePosts(withDeadline.slice(0, 20))

@@ -17,6 +17,8 @@ import {
 } from "../features/dashboard/popoverAnchor"
 import type { FeedViewProps } from "../features/feed/types"
 
+import ExplorePage from "./ExplorePage"
+
 const FILTER_POPOVER_FALLBACK: MenuPopoverAnchor = { top: 64, right: 12, minWidth: 40 }
 
 export default function StudentFeedPage({
@@ -27,6 +29,7 @@ export default function StudentFeedPage({
 }: FeedViewProps) {
   const [interestsSaving, setInterestsSaving] = useState(false)
   const [interestsError, setInterestsError] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<"posts" | "explore">("posts")
 
   const {
     posts,
@@ -96,63 +99,97 @@ export default function StudentFeedPage({
             <p className="mt-0.5 text-xs font-medium text-white/80">Bienvenido a Utopp</p>
           </div>
 
-          <div className="block px-4 pb-2 md:hidden">
-            <FeedHorizontalFilters
-              statusFilter={statusFilter}
-              setStatusFilter={setStatusFilter}
-              sortOrder={sortOrder}
-              setSortOrder={setSortOrder}
-              selectedTags={selectedTags}
-              setSelectedTags={setSelectedTags}
-            />
-          </div>
-          <FeedWeeklyHighlightsCarousel />
-          <FeedTabletHighlights />
-
-          <div className="hidden md:block">
-            <FeedWelcomeBanner userName={userName} />
-          </div>
-
-          <div className="w-full space-y-4 px-4 pt-4 md:px-0">
-            {(() => {
-              const lastPinnedIdx = posts.reduce((acc, p, i) => (p.is_pinned ? i : acc), -1)
-              return posts.map((post, i) => (
-                <div key={post.id} className="mb-4 last:mb-0">
-                  <div className="flex justify-center">
-                    <PostCard
-                      post={post}
-                      currentUserId={currentUserId}
-                      onEdited={(updated) =>
-                        setPosts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))
-                      }
-                    />
-                  </div>
-                  {i === lastPinnedIdx && posts.length > lastPinnedIdx + 1 && (
-                    <div className="flex items-center gap-3 py-1">
-                      <div className="h-px flex-1 bg-cyan-200" />
-                      <span className="whitespace-nowrap text-[10px] font-semibold uppercase tracking-widest text-cyan-600">
-                        - Publicaciones generales -
-                      </span>
-                      <div className="h-px flex-1 bg-cyan-200" />
-                    </div>
-                  )}
-                </div>
-              ))
-            })()}
-          </div>
-
-          {!loading && posts.length === 0 ? (
-            <div className="rounded-xl border border-gray-200 bg-white p-12 text-center">
-              <div className="mb-3 flex justify-center">
-                <Inbox className="h-12 w-12 text-gray-300" />
-              </div>
-              <p className="font-medium text-gray-700">Aun no hay publicaciones</p>
-              <p className="mt-1 text-sm text-gray-400">Se el primero en crear una publicacion</p>
+          {/* Selector de pestañas para cambiar entre feed y explorador (solo móvil) */}
+          <div className="px-4 md:px-0 pt-2 md:pt-0 md:hidden">
+            <div className="flex border-b border-gray-200">
+              <button
+                onClick={() => setActiveTab("posts")}
+                className={`flex-1 pb-3 px-6 text-sm font-bold border-b-2 transition-all ${
+                  activeTab === "posts"
+                    ? "border-violet-600 text-violet-600"
+                    : "border-transparent text-gray-400 hover:text-gray-600"
+                }`}
+              >
+                Publicaciones
+              </button>
+              <button
+                onClick={() => setActiveTab("explore")}
+                className={`flex-1 pb-3 px-6 text-sm font-bold border-b-2 transition-all ${
+                  activeTab === "explore"
+                    ? "border-violet-600 text-violet-600"
+                    : "border-transparent text-gray-400 hover:text-gray-600"
+                }`}
+              >
+                Explorar
+              </button>
             </div>
-          ) : null}
+          </div>
 
-          {loading ? <div className="py-4 text-center text-sm text-gray-400">Cargando mas...</div> : null}
-          <div ref={loaderRef} />
+          {activeTab === "explore" && (
+            <div className="md:hidden">
+              <ExplorePage />
+            </div>
+          )}
+
+          <div className={activeTab === "explore" ? "hidden md:block space-y-0 md:space-y-5" : "space-y-0 md:space-y-5"}>
+            <div className="block px-4 pb-2 pt-3 md:pt-0 md:hidden">
+              <FeedHorizontalFilters
+                statusFilter={statusFilter}
+                setStatusFilter={setStatusFilter}
+                sortOrder={sortOrder}
+                setSortOrder={setSortOrder}
+                selectedTags={selectedTags}
+                setSelectedTags={setSelectedTags}
+              />
+            </div>
+            <FeedWeeklyHighlightsCarousel />
+            <FeedTabletHighlights />
+
+            <div className="hidden md:block">
+              <FeedWelcomeBanner userName={userName} />
+            </div>
+
+            <div className="w-full space-y-4 px-4 pt-4 md:px-0">
+              {(() => {
+                const lastPinnedIdx = posts.reduce((acc, p, i) => (p.is_pinned ? i : acc), -1)
+                return posts.map((post, i) => (
+                  <div key={post.id} className="mb-4 last:mb-0">
+                    <div className="flex justify-center">
+                      <PostCard
+                        post={post}
+                        currentUserId={currentUserId}
+                        onEdited={(updated) =>
+                          setPosts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))
+                        }
+                      />
+                    </div>
+                    {i === lastPinnedIdx && posts.length > lastPinnedIdx + 1 && (
+                      <div className="flex items-center gap-3 py-1">
+                        <div className="h-px flex-1 bg-cyan-200" />
+                        <span className="whitespace-nowrap text-[10px] font-semibold uppercase tracking-widest text-cyan-600">
+                          - Publicaciones generales -
+                        </span>
+                        <div className="h-px flex-1 bg-cyan-200" />
+                      </div>
+                    )}
+                  </div>
+                ))
+              })()}
+            </div>
+
+            {!loading && posts.length === 0 ? (
+              <div className="rounded-xl border border-gray-200 bg-white p-12 text-center">
+                <div className="mb-3 flex justify-center">
+                  <Inbox className="h-12 w-12 text-gray-300" />
+                </div>
+                <p className="font-medium text-gray-700">Aun no hay publicaciones</p>
+                <p className="mt-1 text-sm text-gray-400">Se el primero en crear una publicacion</p>
+              </div>
+            ) : null}
+
+            {loading ? <div className="py-4 text-center text-sm text-gray-400">Cargando mas...</div> : null}
+            <div ref={loaderRef} />
+          </div>
         </div>
 
         <RightSidebar showTrending={false} />

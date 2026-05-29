@@ -7,7 +7,7 @@ export function FeedTabletHighlights() {
   const highlights = useWeeklyFeedHighlights()
 
   return (
-    <div className="hidden space-y-4 px-4 pb-2 md:block lg:hidden">
+    <div className="hidden md:grid lg:hidden grid-cols-2 gap-5 px-4 pb-2">
       <WeeklyOrgsWidget
         organizations={highlights.organizations}
         loading={highlights.orgsLoading}

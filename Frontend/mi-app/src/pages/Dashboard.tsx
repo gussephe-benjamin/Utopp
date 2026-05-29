@@ -1,14 +1,14 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { Home, Plus, User, MoreVertical } from 'lucide-react'
+import { Home, Plus, User, Compass } from 'lucide-react'
 import PublicationWizard from '../components/PublicationWizard'
 import { useAuth } from '../auth/useAuth'
 import { getMe } from '../api/auth.api'
 import { getMyProfile } from '../api/users.api'
 import { useRole, ROLE_ORGANIZACION } from '../hooks/useRole'
 import Profile from '../pages/Profile'
+import ExplorePage from './ExplorePage'
 import { AppTopBar } from '../features/dashboard/components/AppTopBar'
-import { AccountOptionsSheet } from '../features/dashboard/components/AccountOptionsSheet'
 import { measureMenuAnchor, type MenuPopoverAnchor } from '../features/dashboard/popoverAnchor'
 import FeedModeResolver from '../features/feed/FeedModeResolver'
 import { TW_UTOPP_GRADIENT_BR } from '../shared/constants/brand'
@@ -122,6 +122,7 @@ export default function DashboardLayout() {
 
   const isFeedActive    = location.pathname === '/app/inicio'
   const isProfileActive = location.pathname.startsWith('/app/perfil')
+  const isExploreActive = location.pathname === '/app/explorar'
   const profileViewIdMatch = location.pathname.match(/^\/app\/perfil\/(\d+)$/)
   const profileViewId = profileViewIdMatch ? Number(profileViewIdMatch[1]) : undefined
 
@@ -211,18 +212,10 @@ export default function DashboardLayout() {
           }
           navigate('/app/inicio')
         }}
-        onOpenAccountMenu={() => {
-          setShowFeedFiltersSheet(false)
-          setFilterPopoverAnchor(null)
-          setAccountMenuAnchor(
-            measureMenuAnchor(accountMenuTriggerRef.current) ?? FALLBACK_MENU_ANCHOR,
-          )
-          setShowOptionsModal(true)
-        }}
+        onOpenAccountMenu={() => navigate('/app/perfil')}
         onOpenFeedFilters={
           isFeedActive
             ? () => {
-                setShowOptionsModal(false)
                 setFilterPopoverAnchor(
                   measureMenuAnchor(feedFiltersTriggerRef.current) ?? FALLBACK_MENU_ANCHOR,
                 )
@@ -266,64 +259,8 @@ export default function DashboardLayout() {
 
       {/* Barra de Navegación Inferior (Móvil) */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/95 backdrop-blur-md border-t border-gray-100/80 shadow-[0_-4px_20px_rgba(0,0,0,0.03)] z-50 px-4">
-        {canCreate && isOrg ? (
-          <div className="grid h-full grid-cols-3 items-center">
-            <button
-              onClick={() => {
-                if (isFeedActive) {
-                  window.location.assign(`${window.location.origin}/app/inicio`)
-                  return
-                }
-                navigate('/app/inicio')
-              }}
-              className="flex flex-col items-center justify-center justify-self-start w-12 h-12 active:scale-95 transition-transform"
-            >
-              <div className="w-11 h-11 rounded-2xl bg-[#5f38ff] flex items-center justify-center text-white font-extrabold text-lg shadow-[0_4px_12px_rgba(95,56,255,0.25)]">
-                U
-              </div>
-            </button>
-
-            <div className="relative flex items-center justify-center w-12 h-12 justify-self-center">
-              <button
-                type="button"
-                onClick={() => setShowWizard(true)}
-                className={`absolute -top-[22px] w-[54px] h-[54px] rounded-full ${TW_UTOPP_GRADIENT_BR} text-white flex items-center justify-center shadow-[0_6px_20px_rgba(47,85,246,0.35)] border-4 border-white active:scale-95 transition-all`}
-              >
-                <Plus className="w-5.5 h-5.5 stroke-[3.5]" />
-              </button>
-            </div>
-
-            <button
-              onClick={() => {
-                setShowFeedFiltersSheet(false)
-                setFilterPopoverAnchor(null)
-                setAccountMenuAnchor(FALLBACK_MENU_ANCHOR)
-                setShowOptionsModal(true)
-              }}
-              className="flex flex-col items-center justify-center justify-self-end w-12 h-12 active:scale-95 transition-transform"
-            >
-              <div className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${showOptionsModal ? 'bg-[#f3efff] text-[#5f38ff] shadow-sm' : 'bg-transparent text-gray-400'}`}>
-                <MoreVertical className="w-5.5 h-5.5 stroke-[2]" />
-              </div>
-            </button>
-          </div>
-        ) : canCreate ? (
-          <div className="flex h-full items-center justify-around">
-            <button
-              onClick={() => {
-                if (isFeedActive) {
-                  window.location.assign(`${window.location.origin}/app/inicio`)
-                  return
-                }
-                navigate('/app/inicio')
-              }}
-              className="flex flex-col items-center justify-center w-12 h-12 active:scale-95 transition-transform"
-            >
-              <div className="w-11 h-11 rounded-2xl bg-[#5f38ff] flex items-center justify-center text-white font-extrabold text-lg shadow-[0_4px_12px_rgba(95,56,255,0.25)]">
-                U
-              </div>
-            </button>
-            
+        {canCreate ? (
+          <div className="grid h-full grid-cols-3 items-center max-w-[320px] mx-auto justify-items-center">
             <button
               onClick={() => {
                 if (isFeedActive) {
@@ -339,7 +276,7 @@ export default function DashboardLayout() {
               </div>
             </button>
 
-            <div className="relative w-12 h-12 flex items-center justify-center">
+            <div className="relative flex items-center justify-center w-12 h-12">
               <button
                 type="button"
                 onClick={() => setShowWizard(true)}
@@ -357,38 +294,9 @@ export default function DashboardLayout() {
                 <User className="w-5.5 h-5.5 stroke-[2]" />
               </div>
             </button>
-
-            <button
-              onClick={() => {
-                setShowFeedFiltersSheet(false)
-                setFilterPopoverAnchor(null)
-                setAccountMenuAnchor(FALLBACK_MENU_ANCHOR)
-                setShowOptionsModal(true)
-              }}
-              className="flex flex-col items-center justify-center w-12 h-12 active:scale-95 transition-transform"
-            >
-              <div className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${showOptionsModal ? 'bg-[#f3efff] text-[#5f38ff] shadow-sm' : 'bg-transparent text-gray-400'}`}>
-                <MoreVertical className="w-5.5 h-5.5 stroke-[2]" />
-              </div>
-            </button>
           </div>
         ) : (
-          <div className="grid h-full grid-cols-3 items-center justify-items-center">
-            <button
-              onClick={() => {
-                if (isFeedActive) {
-                  window.location.assign(`${window.location.origin}/app/inicio`)
-                  return
-                }
-                navigate('/app/inicio')
-              }}
-              className="flex flex-col items-center justify-center w-12 h-12 active:scale-95 transition-transform"
-            >
-              <div className="w-11 h-11 rounded-2xl bg-[#5f38ff] flex items-center justify-center text-white font-extrabold text-lg shadow-[0_4px_12px_rgba(95,56,255,0.25)]">
-                U
-              </div>
-            </button>
-
+          <div className="grid h-full grid-cols-2 items-center justify-items-center max-w-[220px] mx-auto">
             <button
               onClick={() => {
                 if (isFeedActive) {
@@ -405,18 +313,13 @@ export default function DashboardLayout() {
             </button>
 
             <button
-              onClick={() => {
-                setShowFeedFiltersSheet(false)
-                setFilterPopoverAnchor(null)
-                setAccountMenuAnchor(FALLBACK_MENU_ANCHOR)
-                setShowOptionsModal(true)
-              }}
+              onClick={() => navigate('/app/perfil')}
               className="flex flex-col items-center justify-center w-12 h-12 active:scale-95 transition-transform"
             >
               <div className="w-11 h-11 rounded-2xl flex items-center justify-center transition-all">
                 <div
                   className={`rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 p-[2px] shadow-sm ${
-                    showOptionsModal || isProfileActive ? 'ring-2 ring-violet-200' : ''
+                    isProfileActive ? 'ring-2 ring-violet-200' : ''
                   }`}
                 >
                   {avatarUrl ? (
@@ -438,22 +341,6 @@ export default function DashboardLayout() {
       </div>
 
       <PublicationWizard isOpen={showWizard} onClose={() => setShowWizard(false)} allowedTypes={allowedTypes} />
-
-      {showOptionsModal && (
-        <AccountOptionsSheet
-          displayName={displayName}
-          userEmail={userEmail}
-          avatarUrl={avatarUrl}
-          initial={initial}
-          anchor={accountMenuAnchor ?? FALLBACK_MENU_ANCHOR}
-          onClose={() => {
-            setShowOptionsModal(false)
-            setAccountMenuAnchor(null)
-          }}
-          onNavigateProfile={() => navigate('/app/perfil')}
-          onLogout={handleLogout}
-        />
-      )}
     </div>
   )
 }

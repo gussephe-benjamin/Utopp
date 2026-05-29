@@ -1,5 +1,5 @@
 import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react"
-import { useSearchParams } from "react-router-dom"
+import { useNavigate, useSearchParams } from "react-router-dom"
 import { AnimatePresence, motion } from "framer-motion"
 import {
   Check,
@@ -23,7 +23,9 @@ import {
   BarChart3,
   Star,
   Users,
+  LogOut,
 } from "lucide-react"
+import { useAuth } from "../../../auth/useAuth"
 import type { ProfileUserData } from "./types"
 import type { FeedPostOut } from "../../../types/post.types"
 import { ProfileMetricCard } from "../components/ProfileMetricCard"
@@ -95,6 +97,8 @@ export function OrganizationProfileSelf({
   onPostEdited,
   onPostDeleted,
 }: OrganizationProfileSelfProps) {
+  const navigate = useNavigate()
+  const { logout } = useAuth()
   const [emailCopied, setEmailCopied] = useState(false)
   const [editing, setEditing] = useState(false)
   const [activeTab, setActiveTab] = useState<TabType>("posts")
@@ -240,8 +244,8 @@ export function OrganizationProfileSelf({
               )}
             </div>
 
-            {/* Botón Editar Perfil */}
-            <div className="mt-3 md:mt-0 flex justify-center md:justify-end md:pb-1 shrink-0">
+            {/* Botón Editar Perfil y Cerrar Sesión */}
+            <div className="mt-3 md:mt-0 flex justify-center md:justify-end md:pb-1 shrink-0 gap-2">
               <button
                 type="button"
                 onClick={() => setEditing(true)}
@@ -249,6 +253,17 @@ export function OrganizationProfileSelf({
               >
                 <Pencil className="h-3.5 w-3.5" />
                 Editar perfil
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  logout()
+                  navigate("/login")
+                }}
+                className="inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-white px-3.5 py-1.5 text-xs font-bold text-red-600 shadow-sm hover:bg-red-50 transition-all active:scale-95"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                Cerrar sesión
               </button>
             </div>
           </div>
