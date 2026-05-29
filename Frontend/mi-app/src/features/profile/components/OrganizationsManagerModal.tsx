@@ -3,6 +3,7 @@ import { X, Plus, Check, Search } from "lucide-react"
 import type { OrganizationSummary } from "../../../api/users.api"
 import { motion } from "framer-motion"
 import { useNavigate } from "react-router-dom"
+import { profilePath } from "../lib/profileNavigation"
 
 interface OrganizationsManagerModalProps {
   followingOrganizations: OrganizationSummary[]
@@ -170,7 +171,7 @@ export function OrganizationsManagerModal({
                           : "border-violet-100 bg-violet-50/40"
                       }`}
                     >
-                      <OrgRow org={org} onClose={handleClose} />
+                      <OrgRow org={org} currentUserId={currentUserId} onClose={handleClose} />
                       {isUnfollowed ? (
                         <button
                           type="button"
@@ -217,7 +218,7 @@ export function OrganizationsManagerModal({
                     key={`discover-${org.id}`}
                     className="flex items-center justify-between gap-3 rounded-lg border border-gray-100 bg-gray-50/50 px-3 py-2"
                   >
-                    <OrgRow org={org} onClose={handleClose} />
+                    <OrgRow org={org} currentUserId={currentUserId} onClose={handleClose} />
                     <button
                       type="button"
                       disabled={orgActionId === org.id}
@@ -248,12 +249,20 @@ export function OrganizationsManagerModal({
   )
 }
 
-function OrgRow({ org, onClose }: { org: OrganizationSummary; onClose: () => void }) {
+function OrgRow({
+  org,
+  currentUserId,
+  onClose,
+}: {
+  org: OrganizationSummary
+  currentUserId: number
+  onClose: () => void
+}) {
   const navigate = useNavigate()
   return (
     <div
       onClick={() => {
-        navigate(`/app/perfil/${org.id}`)
+        navigate(profilePath(org.id, currentUserId))
         onClose()
       }}
       className="flex min-w-0 flex-1 items-center gap-3 cursor-pointer hover:opacity-70 transition-opacity"

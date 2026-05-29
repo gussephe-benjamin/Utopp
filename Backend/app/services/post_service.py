@@ -89,6 +89,7 @@ def create_post(db: Session, user_id: int, data: PostCreate) -> Post:
         time_status=compute_time_status(data.deadline_at),
         is_pinned=data.is_pinned,
         pin_priority=pin_priority,
+        aspect_ratio=data.aspect_ratio,
     )
     
     db.add(post)

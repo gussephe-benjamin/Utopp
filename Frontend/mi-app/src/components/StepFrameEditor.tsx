@@ -1,25 +1,33 @@
 import { useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { type WizardImage } from '../types/post.types'
+import {
+  POST_ASPECT_RATIO_OPTIONS,
+  aspectRatioValue,
+  type PostAspectRatio,
+} from '../shared/lib/aspectRatio'
 
 interface StepFrameEditorProps {
   images: WizardImage[]
+  aspectRatio: PostAspectRatio
+  onAspectRatioChange: (ratio: PostAspectRatio) => void
   onUpdate: (images: WizardImage[]) => void
 }
 
 /**
- * Paso de encuadre de imagen — editor interactivo por imagen.
- * Solo formato 4:5 vertical. El usuario arrastra para mover el punto focal
- * y usa el slider de zoom. Los valores (objectPosition, scale) se persisten
- * en WizardImage y se guardan en el backend al publicar.
+ * Paso de formato y encuadre — estilo Instagram.
+ * El usuario elige un formato (1:1, 4:5 o 1.91:1) que aplica a TODAS las
+ * imágenes de la publicación, y por cada imagen arrastra para mover el punto
+ * focal y usa el slider de zoom. Los valores (objectPosition, scale) y el
+ * aspect_ratio se persisten y se usan tal cual en el feed.
  */
-export default function StepFrameEditor({ images, onUpdate }: StepFrameEditorProps) {
+export default function StepFrameEditor({ images, aspectRatio, onAspectRatioChange, onUpdate }: StepFrameEditorProps) {
   const readyImages = images.filter(img => img.status === 'done' && img.cloudinaryUrl)
   const [currentIdx, setCurrentIdx] = useState(0)
 
   if (readyImages.length === 0) return null
 
-  const img = readyImages[currentIdx]
+  const img = readyImages[Math.min(currentIdx, readyImages.length - 1)]
 
   const updateImg = (patch: Partial<WizardImage>) => {
     onUpdate(images.map(i => i.tempId === img.tempId ? { ...i, ...patch } : i))
@@ -39,8 +47,33 @@ export default function StepFrameEditor({ images, onUpdate }: StepFrameEditorPro
   return (
     <div className="space-y-4">
       <div className="text-center">
-        <h3 className="text-sm font-semibold text-gray-700">Ajusta el encuadre de cada imagen</h3>
-        <p className="text-xs text-gray-400 mt-0.5">Arrastra para mover · Slider para zoom · Formato 4:5 vertical</p>
+        <h3 className="text-sm font-semibold text-gray-700">Elige el formato y ajusta el encuadre</h3>
+        <p className="text-xs text-gray-400 mt-0.5">El formato aplica a todas las imágenes · Arrastra para mover · Slider para zoom</p>
+      </div>
+
+      {/* Selector de formato (aspect ratio) — único para toda la publicación */}
+      <div className="flex justify-center">
+        <div className="inline-flex rounded-xl border border-gray-200 bg-gray-50 p-1">
+          {POST_ASPECT_RATIO_OPTIONS.map(opt => {
+            const active = opt.value === aspectRatio
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => onAspectRatioChange(opt.value)}
+                className={`flex flex-col items-center gap-0.5 rounded-lg px-4 py-1.5 text-xs font-semibold transition-all ${
+                  active
+                    ? 'bg-white text-[#4F46E5] shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+                aria-pressed={active}
+              >
+                <span>{opt.label}</span>
+                <span className={`text-[10px] font-medium ${active ? 'text-[#4F46E5]/70' : 'text-gray-400'}`}>{opt.hint}</span>
+              </button>
+            )
+          })}
+        </div>
       </div>
 
       {/* Contador de imágenes */}
@@ -62,7 +95,7 @@ export default function StepFrameEditor({ images, onUpdate }: StepFrameEditorPro
         </button>
 
         <div className="flex-1">
-          <CropEditor img={img} onUpdate={updateImg} />
+          <CropEditor img={img} aspectRatio={aspectRatio} onUpdate={updateImg} />
         </div>
 
         <button
@@ -97,6 +130,7 @@ export default function StepFrameEditor({ images, onUpdate }: StepFrameEditorPro
 
 interface CropEditorProps {
   img: WizardImage
+  aspectRatio: PostAspectRatio
   onUpdate: (patch: Partial<WizardImage>) => void
 }
 
@@ -108,18 +142,19 @@ function parsePct(s: string | undefined, fallback = 50): number {
 }
 
 /**
- * Editor de encuadre 4:5 con pan + zoom.
+ * Editor de encuadre con pan + zoom para el formato elegido.
  * - Drag → cambia objectPosition (sin snap-to-center al llegar a 0%)
  * - Zoom slider → cambia scale, anclado al punto focal actual (transformOrigin)
- * - El frame visible ES exactamente lo que se publica (mismo CSS en Feed.tsx)
+ * - El frame visible ES exactamente lo que se publica (mismo CSS en el feed)
  */
-function CropEditor({ img, onUpdate }: CropEditorProps) {
+function CropEditor({ img, aspectRatio, onUpdate }: CropEditorProps) {
   const containerRef              = useRef<HTMLDivElement>(null)
   const isDragging                = useRef(false)
   const lastPos                   = useRef({ x: 0, y: 0 })
   const [isPanning, setIsPanning] = useState(false)
 
   const scale = img.scale ?? 1
+  const ratioValue = aspectRatioValue(aspectRatio)
 
   // Parse objectPosition safely — fix: parseFloat('0%') === 0, and 0 || 50 wrongly returns 50
   const [rawX = '50%', rawY = '50%'] = (img.objectPosition ?? '50% 50%').split(' ')
@@ -165,10 +200,11 @@ function CropEditor({ img, onUpdate }: CropEditorProps) {
 
   return (
     <div className="space-y-2">
-      {/* Viewport de recorte 4:5 — overflow:hidden hace el crop real */}
+      {/* Viewport de recorte con el formato elegido — overflow:hidden hace el crop real */}
       <div
         ref={containerRef}
-        className="relative w-full aspect-[4/5] bg-gray-200 rounded-xl overflow-hidden cursor-move select-none shadow-md"
+        className="relative w-full bg-gray-200 rounded-xl overflow-hidden cursor-move select-none shadow-md mx-auto"
+        style={{ aspectRatio: ratioValue, maxWidth: ratioValue >= 1 ? '100%' : '340px' }}
         onMouseDown={onMouseDown}
         onMouseMove={onMouseMove}
         onMouseUp={onMouseUp}

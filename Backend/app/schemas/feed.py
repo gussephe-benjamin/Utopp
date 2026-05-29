@@ -33,6 +33,7 @@ class FeedPostOut(BaseModel):
     image_url: Optional[str] = None
     images_count: int = 0
     links_count: int = 0
+    aspect_ratio: str = "4:5"
     
     is_pinned: bool = False
     pin_priority: int = 0

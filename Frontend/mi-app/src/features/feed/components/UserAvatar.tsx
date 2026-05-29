@@ -2,6 +2,7 @@
 // Mantiene hover opacity + transition como en el feed monolítico.
 
 import { useNavigate } from "react-router-dom";
+import { profilePath } from "../../profile/lib/profileNavigation";
 import { TW_UTOPP_GRADIENT_BR } from "../../../shared/constants/brand";
 
 type UserAvatarProps = {
@@ -25,7 +26,7 @@ export function UserAvatar({
   const initial = (userName ?? "U").charAt(0).toUpperCase();
   const handleClick = () => {
     if (!userId) return;
-    navigate(userId === currentUserId ? "/app/perfil" : `/app/perfil/${userId}`);
+    navigate(profilePath(userId, currentUserId));
   };
   return (
     <button

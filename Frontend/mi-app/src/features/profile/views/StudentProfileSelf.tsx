@@ -23,7 +23,8 @@ import { AVAILABILITY_OPTIONS, CAREER_OPTIONS } from "../constants/profileOption
 import type { OrganizationSummary } from "../../../api/users.api"
 import type { FeedPostOut } from "../../../types/post.types"
 import type { ProfileUserData } from "./types"
-import { PostCard } from "../../feed/components/PostCard"
+import { ProfileMetricCard } from "../components/ProfileMetricCard"
+import { ProfilePostItem } from "../components/ProfilePostItem"
 import { TW_UTOPP_GRADIENT_R } from "../../../shared/constants/brand"
 import { EditProfileModal } from "../components/EditProfileModal"
 import { OrganizationsManagerModal } from "../components/OrganizationsManagerModal"
@@ -249,23 +250,35 @@ export function StudentProfileSelf({
 
       {/* ─── Métricas ─── */}
       <section className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-        <MetricCard
+        <ProfileMetricCard
           label="Asistencia"
           value="12"
           subValue="Eventos este ciclo"
+          icon={<BarChart3 className="h-5 w-5 text-violet-500" />}
+          iconBg="bg-violet-50"
+          textColor="text-violet-700"
         />
-        <MetricCard
+        <ProfileMetricCard
           label="Disponibilidad"
           value={availabilityLabel}
           subValue={availabilityEmoji}
+          icon={<Clock className="h-5 w-5 text-amber-500" />}
+          iconBg="bg-amber-50"
+          textColor="text-amber-700"
         />
-        <MetricCard
+        <ProfileMetricCard
           label="Organizaciones seguidas"
           value={`${followingOrganizations.length}`}
+          icon={<Trophy className="h-5 w-5 text-fuchsia-500" />}
+          iconBg="bg-fuchsia-50"
+          textColor="text-fuchsia-700"
         />
-        <MetricCard
+        <ProfileMetricCard
           label="Eventos guardados"
           value={`${eventSavedPosts.length}`}
+          icon={<Bookmark className="h-5 w-5 text-blue-500" />}
+          iconBg="bg-blue-50"
+          textColor="text-blue-700"
         />
       </section>
 
@@ -378,7 +391,7 @@ export function StudentProfileSelf({
             ) : (
               <div className="flex flex-col gap-4">
                 {eventSavedPosts.map((post) => (
-                  <PostCard
+                  <ProfilePostItem
                     key={post.id}
                     post={post}
                     currentUserId={user.id}
@@ -405,24 +418,6 @@ export function StudentProfileSelf({
             <X className="h-3.5 w-3.5" />
           </button>
         </div>
-      )}
-    </div>
-  )
-}
-
-function MetricCard({ label, value, subValue }: { label: string; value: string; subValue?: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center rounded-[18px] border border-gray-150 bg-gray-50/50 p-4 text-center shadow-[0_2px_8px_rgba(0,0,0,0.005)]">
-      <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 leading-tight">
-        {label}
-      </span>
-      <span className="mt-2 text-2xl font-black text-gray-900 leading-none">
-        {value}
-      </span>
-      {subValue && (
-        <span className="mt-1 text-xs font-semibold text-gray-500">
-          {subValue}
-        </span>
       )}
     </div>
   )

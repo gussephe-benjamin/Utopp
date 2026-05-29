@@ -282,6 +282,14 @@ def update_current_user(
 ):
     update_data = data.model_dump(exclude_unset=True)
 
+    org_only_fields = {"description", "contacts"}
+    if org_only_fields.intersection(update_data.keys()):
+        if not _has_role(db, current_user.id, ORG_ROLE_NAME):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Solo las organizaciones pueden actualizar descripción y contactos",
+            )
+
     for field, value in update_data.items():
         setattr(current_user, field, value)
 

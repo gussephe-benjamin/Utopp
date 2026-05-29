@@ -1,7 +1,10 @@
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Dict
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
+
+ORG_DESCRIPTION_MAX_LENGTH = 2000
+ORG_CONTACTS_MAX_KEYS = 10
 
 
 class UserResponse(BaseModel):
@@ -50,6 +53,21 @@ class UserBasicOut(BaseModel):
         from_attributes = True
 
 
+def _normalize_contacts(value: Optional[Dict[str, str]]) -> Optional[Dict[str, str]]:
+    if value is None:
+        return None
+    normalized: Dict[str, str] = {}
+    for key, raw in value.items():
+        clean_key = str(key).strip().lower()
+        clean_val = str(raw).strip()
+        if not clean_key or not clean_val:
+            continue
+        normalized[clean_key] = clean_val
+    if len(normalized) > ORG_CONTACTS_MAX_KEYS:
+        raise ValueError(f"Máximo {ORG_CONTACTS_MAX_KEYS} contactos permitidos")
+    return normalized
+
+
 class UserOut(BaseModel):
     """Salida completa de usuario autenticado."""
     id: int
@@ -60,7 +78,7 @@ class UserOut(BaseModel):
     interests: Optional[List[str]] = None
     availability: Optional[int] = None
     description: Optional[str] = None
-    contacts: Optional[dict] = None
+    contacts: Optional[Dict[str, str]] = None
     is_onboarding_completed: bool = False
     created_at: datetime
     followers_count: int = 0
@@ -83,7 +101,7 @@ class UserPublicOut(BaseModel):
     interests: Optional[List[str]] = None
     availability: Optional[int] = None
     description: Optional[str] = None
-    contacts: Optional[dict] = None
+    contacts: Optional[Dict[str, str]] = None
     followers_count: int = 0
     following_count: int = 0
     posts_count: int = 0
@@ -102,8 +120,21 @@ class UserUpdate(BaseModel):
     cycle: Optional[int] = Field(None, ge=1, le=12)
     interests: Optional[List[str]] = None
     availability: Optional[int] | None = None
-    description: Optional[str] = Field(None, max_length=1000)
-    contacts: Optional[dict] = None
+    description: Optional[str] = Field(None, max_length=ORG_DESCRIPTION_MAX_LENGTH)
+    contacts: Optional[Dict[str, str]] = None
+
+    @field_validator("description")
+    @classmethod
+    def validate_description(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return None
+        stripped = v.strip()
+        return stripped if stripped else None
+
+    @field_validator("contacts")
+    @classmethod
+    def validate_contacts(cls, v: Optional[Dict[str, str]]) -> Optional[Dict[str, str]]:
+        return _normalize_contacts(v)
 
 
 class FollowOut(BaseModel):

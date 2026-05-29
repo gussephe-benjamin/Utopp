@@ -24,6 +24,8 @@ import {
   isPostDescriptionWordCountValid,
   POST_DESCRIPTION_MAX_WORDS,
 } from '../shared/lib/wordCount'
+import { DEFAULT_POST_ASPECT_RATIO, normalizeAspectRatio, type PostAspectRatio } from '../shared/lib/aspectRatio'
+import { formatApiError } from '../shared/lib/apiError'
 
 // Estado inicial vacío del formulario
 const initialFormData: WizardFormData = {
@@ -35,6 +37,7 @@ const initialFormData: WizardFormData = {
   description: '',
   deadline_at: '',
   tags: [],
+  aspect_ratio: DEFAULT_POST_ASPECT_RATIO,
 }
 
 // Acciones del reducer para actualizar el estado del wizard
@@ -45,6 +48,7 @@ type WizardAction =
   | { type: 'SET_IMAGES'; payload: WizardImage[] }
   | { type: 'SET_GENERAL_INFO'; payload: { title: string; description: string; deadline_at: string } }
   | { type: 'SET_TAGS'; payload: string[] }
+  | { type: 'SET_ASPECT_RATIO'; payload: PostAspectRatio }
   | { type: 'RESET' }
 
 /** Reducer puro que maneja todas las actualizaciones de estado del formulario */
@@ -63,6 +67,8 @@ function wizardReducer(state: WizardFormData, action: WizardAction): WizardFormD
       return { ...state, ...action.payload }
     case 'SET_TAGS':
       return { ...state, tags: action.payload }
+    case 'SET_ASPECT_RATIO':
+      return { ...state, aspect_ratio: action.payload }
     case 'RESET':
       return initialFormData
     default:
@@ -208,6 +214,7 @@ export default function PublicationWizard({ isOpen, onClose, allowedTypes }: Pub
         deadline_at: formData.deadline_at ? new Date(formData.deadline_at).toISOString() : undefined,
         is_pinned: isPinned,
         tags: formData.tags.length > 0 ? formData.tags : undefined,
+        aspect_ratio: normalizeAspectRatio(formData.aspect_ratio),
       })
 
       const postId: number = post.id
@@ -258,7 +265,7 @@ export default function PublicationWizard({ isOpen, onClose, allowedTypes }: Pub
       window.dispatchEvent(new CustomEvent('postPublished'))
 
     } catch (err) {
-      setPublishError(err instanceof Error ? err.message : 'Error desconocido al publicar')
+      setPublishError(formatApiError(err, 'Error desconocido al publicar'))
       setPublishProgress(null)
     } finally {
       setIsPublishing(false)
@@ -311,6 +318,8 @@ export default function PublicationWizard({ isOpen, onClose, allowedTypes }: Pub
           return (
             <StepFrameEditor
               images={formData.images}
+              aspectRatio={formData.aspect_ratio}
+              onAspectRatioChange={ratio => dispatch({ type: 'SET_ASPECT_RATIO', payload: ratio })}
               onUpdate={images => dispatch({ type: 'SET_IMAGES', payload: images })}
             />
           )
@@ -325,6 +334,8 @@ export default function PublicationWizard({ isOpen, onClose, allowedTypes }: Pub
             deadline_at={formData.deadline_at}
             images={formData.images}
             links={formData.links}
+            tags={formData.tags}
+            aspectRatio={formData.aspect_ratio}
           />
         )
       case 6:
@@ -337,6 +348,8 @@ export default function PublicationWizard({ isOpen, onClose, allowedTypes }: Pub
             deadline_at={formData.deadline_at}
             images={formData.images}
             links={formData.links}
+            tags={formData.tags}
+            aspectRatio={formData.aspect_ratio}
           />
         )
       default:

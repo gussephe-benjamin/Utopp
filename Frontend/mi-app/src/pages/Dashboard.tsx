@@ -5,7 +5,7 @@ import PublicationWizard from '../components/PublicationWizard'
 import { useAuth } from '../auth/useAuth'
 import { getMe } from '../api/auth.api'
 import { getMyProfile } from '../api/users.api'
-import { useRole } from '../hooks/useRole'
+import { useRole, ROLE_ORGANIZACION } from '../hooks/useRole'
 import Profile from '../pages/Profile'
 import { AppTopBar } from '../features/dashboard/components/AppTopBar'
 import { AccountOptionsSheet } from '../features/dashboard/components/AccountOptionsSheet'
@@ -25,6 +25,7 @@ export default function DashboardLayout() {
   const { logout } = useAuth()
 
   const { canCreate, allowedTypes, roleName } = useRole()
+  const isOrg = roleName === ROLE_ORGANIZACION
 
   useEffect(() => {
     getMe()
@@ -123,6 +124,13 @@ export default function DashboardLayout() {
   const isProfileActive = location.pathname.startsWith('/app/perfil')
   const profileViewIdMatch = location.pathname.match(/^\/app\/perfil\/(\d+)$/)
   const profileViewId = profileViewIdMatch ? Number(profileViewIdMatch[1]) : undefined
+
+  useEffect(() => {
+    if (!isProfileActive || profileViewId == null || currentUserId == null) return
+    if (profileViewId === currentUserId) {
+      navigate(`/app/perfil${location.search}`, { replace: true })
+    }
+  }, [isProfileActive, profileViewId, currentUserId, location.search, navigate])
 
   useEffect(() => {
     if (!isFeedActive) {
@@ -258,7 +266,48 @@ export default function DashboardLayout() {
 
       {/* Barra de Navegación Inferior (Móvil) */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/95 backdrop-blur-md border-t border-gray-100/80 shadow-[0_-4px_20px_rgba(0,0,0,0.03)] z-50 px-4">
-        {canCreate ? (
+        {canCreate && isOrg ? (
+          <div className="grid h-full grid-cols-3 items-center">
+            <button
+              onClick={() => {
+                if (isFeedActive) {
+                  window.location.assign(`${window.location.origin}/app/inicio`)
+                  return
+                }
+                navigate('/app/inicio')
+              }}
+              className="flex flex-col items-center justify-center justify-self-start w-12 h-12 active:scale-95 transition-transform"
+            >
+              <div className="w-11 h-11 rounded-2xl bg-[#5f38ff] flex items-center justify-center text-white font-extrabold text-lg shadow-[0_4px_12px_rgba(95,56,255,0.25)]">
+                U
+              </div>
+            </button>
+
+            <div className="relative flex items-center justify-center w-12 h-12 justify-self-center">
+              <button
+                type="button"
+                onClick={() => setShowWizard(true)}
+                className={`absolute -top-[22px] w-[54px] h-[54px] rounded-full ${TW_UTOPP_GRADIENT_BR} text-white flex items-center justify-center shadow-[0_6px_20px_rgba(47,85,246,0.35)] border-4 border-white active:scale-95 transition-all`}
+              >
+                <Plus className="w-5.5 h-5.5 stroke-[3.5]" />
+              </button>
+            </div>
+
+            <button
+              onClick={() => {
+                setShowFeedFiltersSheet(false)
+                setFilterPopoverAnchor(null)
+                setAccountMenuAnchor(FALLBACK_MENU_ANCHOR)
+                setShowOptionsModal(true)
+              }}
+              className="flex flex-col items-center justify-center justify-self-end w-12 h-12 active:scale-95 transition-transform"
+            >
+              <div className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${showOptionsModal ? 'bg-[#f3efff] text-[#5f38ff] shadow-sm' : 'bg-transparent text-gray-400'}`}>
+                <MoreVertical className="w-5.5 h-5.5 stroke-[2]" />
+              </div>
+            </button>
+          </div>
+        ) : canCreate ? (
           <div className="flex h-full items-center justify-around">
             <button
               onClick={() => {

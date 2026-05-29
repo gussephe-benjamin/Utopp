@@ -4,6 +4,8 @@ import { X, Bookmark, ChevronLeft, ChevronRight, Calendar, ExternalLink, Link } 
 import { AnimatePresence, motion } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { getPost } from '../api/posts.api'
+import { getMyProfile } from '../api/users.api'
+import { profilePath } from '../features/profile/lib/profileNavigation'
 import { unsavePost } from '../api/saved-posts.api'
 import { POST_TYPE_LABELS, POST_TYPE_ICONS, SUBTYPE_LABELS } from '../types/post.types'
 import { TW_UTOPP_GRADIENT_BR, TW_UTOPP_GRADIENT_R } from '../shared/constants/brand'
@@ -76,12 +78,19 @@ const MAX_DESC_CHARS = 1000
 
 export default function PostDetailModal({ postId, onClose, onUnsaved }: PostDetailModalProps) {
   const navigate = useNavigate()
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null)
   const [post, setPost]             = useState<PostDetail | null>(null)
   const [loading, setLoading]       = useState(false)
   const [imgIdx, setImgIdx]         = useState(0)
   const [currentImageRatio, setCurrentImageRatio] = useState<number | null>(null)
   const [unsaving, setUnsaving]     = useState(false)
   const [descExpanded, setDescExpanded] = useState(false)
+
+  useEffect(() => {
+    getMyProfile()
+      .then((profile) => setCurrentUserId(profile.id))
+      .catch(() => setCurrentUserId(null))
+  }, [])
 
   useEffect(() => {
     if (!postId) {
@@ -236,8 +245,7 @@ export default function PostDetailModal({ postId, onClose, onUnsaved }: PostDeta
                 <button
                   type="button"
                   onClick={() => {
-                    const target = post.user_id
-                    navigate(target ? `/app/perfil/${target}` : '/app/perfil')
+                    navigate(profilePath(post.user_id, currentUserId))
                     onClose()
                   }}
                   className="flex items-center gap-3 min-w-0 text-left hover:opacity-90 transition-opacity"

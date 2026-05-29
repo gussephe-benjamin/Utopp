@@ -26,6 +26,24 @@ export interface OrganizationSummary {
   posts_count?: number
 }
 
+/** Respuesta de GET /users/me y GET /users/{id} (campos relevantes para perfil). */
+export interface UserProfileResponse {
+  id: number
+  email?: string
+  full_name?: string | null
+  career?: string | null
+  cycle?: number | null
+  interests?: string[] | null
+  availability?: number | null
+  description?: string | null
+  contacts?: Record<string, string> | null
+  followers_count?: number
+  following_count?: number
+  posts_count?: number
+  profile_image_url?: string | null
+  role_name?: string
+}
+
 /**
  * GET /users/check-username?username=...
  * Verifica si un nombre de usuario está disponible.
@@ -63,8 +81,8 @@ export async function getAllUsers() {
  * Devuelve el perfil completo del usuario autenticado.
  * Auth: Requerida.
  */
-export async function getMyProfile() {
-  const { data } = await api.get("/users/me")
+export async function getMyProfile(): Promise<UserProfileResponse> {
+  const { data } = await api.get<UserProfileResponse>("/users/me")
   return data
 }
 
@@ -74,8 +92,8 @@ export async function getMyProfile() {
  * Solo los campos enviados se modifican.
  * Auth: Requerida.
  */
-export async function updateMyProfile(payload: Record<string, unknown>) {
-  const { data } = await api.patch("/users/me", payload)
+export async function updateMyProfile(payload: Record<string, unknown>): Promise<UserProfileResponse> {
+  const { data } = await api.patch<UserProfileResponse>("/users/me", payload)
   return data
 }
 
@@ -125,8 +143,8 @@ export async function getOrganizations(params?: { page?: number; size?: number }
  * seguidores, seguidos y posts.
  * Auth: No requerida.
  */
-export async function getUserProfile(userId: number) {
-  const { data } = await api.get(`/users/${userId}`)
+export async function getUserProfile(userId: number): Promise<UserProfileResponse> {
+  const { data } = await api.get<UserProfileResponse>(`/users/${userId}`)
   return data
 }
 

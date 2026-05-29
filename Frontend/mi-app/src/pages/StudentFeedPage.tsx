@@ -6,6 +6,8 @@ import { LeftSidebar } from "../features/feed/components/LeftSidebar"
 import { RightSidebar } from "../features/feed/components/RightSidebar"
 import { FeedWelcomeBanner } from "../features/feed/components/FeedWelcomeBanner"
 import { FeedHorizontalFilters } from "../features/feed/components/FeedHorizontalFilters"
+import { FeedWeeklyHighlightsCarousel } from "../features/feed/components/FeedWeeklyHighlightsCarousel"
+import { FeedTabletHighlights } from "../features/feed/components/FeedTabletHighlights"
 import { FeedFiltersPanel } from "../features/feed/components/FeedFiltersPanel"
 import { useFeed } from "../features/feed/hooks/useFeed"
 import { updateInterests } from "../api/users.api"
@@ -104,6 +106,8 @@ export default function StudentFeedPage({
               setSelectedTags={setSelectedTags}
             />
           </div>
+          <FeedWeeklyHighlightsCarousel />
+          <FeedTabletHighlights />
 
           <div className="hidden md:block">
             <FeedWelcomeBanner userName={userName} />

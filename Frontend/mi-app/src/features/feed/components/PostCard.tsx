@@ -22,24 +22,19 @@ import { savePost, unsavePost } from "../../../api/saved-posts.api";
 import { participate, updateParticipation, cancelParticipation } from "../../../api/participants.api";
 import EditPostWizard from "../../../components/EditPostWizard";
 import { POST_TYPE_LABELS, SUBTYPE_LABELS, type FeedPostOut } from "../../../types/post.types";
+import {
+  aspectRatioValue,
+  FEED_POST_CARD_MAX_WIDTH,
+  normalizeAspectRatio,
+} from "../../../shared/lib/aspectRatio";
 import { formatDate, isExpired, timeAgo, timeRemaining } from "../../../shared/lib/date";
 import { UTOPP_BRAND } from "../../../shared/constants/brand";
 import { TYPE_GRADIENTS } from "../constants/typeGradients";
 import { getDisplayName } from "../lib/display";
 import { PostImageViewerModal } from "./PostImageViewerModal";
 import { UserAvatar } from "./UserAvatar";
-
-function resolvePostImageUrl(rawUrl: string): string {
-  if (!rawUrl) return rawUrl;
-  if (/^(https?:)?\/\//i.test(rawUrl) || rawUrl.startsWith("data:") || rawUrl.startsWith("blob:")) {
-    return rawUrl;
-  }
-  const apiBase = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/+$/, "");
-  if (!apiBase) return rawUrl;
-  const normalizedPath = rawUrl.startsWith("/") ? rawUrl : `/${rawUrl}`;
-  return `${apiBase}${normalizedPath}`;
-}
-
+import { resolvePostImageUrl } from "../../../shared/lib/postImageUrl";
+import { profilePath } from "../../profile/lib/profileNavigation";
 
 type PostCardProps = {
   post: FeedPostOut;
@@ -66,7 +61,6 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
   const WIDE_RATIO = 1.45;
   const TALL_RATIO = 0.78;
   const ULTRA_TALL_RATIO = 0.56;
-  const DEFAULT_CARD_MAX_WIDTH = 680;
   const SWIPE_THRESHOLD_PX = 40;
 
   const [descExpanded, setDescExpanded] = useState(false);
@@ -355,6 +349,18 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
     setViewerOpen(true);
   };
   const mediaPresentation = useMemo(() => {
+    // Formato fijo estilo Instagram persistido en el post: el frame usa ese ratio
+    // exacto con object-cover + object_position/scale guardados.
+    if (post.aspect_ratio) {
+      const fixedRatio = aspectRatioValue(normalizeAspectRatio(post.aspect_ratio));
+      return {
+        objectFit: "cover" as const,
+        mediaAspectRatio: fixedRatio,
+        minMediaHeight: 0,
+        maxMediaHeight: undefined as number | undefined,
+      };
+    }
+
     const ratio = currentImageRatio;
     if (!ratio || !Number.isFinite(ratio)) {
       return {
@@ -362,18 +368,15 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
         mediaAspectRatio: 16 / 9,
         minMediaHeight: 220,
         maxMediaHeight: 520,
-        cardMaxWidth: DEFAULT_CARD_MAX_WIDTH,
       };
     }
 
     if (ratio >= ULTRA_WIDE_RATIO) {
       return {
-        // Ultra panorámicas: mantenemos el modo híbrido con recorte leve para evitar una franja demasiado baja.
         objectFit: "cover" as const,
         mediaAspectRatio: 2.2,
         minMediaHeight: 220,
         maxMediaHeight: 340,
-        cardMaxWidth: DEFAULT_CARD_MAX_WIDTH,
       };
     }
 
@@ -383,7 +386,6 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
         mediaAspectRatio: ratio,
         minMediaHeight: 220,
         maxMediaHeight: 460,
-        cardMaxWidth: DEFAULT_CARD_MAX_WIDTH,
       };
     }
 
@@ -393,7 +395,6 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
         mediaAspectRatio: ratio,
         minMediaHeight: 250,
         maxMediaHeight: 620,
-        cardMaxWidth: 640,
       };
     }
 
@@ -403,7 +404,6 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
         mediaAspectRatio: ratio,
         minMediaHeight: 300,
         maxMediaHeight: 760,
-        cardMaxWidth: 610,
       };
     }
 
@@ -413,7 +413,6 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
         mediaAspectRatio: ratio,
         minMediaHeight: 360,
         maxMediaHeight: 900,
-        cardMaxWidth: 560,
       };
     }
 
@@ -422,9 +421,8 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
       mediaAspectRatio: ratio,
       minMediaHeight: 420,
       maxMediaHeight: 980,
-      cardMaxWidth: 510,
     };
-  }, [currentImageRatio]);
+  }, [currentImageRatio, post.aspect_ratio]);
 
   const hasDeadline = Boolean(post.deadline_at);
   const deadlineExpired = post.deadline_at ? isExpired(post.deadline_at) : false;
@@ -445,6 +443,7 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
             deadline_at: post.deadline_at,
             created_at: post.created_at,
             is_pinned: post.is_pinned,
+            aspect_ratio: post.aspect_ratio,
           }}
           onClose={() => setEditingPost(false)}
           onSaved={handleEditSaved}
@@ -458,12 +457,12 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
         initial="hidden"
         whileInView="show"
         viewport={{ once: true, margin: "-50px" }}
-        className={`relative mx-auto h-auto w-full overflow-visible rounded-[22px] border bg-white shadow-[0_4px_20px_rgba(0,0,0,0.015)] transition-all duration-300 hover:-translate-y-[1px] hover:shadow-[0_8px_30px_rgba(0,0,0,0.03)] ${
+        className={`relative mx-auto h-auto w-full overflow-hidden rounded-[22px] border bg-white shadow-[0_4px_20px_rgba(0,0,0,0.015)] transition-all duration-300 hover:-translate-y-[1px] hover:shadow-[0_8px_30px_rgba(0,0,0,0.03)] ${
           post.is_pinned
             ? "border-amber-200/75 shadow-[0_4px_24px_rgba(245,158,11,0.04)] ring-1 ring-amber-100/30"
             : "border-gray-100"
         }`}
-        style={{ maxWidth: `${mediaPresentation.cardMaxWidth}px` }}
+        style={{ maxWidth: `${FEED_POST_CARD_MAX_WIDTH}px` }}
       >
         {post.is_pinned && (
           <div className="px-4 pt-3.5 flex">
@@ -487,7 +486,7 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
                 <button
                   type="button"
                   onClick={() =>
-                    navigate(post.user_id === currentUserId ? "/app/perfil" : `/app/perfil/${post.user_id}`)
+                    navigate(profilePath(post.user_id, currentUserId))
                   }
                   className="flex min-w-0 items-center gap-1.5 text-left text-sm font-bold leading-tight text-gray-900 transition-colors hover:text-[#2f55f6]"
                 >
@@ -579,8 +578,12 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
               className="group relative w-full overflow-hidden rounded-2xl border border-gray-100/70 bg-gray-50 shadow-sm"
               style={{
                 aspectRatio: String(mediaPresentation.mediaAspectRatio),
-                minHeight: `${mediaPresentation.minMediaHeight}px`,
-                maxHeight: `${mediaPresentation.maxMediaHeight}px`,
+                ...(mediaPresentation.minMediaHeight > 0
+                  ? { minHeight: `${mediaPresentation.minMediaHeight}px` }
+                  : {}),
+                ...(mediaPresentation.maxMediaHeight != null
+                  ? { maxHeight: `${mediaPresentation.maxMediaHeight}px` }
+                  : {}),
               }}
               onClick={handleMediaClick}
               onTouchStart={handleTouchStart}
@@ -684,7 +687,7 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
 
         <div className="border-t border-gray-100/80 w-full" />
 
-        <div className="flex items-center justify-between gap-4 bg-white px-4 py-3.5">
+        <div className="flex items-center justify-between gap-4 rounded-b-[22px] bg-white px-4 py-3.5">
           <div className="flex items-center gap-2">
             <button
               type="button"

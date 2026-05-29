@@ -4,6 +4,7 @@ import { AVAILABILITY_OPTIONS, CAREER_OPTIONS } from "../constants/profileOption
 import type { OrganizationSummary } from "../../../api/users.api"
 import type { ProfileUserData } from "./types"
 import { TW_UTOPP_GRADIENT_R } from "../../../shared/constants/brand"
+import { ProfileMetricCard } from "../components/ProfileMetricCard"
 
 interface StudentProfilePublicProps {
   user: ProfileUserData
@@ -96,7 +97,7 @@ export function StudentProfilePublic({
         <div className="space-y-6">
           {/* Fila de Métricas */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <MetricCard
+            <ProfileMetricCard
               label="Asistencia"
               value="12"
               subValue="Eventos este ciclo"
@@ -104,21 +105,15 @@ export function StudentProfilePublic({
               iconBg="bg-violet-50"
               textColor="text-violet-700"
             />
-            <MetricCard
+            <ProfileMetricCard
               label="Disponibilidad"
               value={availabilityLabel}
               icon={<Clock className="h-5 w-5 text-amber-500" />}
               iconBg="bg-amber-50"
               textColor="text-amber-700"
             />
-            <MetricCard
-              grayPlaceholder
-              placeholderText="Publicaciones"
-            />
-            <MetricCard
-              grayPlaceholder
-              placeholderText="Funcionalidad Extra"
-            />
+            <ProfileMetricCard grayPlaceholder placeholderText="Publicaciones" />
+            <ProfileMetricCard grayPlaceholder placeholderText="Funcionalidad Extra" />
           </div>
 
           {/* Mis Organizaciones */}
@@ -167,53 +162,3 @@ export function StudentProfilePublic({
   )
 }
 
-function MetricCard({
-  label,
-  value,
-  subValue,
-  icon,
-  iconBg = "bg-purple-50",
-  textColor = "text-purple-600",
-  grayPlaceholder,
-  placeholderText,
-}: {
-  label?: string
-  value?: string
-  subValue?: string
-  icon?: React.ReactNode
-  iconBg?: string
-  textColor?: string
-  grayPlaceholder?: boolean
-  placeholderText?: string
-}) {
-  if (grayPlaceholder) {
-    return (
-      <div className="flex items-center justify-center rounded-xl border border-gray-200 bg-gray-50 p-4 text-center aspect-square shadow-[0_4px_20px_rgba(0,0,0,0.005)]">
-        <span className="text-xs font-bold text-gray-400 leading-snug">
-          {placeholderText}
-        </span>
-      </div>
-    )
-  }
-
-  return (
-    <div className="flex flex-col items-start justify-between rounded-xl border border-gray-200 bg-white p-4 aspect-square shadow-[0_4px_20px_rgba(0,0,0,0.005)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.015)] transition-shadow duration-300">
-      <div className={`p-1.5 ${iconBg} rounded-lg mb-2`}>
-        {icon}
-      </div>
-      <div className="flex-1 flex flex-col justify-end w-full">
-        <span className="text-[9px] font-bold uppercase tracking-wider text-gray-400 leading-none mb-1">
-          {label}
-        </span>
-        <span className={`text-sm md:text-base font-black ${textColor} leading-tight break-words max-w-full`}>
-          {value}
-        </span>
-        {subValue && (
-          <span className="mt-1 text-[9px] font-semibold text-gray-400 leading-none">
-            {subValue}
-          </span>
-        )}
-      </div>
-    </div>
-  )
-}

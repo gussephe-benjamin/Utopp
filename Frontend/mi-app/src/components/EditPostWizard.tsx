@@ -26,6 +26,11 @@ import {
   isPostDescriptionWordCountValid,
   POST_DESCRIPTION_MAX_WORDS,
 } from '../shared/lib/wordCount'
+import {
+  DEFAULT_POST_ASPECT_RATIO,
+  normalizeAspectRatio,
+  type PostAspectRatio,
+} from '../shared/lib/aspectRatio'
 
 interface PostItem {
   id: number
@@ -39,6 +44,7 @@ interface PostItem {
   deadline_at?: string
   created_at: string
   is_pinned?: boolean
+  aspect_ratio?: string
 }
 
 interface EditPostWizardProps {
@@ -75,6 +81,9 @@ export default function EditPostWizard({ post, onClose, onSaved }: EditPostWizar
   const [deadlineAt, setDeadlineAt] = useState(isoToDatetimeLocal(post?.deadline_at))
   const [tags, setTags]             = useState<string[]>(post?.tags ?? [])
   const [isPinned, setIsPinned]     = useState(post?.is_pinned ?? false)
+  const [aspectRatio, setAspectRatio] = useState<PostAspectRatio>(
+    post?.aspect_ratio ? normalizeAspectRatio(post.aspect_ratio) : DEFAULT_POST_ASPECT_RATIO,
+  )
   const { roleName } = useRole()
   const canPin = roleName === ROLE_ADMIN || roleName === ROLE_ROOT || roleName === ROLE_OFICINA
   const [images, setImages]         = useState<WizardImage[]>([])
@@ -116,6 +125,7 @@ export default function EditPostWizard({ post, onClose, onSaved }: EditPostWizar
     setDescription(post.description)
     setDeadlineAt(isoToDatetimeLocal(post.deadline_at))
     setTags(post.tags ?? [])
+    setAspectRatio(post.aspect_ratio ? normalizeAspectRatio(post.aspect_ratio) : DEFAULT_POST_ASPECT_RATIO)
     setCurrentStep(1)
     setSaveError(null)
     setLoading(true)
@@ -214,6 +224,7 @@ export default function EditPostWizard({ post, onClose, onSaved }: EditPostWizar
         tags:        tags.length > 0 ? tags : undefined,
         ...(deadlineAt ? { deadline_at: new Date(deadlineAt).toISOString() } : { deadline_at: null }),
         is_pinned: isPinned,
+        aspect_ratio: aspectRatio,
       })
 
       // 2. Image diff
@@ -374,7 +385,14 @@ export default function EditPostWizard({ post, onClose, onSaved }: EditPostWizar
         )
       case 3:
         if (hasImages) {
-          return <StepFrameEditor images={images} onUpdate={handleImagesChange} />
+          return (
+            <StepFrameEditor
+              images={images}
+              aspectRatio={aspectRatio}
+              onAspectRatioChange={ratio => { setAspectRatio(ratio); markDirty() }}
+              onUpdate={handleImagesChange}
+            />
+          )
         }
         return (
           <Step5Preview
@@ -385,6 +403,8 @@ export default function EditPostWizard({ post, onClose, onSaved }: EditPostWizar
             deadline_at={deadlineAt}
             images={images}
             links={links}
+            tags={tags}
+            aspectRatio={aspectRatio}
           />
         )
       case 4:
@@ -397,6 +417,8 @@ export default function EditPostWizard({ post, onClose, onSaved }: EditPostWizar
             deadline_at={deadlineAt}
             images={images}
             links={links}
+            tags={tags}
+            aspectRatio={aspectRatio}
           />
         )
       default:

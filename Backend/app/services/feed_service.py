@@ -182,6 +182,7 @@ def build_feed(
                 image_url=first_image_url,
                 images_count=len(post.images) if post.images else 0,
                 links_count=len(post.links) if post.links else 0,
+                aspect_ratio=getattr(post, "aspect_ratio", None) or "4:5",
                 is_saved=post.id in saved_post_ids,
                 participation_status=participation_map.get(post.id),
             )

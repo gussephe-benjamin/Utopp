@@ -382,3 +382,40 @@ def run_migrations(engine: Engine) -> None:
         """))
 
         conn.commit()
+
+        # 15. Agregar columna aspect_ratio a posts si no existe (formato estilo Instagram)
+        conn.execute(text("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name = 'posts' AND column_name = 'aspect_ratio'
+                ) THEN
+                    ALTER TABLE posts
+                    ADD COLUMN aspect_ratio VARCHAR(8) NOT NULL DEFAULT '4:5';
+                END IF;
+            END$$;
+        """))
+
+        conn.commit()
+
+        # 16. Perfil de organización: descripción y contactos en users
+        conn.execute(text("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name = 'users' AND column_name = 'description'
+                ) THEN
+                    ALTER TABLE users ADD COLUMN description TEXT;
+                END IF;
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name = 'users' AND column_name = 'contacts'
+                ) THEN
+                    ALTER TABLE users ADD COLUMN contacts JSONB;
+                END IF;
+            END$$;
+        """))
+
+        conn.commit()
