@@ -17,7 +17,9 @@ import {
 } from "lucide-react"
 import type { ProfileUserData } from "./types"
 import type { FeedPostOut } from "../../../types/post.types"
-import { PostCard } from "../../feed/components/PostCard"
+import { ProfileMetricCard } from "../components/ProfileMetricCard"
+import { ProfilePostItem } from "../components/ProfilePostItem"
+import { BarChart3, FileText, Star, Users } from "lucide-react"
 import { INTERESTS } from "../../../constants/interests"
 import { TW_UTOPP_GRADIENT_R } from "../../../shared/constants/brand"
 
@@ -29,6 +31,7 @@ interface OrganizationProfilePublicProps {
   followSaving: boolean
   onFollowToggle: () => Promise<void>
   currentUserId?: number | null
+  showFollowButton?: boolean
 }
 
 function getContactIcon(key: string) {
@@ -66,6 +69,7 @@ export function OrganizationProfilePublic({
   followSaving,
   onFollowToggle,
   currentUserId = null,
+  showFollowButton = true,
 }: OrganizationProfilePublicProps) {
   const [emailCopied, setEmailCopied] = useState(false)
 
@@ -111,34 +115,6 @@ export function OrganizationProfilePublic({
       <section className="rounded-[22px] border border-violet-100 bg-white shadow-[0_4px_20px_rgba(0,0,0,0.015)] overflow-hidden">
         {/* Banner */}
         <div className={`relative h-44 w-full ${TW_UTOPP_GRADIENT_R} md:h-56`}>
-          {/* Botón Seguir (Esquina superior derecha en Desktop) */}
-          <div className="absolute top-4 right-4 hidden md:block">
-            <button
-              type="button"
-              disabled={followSaving}
-              onClick={onFollowToggle}
-              className={`inline-flex items-center gap-1.5 rounded-full px-5 py-2 text-xs font-bold shadow-md transition-all active:scale-95 disabled:opacity-75 ${
-                isFollowing
-                  ? "border border-[#9333EA] bg-white text-[#9333EA] hover:bg-purple-50"
-                  : `${TW_UTOPP_GRADIENT_R} text-white hover:brightness-110`
-              }`}
-            >
-              {followSaving ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : isFollowing ? (
-                <>
-                  <UserMinus className="h-3.5 w-3.5" />
-                  Dejar de seguir
-                </>
-              ) : (
-                <>
-                  <UserPlus className="h-3.5 w-3.5" />
-                  Seguir
-                </>
-              )}
-            </button>
-          </div>
-
           {/* Avatar con borde de color de marca fucsia y badge "FP" */}
           <div className="absolute -bottom-14 left-1/2 -translate-x-1/2 md:left-10 md:translate-x-0">
             <div className="relative h-28 w-28 rounded-full bg-white p-1 ring-4 ring-[#C026D3] shadow-lg md:h-32 md:w-32">
@@ -184,13 +160,13 @@ export function OrganizationProfilePublic({
               )}
             </div>
 
-            {/* Botón Seguir (Sólo visible en móviles) */}
-            <div className="mt-4 md:hidden">
+            {showFollowButton ? (
+            <div className="mt-4 shrink-0 md:mt-0">
               <button
                 type="button"
                 disabled={followSaving}
                 onClick={onFollowToggle}
-                className={`w-full inline-flex items-center justify-center gap-1.5 rounded-full px-5 py-2.5 text-xs font-bold shadow-md transition-all active:scale-95 disabled:opacity-75 ${
+                className={`w-full md:w-auto inline-flex items-center justify-center gap-1.5 rounded-full px-5 py-2.5 text-xs font-bold shadow-md transition-all active:scale-95 disabled:opacity-75 ${
                   isFollowing
                     ? "border border-[#9333EA] bg-white text-[#9333EA] hover:bg-purple-50"
                     : `${TW_UTOPP_GRADIENT_R} text-white hover:brightness-110`
@@ -211,22 +187,41 @@ export function OrganizationProfilePublic({
                 )}
               </button>
             </div>
+            ) : null}
           </div>
         </div>
       </section>
 
       {/* ─── Métricas ─── */}
       <section className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-        <MetricCard label="Alumnos Siguiendo Totales" value={`${user.followers_count ?? 0}`} />
-        <MetricCard label="Cantidad de publicaciones" value={`${publishedPosts.length}`} />
-        <MetricCard
-          label="Promedio de satisfacción"
-          value={user.satisfaction_score !== undefined && user.satisfaction_score !== null ? `${user.satisfaction_score} ★` : "4.5 ★"}
+        <ProfileMetricCard
+          label="Alumnos siguiendo totales"
+          value={`${user.followers_count ?? 0}`}
+          icon={<Users className="h-5 w-5 text-violet-500" />}
+          iconBg="bg-violet-50"
+          textColor="text-violet-700"
         />
-        <MetricCard
+        <ProfileMetricCard
+          label="Cantidad de publicaciones"
+          value={`${publishedPosts.length}`}
+          icon={<FileText className="h-5 w-5 text-blue-500" />}
+          iconBg="bg-blue-50"
+          textColor="text-blue-700"
+        />
+        <ProfileMetricCard
+          label="Promedio de satisfacción"
+          value={user.satisfaction_score !== undefined && user.satisfaction_score !== null ? `${user.satisfaction_score} ★` : "-"}
+          icon={<Star className="h-5 w-5 text-amber-500" />}
+          iconBg="bg-amber-50"
+          textColor="text-amber-700"
+        />
+        <ProfileMetricCard
           label="# promedio de alumnos por evento"
-          value={user.avg_students_per_event !== undefined && user.avg_students_per_event !== null ? `${user.avg_students_per_event}` : "0"}
-          subValue={user.avg_students_per_event === 1 ? "alumno" : "alumnos"}
+          value={user.avg_students_per_event !== undefined && user.avg_students_per_event !== null ? `${user.avg_students_per_event}` : "-"}
+          subValue={user.avg_students_per_event !== undefined && user.avg_students_per_event !== null ? (user.avg_students_per_event === 1 ? "alumno" : "alumnos") : undefined}
+          icon={<BarChart3 className="h-5 w-5 text-emerald-500" />}
+          iconBg="bg-emerald-50"
+          textColor="text-emerald-700"
         />
       </section>
 
@@ -239,9 +234,15 @@ export function OrganizationProfilePublic({
             <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">
               Sobre nosotros
             </h2>
-            <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">
-              {user.description}
-            </p>
+            {user.description?.trim() ? (
+              <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">
+                {user.description}
+              </p>
+            ) : (
+              <p className="text-xs text-gray-400 italic">
+                Esta organización aún no ha agregado una descripción.
+              </p>
+            )}
           </article>
 
           {/* Contactos */}
@@ -314,25 +315,14 @@ export function OrganizationProfilePublic({
               </div>
             ) : (
               <div className="flex flex-col gap-4">
-                 {publishedPosts.map((post) => {
-                  const isHighlighted = String(post.id) === activeHighlightId
-                  return (
-                    <div
-                      key={post.id}
-                      id={`post-${post.id}`}
-                      className={`transition-all duration-1000 rounded-[22px] ${
-                        isHighlighted
-                          ? "ring-4 ring-violet-500/80 ring-offset-2 scale-[1.01] shadow-[0_0_20px_rgba(139,92,246,0.25)]"
-                          : ""
-                      }`}
-                    >
-                      <PostCard
-                        post={post}
-                        currentUserId={currentUserId}
-                      />
-                    </div>
-                  )
-                })}
+                {publishedPosts.map((post) => (
+                  <ProfilePostItem
+                    key={post.id}
+                    post={post}
+                    currentUserId={currentUserId ?? null}
+                    highlighted={String(post.id) === activeHighlightId}
+                  />
+                ))}
               </div>
             )}
           </div>
@@ -342,20 +332,3 @@ export function OrganizationProfilePublic({
   )
 }
 
-function MetricCard({ label, value, subValue }: { label: string; value: string; subValue?: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center rounded-[18px] border border-gray-100 bg-gray-50/50 p-4 text-center shadow-[0_2px_8px_rgba(0,0,0,0.005)]">
-      <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 leading-tight">
-        {label}
-      </span>
-      <span className="mt-2 text-2xl font-black text-gray-900 leading-none">
-        {value}
-      </span>
-      {subValue && (
-        <span className="mt-1 text-xs font-semibold text-gray-500">
-          {subValue}
-        </span>
-      )}
-    </div>
-  )
-}

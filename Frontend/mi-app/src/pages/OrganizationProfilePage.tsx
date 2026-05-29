@@ -11,6 +11,8 @@ import {
   getMyFollowingOrganizations,
 } from "../api/users.api"
 import { getSavedPosts } from "../api/saved-posts.api"
+import { getMyRoles } from "../api/roles.api"
+import { ROLE_ESTUDIANTE } from "../hooks/useRole"
 import { uploadToCloudinary } from "../api/cloudinary"
 import { OrganizationProfileSelf } from "../features/profile/views/OrganizationProfileSelf"
 import { OrganizationProfilePublic } from "../features/profile/views/OrganizationProfilePublic"
@@ -23,7 +25,7 @@ interface OrganizationProfilePageProps {
 }
 
 export default function OrganizationProfilePage({ viewedUserId }: OrganizationProfilePageProps) {
-  const isMe = !viewedUserId
+  const [isOwnProfile, setIsOwnProfile] = useState<boolean | null>(viewedUserId == null ? true : null)
   const [user, setUser] = useState<ProfileUserData | null>(null)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [posts, setPosts] = useState<FeedPostOut[]>([])
@@ -31,6 +33,7 @@ export default function OrganizationProfilePage({ viewedUserId }: OrganizationPr
   const [loading, setLoading] = useState(true)
 
   const [currentUserId, setCurrentUserId] = useState<number | null>(null)
+  const [viewerCanFollow, setViewerCanFollow] = useState(false)
   const [isFollowing, setIsFollowing] = useState(false)
   const [followSaving, setFollowSaving] = useState(false)
   const [savingProfile, setSavingProfile] = useState(false)
@@ -40,19 +43,33 @@ export default function OrganizationProfilePage({ viewedUserId }: OrganizationPr
   useEffect(() => {
     let mounted = true
     setLoading(true)
+    setIsOwnProfile(viewedUserId == null ? true : null)
+    setUser(null)
+    setPosts([])
+    setSavedPosts([])
+    setIsFollowing(false)
 
     ;(async () => {
       try {
         let profile: ProfileUserData | null = null
         let savedRaw: SavedPostRaw[] = []
 
-        // Always try to fetch current user's profile to resolve currentUserId
-        const myProfile = await getMyProfile().catch(() => null)
+        const [myProfile, myRoles] = await Promise.all([
+          getMyProfile().catch(() => null),
+          getMyRoles().catch(() => []),
+        ])
         if (myProfile && mounted) {
           setCurrentUserId(myProfile.id)
         }
+        if (mounted) {
+          setViewerCanFollow(myRoles.some((r) => r.name === ROLE_ESTUDIANTE))
+        }
 
-        if (isMe) {
+        const viewingSelf =
+          !viewedUserId || (myProfile != null && viewedUserId === myProfile.id)
+        if (mounted) setIsOwnProfile(viewingSelf)
+
+        if (viewingSelf) {
           profile = myProfile
           savedRaw = await getSavedPosts().catch(() => [] as SavedPostRaw[])
         } else if (viewedUserId) {
@@ -64,18 +81,6 @@ export default function OrganizationProfilePage({ viewedUserId }: OrganizationPr
 
         if (!mounted || !profile) return
 
-        // Provide defaults if fields are empty
-        if (!profile.description) {
-          profile.description = "Somos una organización estudiantil comprometida con el desarrollo y la integración de la comunidad estudiantil. Organizamos eventos culturales, académicos y deportivos para fomentar el talento y la colaboración."
-        }
-        if (!profile.contacts || Object.keys(profile.contacts).length === 0) {
-          profile.contacts = {
-            instagram: "https://instagram.com/utopp_org",
-            website: "https://utopp.edu.pe",
-            linkedin: "https://linkedin.com/company/utopp-org"
-          }
-        }
-
         setUser(profile)
         setAvatarUrl(profile.profile_image_url ?? null)
 
@@ -84,7 +89,7 @@ export default function OrganizationProfilePage({ viewedUserId }: OrganizationPr
         setPosts(userPosts)
 
         // Load saved posts if it's the current user
-        if (isMe && savedRaw.length > 0) {
+        if (viewingSelf && savedRaw.length > 0) {
           const mappedSaved = savedRaw.map(mapSavedPostToFeedPost)
           setSavedPosts(mappedSaved)
         }
@@ -98,7 +103,7 @@ export default function OrganizationProfilePage({ viewedUserId }: OrganizationPr
     return () => {
       mounted = false
     }
-  }, [isMe, viewedUserId])
+  }, [viewedUserId])
 
   const handleSaveProfile = useCallback(
     async (payload: {
@@ -124,9 +129,9 @@ export default function OrganizationProfilePage({ viewedUserId }: OrganizationPr
           prev
             ? {
                 ...prev,
-                full_name: payload.fullName,
-                description: payload.description,
-                contacts: payload.contacts,
+                full_name: updatedUser.full_name ?? payload.fullName,
+                description: updatedUser.description ?? payload.description,
+                contacts: updatedUser.contacts ?? payload.contacts,
                 interests: payload.interests,
                 role_name: updatedUser.role_name ?? prev.role_name,
               }
@@ -190,7 +195,7 @@ export default function OrganizationProfilePage({ viewedUserId }: OrganizationPr
     }
   }, [user, isFollowing])
 
-  if (loading || !user) {
+  if (loading || !user || isOwnProfile === null) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <p className="text-sm text-gray-600 animate-pulse">Cargando perfil de organización...</p>
@@ -204,7 +209,7 @@ export default function OrganizationProfilePage({ viewedUserId }: OrganizationPr
     posts,
   }
 
-  return isMe ? (
+  return isOwnProfile ? (
     <OrganizationProfileSelf
       {...sharedProps}
       savedPosts={savedPosts}
@@ -228,6 +233,7 @@ export default function OrganizationProfilePage({ viewedUserId }: OrganizationPr
       followSaving={followSaving}
       onFollowToggle={handleFollowToggle}
       currentUserId={currentUserId}
+      showFollowButton={viewerCanFollow}
     />
   )
 }

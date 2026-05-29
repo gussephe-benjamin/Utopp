@@ -20,10 +20,14 @@ import {
   FileText,
   Bookmark,
   Archive,
+  BarChart3,
+  Star,
+  Users,
 } from "lucide-react"
 import type { ProfileUserData } from "./types"
 import type { FeedPostOut } from "../../../types/post.types"
-import { PostCard } from "../../feed/components/PostCard"
+import { ProfileMetricCard } from "../components/ProfileMetricCard"
+import { ProfilePostItem } from "../components/ProfilePostItem"
 import { EditOrgProfileModal } from "../components/EditOrgProfileModal"
 import { INTERESTS } from "../../../constants/interests"
 import { TW_UTOPP_GRADIENT_R } from "../../../shared/constants/brand"
@@ -269,19 +273,34 @@ export function OrganizationProfileSelf({
 
       {/* ─── Métricas ─── */}
       <section className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-        <MetricCard label="Alumnos Siguiendo Totales" value={`${user.followers_count ?? 0}`} />
-        <MetricCard
+        <ProfileMetricCard
+          label="Alumnos siguiendo totales"
+          value={`${user.followers_count ?? 0}`}
+          icon={<Users className="h-5 w-5 text-violet-500" />}
+          iconBg="bg-violet-50"
+          textColor="text-violet-700"
+        />
+        <ProfileMetricCard
           label="Cantidad de publicaciones"
           value={`${posts.filter((p) => p.status === "published" || !p.status).length}`}
+          icon={<FileText className="h-5 w-5 text-blue-500" />}
+          iconBg="bg-blue-50"
+          textColor="text-blue-700"
         />
-        <MetricCard
+        <ProfileMetricCard
           label="Promedio de satisfacción"
-          value={user.satisfaction_score !== undefined && user.satisfaction_score !== null ? `${user.satisfaction_score} ★` : "4.5 ★"}
+          value={user.satisfaction_score !== undefined && user.satisfaction_score !== null ? `${user.satisfaction_score} ★` : "-"}
+          icon={<Star className="h-5 w-5 text-amber-500" />}
+          iconBg="bg-amber-50"
+          textColor="text-amber-700"
         />
-        <MetricCard
+        <ProfileMetricCard
           label="# promedio de alumnos por evento"
-          value={user.avg_students_per_event !== undefined && user.avg_students_per_event !== null ? `${user.avg_students_per_event}` : "0"}
-          subValue={user.avg_students_per_event === 1 ? "alumno" : "alumnos"}
+          value={user.avg_students_per_event !== undefined && user.avg_students_per_event !== null ? `${user.avg_students_per_event}` : "-"}
+          subValue={user.avg_students_per_event !== undefined && user.avg_students_per_event !== null ? (user.avg_students_per_event === 1 ? "alumno" : "alumnos") : undefined}
+          icon={<BarChart3 className="h-5 w-5 text-emerald-500" />}
+          iconBg="bg-emerald-50"
+          textColor="text-emerald-700"
         />
       </section>
 
@@ -294,9 +313,15 @@ export function OrganizationProfileSelf({
             <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">
               Sobre nosotros
             </h2>
-            <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">
-              {user.description}
-            </p>
+            {user.description?.trim() ? (
+              <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">
+                {user.description}
+              </p>
+            ) : (
+              <p className="text-xs text-gray-400 italic">
+                Aún no hay descripción. Edita tu perfil para agregar información sobre la organización.
+              </p>
+            )}
           </article>
 
           {/* Contactos */}
@@ -394,50 +419,21 @@ export function OrganizationProfileSelf({
               </div>
             ) : (
               <div className="flex flex-col gap-4">
-                 {filteredPosts.map((post) => {
-                  const isHighlighted = String(post.id) === activeHighlightId
-                  return (
-                    <div
-                      key={post.id}
-                      id={`post-${post.id}`}
-                      className={`transition-all duration-1000 rounded-[22px] ${
-                        isHighlighted
-                          ? "ring-4 ring-violet-500/80 ring-offset-2 scale-[1.01] shadow-[0_0_20px_rgba(139,92,246,0.25)]"
-                          : ""
-                      }`}
-                    >
-                      <PostCard
-                        post={post}
-                        currentUserId={user.id}
-                        onEdited={onPostEdited}
-                        onDeleted={onPostDeleted}
-                      />
-                    </div>
-                  )
-                })}
+                {filteredPosts.map((post) => (
+                  <ProfilePostItem
+                    key={post.id}
+                    post={post}
+                    currentUserId={user.id}
+                    highlighted={String(post.id) === activeHighlightId}
+                    onEdited={onPostEdited}
+                    onDeleted={onPostDeleted}
+                  />
+                ))}
               </div>
             )}
           </div>
         </div>
       </div>
-    </div>
-  )
-}
-
-function MetricCard({ label, value, subValue }: { label: string; value: string; subValue?: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center rounded-[18px] border border-gray-100 bg-gray-50/50 p-4 text-center shadow-[0_2px_8px_rgba(0,0,0,0.005)]">
-      <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 leading-tight">
-        {label}
-      </span>
-      <span className="mt-2 text-2xl font-black text-gray-900 leading-none">
-        {value}
-      </span>
-      {subValue && (
-        <span className="mt-1 text-xs font-semibold text-gray-500">
-          {subValue}
-        </span>
-      )}
     </div>
   )
 }

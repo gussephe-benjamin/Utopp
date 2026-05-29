@@ -146,6 +146,8 @@ def get_current_user_profile(
         cycle=current_user.cycle,
         interests=current_user.interests,
         availability=current_user.availability,
+        description=current_user.description,
+        contacts=current_user.contacts,
         is_onboarding_completed=current_user.is_onboarding_completed,
         created_at=current_user.created_at,
         followers_count=followers_count,
@@ -169,13 +171,53 @@ def update_current_user(
 ):
     update_data = data.model_dump(exclude_unset=True)
 
+    org_only_fields = {"description", "contacts"}
+    if org_only_fields.intersection(update_data.keys()):
+        if not _has_role(db, current_user.id, ORG_ROLE_NAME):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Solo las organizaciones pueden actualizar descripción y contactos",
+            )
+
     for field, value in update_data.items():
         setattr(current_user, field, value)
 
     db.commit()
     db.refresh(current_user)
 
-    return current_user
+    uid = current_user.id
+    followers_count = db.scalar(
+        select(func.count()).select_from(Follow).where(Follow.following_id == uid)
+    ) or 0
+    following_count = db.scalar(
+        select(func.count()).select_from(Follow).where(Follow.follower_id == uid)
+    ) or 0
+    posts_count = db.scalar(
+        select(func.count()).select_from(Post).where(Post.user_id == uid)
+    ) or 0
+    profile_img = db.scalars(
+        select(UserProfileImage).where(
+            UserProfileImage.user_id == uid,
+            UserProfileImage.is_active.is_(True),
+        )
+    ).first()
+    return UserOut(
+        id=current_user.id,
+        email=current_user.email,
+        full_name=current_user.full_name,
+        career=current_user.career,
+        cycle=current_user.cycle,
+        interests=current_user.interests,
+        availability=current_user.availability,
+        description=current_user.description,
+        contacts=current_user.contacts,
+        is_onboarding_completed=current_user.is_onboarding_completed,
+        created_at=current_user.created_at,
+        followers_count=followers_count,
+        following_count=following_count,
+        posts_count=posts_count,
+        profile_image_url=profile_img.url if profile_img else None,
+    )
 
 
 # ============================================================
@@ -361,6 +403,8 @@ def get_user_profile(
         cycle=user.cycle,
         interests=user.interests,
         availability=user.availability,
+        description=user.description,
+        contacts=user.contacts,
         followers_count=followers_count,
         following_count=following_count,
         posts_count=posts_count,

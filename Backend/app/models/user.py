@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import String, DateTime, func, Boolean, JSON, Integer, ForeignKey
+from sqlalchemy import String, DateTime, func, Boolean, JSON, Integer, ForeignKey, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.base import Base
@@ -18,7 +18,9 @@ class User(Base):
     availability: Mapped[int | None] = mapped_column(Integer, nullable=True)
     
     cycle: Mapped[int | None] = mapped_column(Integer, nullable= True)
-    
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    contacts: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+
     google_id: Mapped[str | None] = mapped_column(String, unique=True, nullable=True)
     last_accepted_legal_document_id: Mapped[int | None] = mapped_column(
         ForeignKey("legal_documents.id"), nullable=True, index=True

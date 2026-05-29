@@ -30,7 +30,7 @@ interface StudentProfilePageProps {
  * en función del `viewedUserId` recibido.
  */
 export default function StudentProfilePage({ viewedUserId }: StudentProfilePageProps) {
-  const isMe = !viewedUserId
+  const [isOwnProfile, setIsOwnProfile] = useState<boolean | null>(viewedUserId == null ? true : null)
 
   const [user, setUser] = useState<ProfileUserData | null>(null)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
@@ -47,20 +47,28 @@ export default function StudentProfilePage({ viewedUserId }: StudentProfilePageP
   useEffect(() => {
     let mounted = true
     setLoading(true)
+    setIsOwnProfile(viewedUserId == null ? true : null)
+    setUser(null)
+    setFollowingOrganizations([])
+    setEventSavedPosts([])
 
     ;(async () => {
       try {
-        if (isMe) {
-          const [profile, savedRaw, followingOrgs, orgs, roles] = await Promise.all([
-            getMyProfile(),
+        const myProfile = await getMyProfile()
+        const viewingSelf =
+          !viewedUserId || viewedUserId === myProfile.id
+        if (mounted) setIsOwnProfile(viewingSelf)
+
+        if (viewingSelf) {
+          const [savedRaw, followingOrgs, orgs, roles] = await Promise.all([
             getSavedPosts().catch(() => [] as SavedPostRaw[]),
             getMyFollowingOrganizations().catch(() => []),
             getOrganizations().catch(() => []),
             getMyRoles().catch(() => []),
           ])
           if (!mounted) return
-          setUser({ ...profile, role_name: roles[0]?.name ?? profile.role_name ?? "alumno" })
-          setAvatarUrl(profile.profile_image_url ?? null)
+          setUser({ ...myProfile, role_name: roles[0]?.name ?? myProfile.role_name ?? "alumno" })
+          setAvatarUrl(myProfile.profile_image_url ?? null)
           setFollowingOrganizations(followingOrgs)
           setAllOrganizations(orgs)
           const savedFeedPosts = (savedRaw as SavedPostRaw[])
@@ -87,7 +95,7 @@ export default function StudentProfilePage({ viewedUserId }: StudentProfilePageP
     return () => {
       mounted = false
     }
-  }, [isMe, viewedUserId])
+  }, [viewedUserId])
 
   const handleSaveProfile = useCallback(
     async (payload: { cycle: number; availability: number }) => {
@@ -213,7 +221,7 @@ export default function StudentProfilePage({ viewedUserId }: StudentProfilePageP
   }, [user, avatarUrl])
 
   const content = useMemo(() => {
-    if (loading || !user) {
+    if (loading || !user || isOwnProfile === null) {
       return (
         <div className="flex min-h-[60vh] items-center justify-center">
           <p className="text-sm text-gray-600">Cargando perfil...</p>
@@ -221,7 +229,7 @@ export default function StudentProfilePage({ viewedUserId }: StudentProfilePageP
       )
     }
 
-    if (isMe) {
+    if (isOwnProfile) {
       return (
         <StudentProfileSelf
           {...sharedProps}
@@ -256,7 +264,7 @@ export default function StudentProfilePage({ viewedUserId }: StudentProfilePageP
   }, [
     loading,
     user,
-    isMe,
+    isOwnProfile,
     avatarUrl,
     eventSavedPosts,
     followingOrganizations,

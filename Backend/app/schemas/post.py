@@ -5,8 +5,31 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.models.post import PostType, SubPostType, PostStatus, TimeStatus, VALID_SUBTYPES
 
-DESCRIPTION_MIN_WORDS = 200
+
+def _coerce_post_type(value: object) -> PostType | None:
+    """Convierte post_type (enum o string JSON) para lookups en VALID_SUBTYPES."""
+    if value is None:
+        return None
+    if isinstance(value, PostType):
+        return value
+    try:
+        return PostType(value)
+    except (ValueError, TypeError):
+        return None
+
+DESCRIPTION_MIN_WORDS = 0
 DESCRIPTION_MAX_WORDS = 700
+
+ALLOWED_ASPECT_RATIOS = ("1:1", "4:5", "1.91:1")
+DEFAULT_ASPECT_RATIO = "4:5"
+
+
+def _validate_aspect_ratio(value: str) -> str:
+    if value not in ALLOWED_ASPECT_RATIOS:
+        raise ValueError(
+            f"aspect_ratio debe ser uno de {ALLOWED_ASPECT_RATIOS} (recibido: {value})."
+        )
+    return value
 
 
 def _count_words(value: str) -> int:
@@ -33,6 +56,12 @@ class PostBase(BaseModel):
     specific_fields: Optional[Dict[str, Any]] = Field(default_factory=dict)
     deadline_at: Optional[datetime] = None
     is_pinned: bool = False
+    aspect_ratio: str = DEFAULT_ASPECT_RATIO
+    
+    @field_validator("aspect_ratio")
+    @classmethod
+    def validate_aspect_ratio(cls, v: str):
+        return _validate_aspect_ratio(v)
     
     @field_validator("subtype", mode="after")
     @classmethod
@@ -40,14 +69,15 @@ class PostBase(BaseModel):
         if v is None:
             return v
 
-        post_type = info.data.get("post_type")
+        post_type = _coerce_post_type(info.data.get("post_type"))
         if post_type:
             valid = VALID_SUBTYPES.get(post_type, [])
             valid_values = [s.value for s in valid]
+            subtype_value = v.value if hasattr(v, "value") else str(v)
 
-            if v.value not in valid_values:
+            if subtype_value not in valid_values:
                 raise ValueError(
-                    f"Subtipo '{v.value}' no es válido para tipo '{post_type.value}'. "
+                    f"Subtipo '{subtype_value}' no es válido para tipo '{post_type.value}'. "
                     f"Subtipos válidos: {valid_values}"
                 )
         return v
@@ -160,6 +190,7 @@ class PostUpdate(BaseModel):
     specific_fields: Optional[Dict[str, Any]] = None
     deadline_at: Optional[datetime] = None
     is_pinned: Optional[bool] = None
+    aspect_ratio: Optional[str] = None
 
     @field_validator("description")
     @classmethod
@@ -167,6 +198,13 @@ class PostUpdate(BaseModel):
         if v is None:
             return v
         return _validate_description_word_count(v)
+
+    @field_validator("aspect_ratio")
+    @classmethod
+    def validate_aspect_ratio(cls, v: Optional[str]):
+        if v is None:
+            return v
+        return _validate_aspect_ratio(v)
 
 
 class PostImageOut(BaseModel):
@@ -217,6 +255,7 @@ class PostOut(BaseModel):
     status: PostStatus
     time_status: TimeStatus
     tags: Optional[List[str]] = None
+    aspect_ratio: str = DEFAULT_ASPECT_RATIO
     specific_fields: Dict[str, Any] = Field(default_factory=dict)
     deadline_at: Optional[datetime] = None
     created_at: datetime
@@ -241,6 +280,7 @@ class PostListOut(BaseModel):
     status: PostStatus
     time_status: TimeStatus
     tags: Optional[List[str]] = None
+    aspect_ratio: str = DEFAULT_ASPECT_RATIO
     deadline_at: Optional[datetime] = None
     created_at: datetime
     

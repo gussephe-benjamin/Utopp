@@ -1,10 +1,14 @@
 import { useEffect } from "react"
-import { Building2, Inbox, X } from "lucide-react"
+import { Inbox, X } from "lucide-react"
 import { PostCard } from "../features/feed/components/PostCard"
+import { LeftSidebar } from "../features/feed/components/LeftSidebar"
 import { RightSidebar } from "../features/feed/components/RightSidebar"
+import { FeedWelcomeBanner } from "../features/feed/components/FeedWelcomeBanner"
+import { FeedHorizontalFilters } from "../features/feed/components/FeedHorizontalFilters"
+import { FeedWeeklyHighlightsCarousel } from "../features/feed/components/FeedWeeklyHighlightsCarousel"
+import { FeedTabletHighlights } from "../features/feed/components/FeedTabletHighlights"
 import { FeedFiltersPanel } from "../features/feed/components/FeedFiltersPanel"
 import { useFeed } from "../features/feed/hooks/useFeed"
-import { FeedQuickCreate } from "../features/feed/components/FeedQuickCreate"
 import {
   getClampedRightPopoverStyle,
   type MenuPopoverAnchor,
@@ -23,7 +27,6 @@ export default function OrganizationFeedPage({
   onCloseFiltersSheet = () => {},
   filterPopoverAnchor = null,
   onCategoryFiltersActiveChange,
-  onOpenCreate = () => {},
 }: FeedViewProps) {
   const {
     posts,
@@ -31,6 +34,7 @@ export default function OrganizationFeedPage({
     loading,
     loaderRef,
     currentUserId,
+    userName,
     avatarUrl,
     statusFilter,
     setStatusFilter,
@@ -45,28 +49,40 @@ export default function OrganizationFeedPage({
   }, [onCategoryFiltersActiveChange, selectedTags])
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="mx-auto flex w-full max-w-[1320px] gap-6 px-4 pb-8 pt-0 md:pt-6">
-        <div className="w-full min-w-0 max-w-[720px] flex-1 space-y-4">
-          <section className="rounded-2xl border border-violet-100 bg-white p-5 shadow-sm">
-            <div className="flex items-start gap-3">
-              <div className="rounded-full bg-violet-100 p-2 text-violet-700">
-                <Building2 className="h-4 w-4" />
-              </div>
-              <div>
-                <h1 className="text-lg font-bold text-gray-900">Feed de organizaciones</h1>
-                <p className="text-sm text-gray-600">
-                  Base separada para organizaciones. En esta iteración mantiene el feed completo.
-                </p>
-              </div>
-            </div>
-          </section>
+    <div className="flex min-h-screen justify-center bg-gray-50" style={{ overflowAnchor: "none" }}>
+      <div className="mx-auto flex w-full max-w-[1320px] items-start justify-center gap-6 px-0 pb-8 pt-0 md:px-4 md:pt-6">
+        <LeftSidebar
+          variant="organization"
+          userName={userName}
+          avatarUrl={avatarUrl}
+        />
 
-          <FeedQuickCreate avatarUrl={avatarUrl} onOpenWizard={onOpenCreate} />
+        <div className="w-full min-w-0 max-w-[700px] flex-1 space-y-0 md:space-y-5">
+          <div className="mb-3 block w-full rounded-b-[32px] bg-gradient-to-b from-[#2f55f6] via-[#614bf8] to-[#803ef8] px-6 pb-7 pt-7 text-white shadow-lg md:hidden">
+            <h1 className="text-2xl font-bold tracking-tight">Hola, {userName}</h1>
+            <p className="mt-0.5 text-xs font-medium text-white/80">Bienvenido a Utopp</p>
+          </div>
 
-          <section className="space-y-4">
+          <div className="block px-4 pb-2 md:hidden">
+            <FeedHorizontalFilters
+              statusFilter={statusFilter}
+              setStatusFilter={setStatusFilter}
+              sortOrder={sortOrder}
+              setSortOrder={setSortOrder}
+              selectedTags={selectedTags}
+              setSelectedTags={setSelectedTags}
+            />
+          </div>
+          <FeedWeeklyHighlightsCarousel />
+          <FeedTabletHighlights />
+
+          <div className="hidden md:block">
+            <FeedWelcomeBanner userName={userName} />
+          </div>
+
+          <div className="w-full space-y-4 px-4 pt-4 md:px-0">
             {posts.map((post) => (
-              <div key={post.id} className="flex justify-center">
+              <div key={post.id} className="mb-4 last:mb-0 flex justify-center">
                 <PostCard
                   post={post}
                   currentUserId={currentUserId}
@@ -76,7 +92,7 @@ export default function OrganizationFeedPage({
                 />
               </div>
             ))}
-          </section>
+          </div>
 
           {!loading && posts.length === 0 ? (
             <div className="rounded-xl border border-gray-200 bg-white p-12 text-center">
@@ -91,7 +107,7 @@ export default function OrganizationFeedPage({
           <div ref={loaderRef} />
         </div>
 
-        <RightSidebar />
+        <RightSidebar showTrending={false} />
       </div>
 
       {filtersSheetOpen && (

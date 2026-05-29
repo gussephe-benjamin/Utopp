@@ -1,20 +1,19 @@
 import { useState } from "react"
 import type { ReactNode } from "react"
 import { AuthContext } from "./auth-context"
+import { getToken, setToken, clearToken } from "./tokenStorage"
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [token, setToken] = useState<string | null>(
-    localStorage.getItem("token")
-  )
+  const [token, setTokenState] = useState<string | null>(getToken())
 
   const login = (jwt: string) => {
-    localStorage.setItem("token", jwt)
     setToken(jwt)
+    setTokenState(jwt)
   }
 
   const logout = () => {
-    localStorage.removeItem("token")
-    setToken(null)
+    clearToken()
+    setTokenState(null)
   }
 
   return (

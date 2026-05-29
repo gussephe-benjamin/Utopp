@@ -24,6 +24,7 @@ import {
   MessagesSquare,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import type { PostAspectRatio } from '../shared/lib/aspectRatio'
 
 // ============================================================
 // Tipos compartidos para el flujo de creación y visualización
@@ -251,6 +252,8 @@ export interface WizardFormData {
   description: string
   deadline_at: string  // ISO date string YYYY-MM-DD, vacío si no aplica
   tags: string[]
+  /** Formato (aspect ratio) único para todas las imágenes de la publicación. */
+  aspect_ratio: PostAspectRatio
 }
 
 // ── Tipos de respuesta del backend (Feed) ─────────────────
@@ -280,6 +283,8 @@ export interface FeedPostOut {
   is_saved: boolean
   participation_status?: string
   status?: string
+  /** Formato (aspect ratio) de las imágenes de la publicación. */
+  aspect_ratio?: PostAspectRatio
 }
 
 /** Respuesta paginada del endpoint /feed. */

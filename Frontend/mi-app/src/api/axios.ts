@@ -1,4 +1,5 @@
 import axios from "axios"
+import { getToken, setToken, clearToken } from "../auth/tokenStorage"
 
 const baseURL = import.meta.env.VITE_API_URL 
 
@@ -23,7 +24,7 @@ const api = axios.create({
 
 // Interceptor → adjunta el token automáticamente
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token")
+  const token = getToken()
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
@@ -53,15 +54,15 @@ api.interceptors.response.use(
       try {
         const refreshResponse = await axios.post(`${baseURL}/auth/refresh`, {}, {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`
+            Authorization: `Bearer ${getToken()}`
           }
         })
         const newToken = refreshResponse.data.access_token
-        localStorage.setItem("token", newToken)
+        setToken(newToken)
         originalRequest.headers.Authorization = `Bearer ${newToken}`
         return axios.request(originalRequest)
       } catch {
-        localStorage.removeItem("token")
+        clearToken()
         window.location.href = "/login"
       }
     }

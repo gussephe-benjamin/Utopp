@@ -84,6 +84,12 @@ class PostStatus(str, enum.Enum):
     
     archived = "archived"
 
+class AspectRatio(str, enum.Enum):
+    """Formato (aspect ratio) de las imágenes de una publicación, estilo Instagram."""
+    square = "1:1"
+    portrait = "4:5"
+    landscape = "1.91:1"
+
 class TimeStatus(str, enum.Enum):
     no_deadline = "no_deadline"
     in_time = "in_time"
@@ -154,6 +160,10 @@ class Post(Base):
     )
     
     tags: Mapped[list[str] | None] = mapped_column(JSONB, nullable=True)
+
+    aspect_ratio: Mapped[str] = mapped_column(
+        String(8), nullable=False, server_default=text("'4:5'"),
+    )
 
     legacy_source: Mapped[str | None] = mapped_column(String(50), nullable=True)
     

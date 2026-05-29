@@ -7,6 +7,7 @@ import { STATUS_BADGE } from '../constants/profileOptions'
 import type { PostItem } from '../types'
 import { ConfirmModal } from './ConfirmModal'
 import { AnimatePresence } from 'framer-motion'
+import { resolvePostImageUrl } from '../../../shared/lib/postImageUrl'
 
 export function ProfilePostListCard({
   post,
@@ -51,10 +52,15 @@ export function ProfilePostListCard({
     }
   }, [post.id])
 
-  const displayImages = useMemo(
-    () => (images.length > 0 ? images : post.image_url ? [{ id: -1, url: post.image_url, position: 0 }] : []),
-    [images, post.image_url],
-  )
+  const displayImages = useMemo(() => {
+    const source =
+      images.length > 0
+        ? images
+        : post.image_url
+          ? [{ id: -1, url: post.image_url, position: 0 }]
+          : []
+    return source.map((img) => ({ ...img, url: resolvePostImageUrl(img.url) }))
+  }, [images, post.image_url])
   const totalImages = displayImages.length
 
   const handleArchive = async () => {

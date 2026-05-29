@@ -3,6 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { INTERESTS } from "../../../constants/interests";
 
+/** Referencia estable: evita bucle infinito cuando `interests` no se pasa como prop. */
+const EMPTY_INTERESTS: string[] = []
+
 type LeftSidebarProps = {
   userName?: string;
   avatarUrl?: string | null;
@@ -15,6 +18,8 @@ type LeftSidebarProps = {
   interestsSaving?: boolean;
   interestsError?: string | null;
   onSaveInterests?: (interests: string[]) => Promise<void>;
+  /** "student" (por defecto) muestra carrera + intereses; "organization" muestra subtítulo de org y oculta intereses. */
+  variant?: "student" | "organization";
 };
 
 export function LeftSidebar({
@@ -22,25 +27,39 @@ export function LeftSidebar({
   avatarUrl,
   career,
   cycle,
-  interests = [],
+  interests,
   interestsSaving = false,
   interestsError = null,
   onSaveInterests,
+  variant = "student",
 }: LeftSidebarProps) {
   const navigate = useNavigate();
+  const interestsList = interests ?? EMPTY_INTERESTS
   const [editingInterests, setEditingInterests] = useState(false)
-  const [draftInterests, setDraftInterests] = useState<string[]>(interests)
+  const [draftInterests, setDraftInterests] = useState<string[]>(interestsList)
 
-  const displayName = userName ?? "Usuario";
-  const academicLine = [career, cycle ? `Ciclo ${cycle}` : null].filter(Boolean).join(" · ");
+  const isOrganization = variant === "organization";
+  const displayName = userName ?? (isOrganization ? "Organización" : "Usuario");
+  const academicLine = isOrganization
+    ? "Organización Estudiantil · UTEC"
+    : [career, cycle ? `Ciclo ${cycle}` : null].filter(Boolean).join(" · ");
   const selectedInterests = useMemo(
-    () => INTERESTS.filter((interest) => interests.includes(interest.id)),
-    [interests],
+    () => INTERESTS.filter((interest) => interestsList.includes(interest.id)),
+    [interestsList],
   )
 
   useEffect(() => {
-    if (!editingInterests) setDraftInterests(interests)
-  }, [editingInterests, interests])
+    if (editingInterests) return
+    setDraftInterests((prev) => {
+      if (
+        prev.length === interestsList.length &&
+        prev.every((id, i) => id === interestsList[i])
+      ) {
+        return prev
+      }
+      return [...interestsList]
+    })
+  }, [editingInterests, interestsList])
 
   const toggleInterest = (interestId: string) => {
     setDraftInterests((prev) =>
@@ -87,7 +106,8 @@ export function LeftSidebar({
         </div>
       </div>
 
-      {/* Widget Mis intereses */}
+      {/* Widget Mis intereses (solo para estudiantes) */}
+      {!isOrganization && (
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
         <h4 className="font-bold text-gray-800 text-sm mb-3">Mis intereses</h4>
         <div className="flex flex-wrap gap-2 mb-3">
@@ -142,7 +162,7 @@ export function LeftSidebar({
               <button
                 type="button"
                 onClick={() => {
-                  setDraftInterests(interests)
+                  setDraftInterests([...interestsList])
                   setEditingInterests(false)
                 }}
                 className="rounded-full border border-gray-200 px-3 py-1 text-[11px] font-semibold text-gray-600 hover:bg-white"
@@ -161,6 +181,7 @@ export function LeftSidebar({
           </div>
         ) : null}
       </div>
+      )}
 
     </aside>
   );
