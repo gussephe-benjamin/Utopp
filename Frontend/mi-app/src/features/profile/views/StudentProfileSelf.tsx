@@ -39,7 +39,7 @@ interface StudentProfileSelfProps {
   eventSavedPosts: FeedPostOut[]
   followingOrganizations: OrganizationSummary[]
   allOrganizations: OrganizationSummary[]
-  onSaveProfile: (payload: { cycle: number; availability: number }) => Promise<void>
+  onSaveProfile: (payload: { cycle: number; availability: number; interests: string[] }) => Promise<void>
   onFollowOrganization: (orgId: number) => Promise<void>
   onUnfollowOrganization: (orgId: number) => Promise<void>
   onCloseOrganizationsManager?: (unfollowedIds?: Set<number>) => void
@@ -103,7 +103,7 @@ export function StudentProfileSelf({
     setTimeout(() => setEmailCopied(false), 2000)
   }
 
-  const handleSubmitEdit = async (payload: { cycle: number; availability: number }) => {
+  const handleSubmitEdit = async (payload: { cycle: number; availability: number; interests: string[] }) => {
     await onSaveProfile(payload)
     setEditing(false)
   }
@@ -124,6 +124,7 @@ export function StudentProfileSelf({
           <EditProfileModal
             initialCycle={user.cycle ?? 1}
             initialAvailability={user.availability ?? 0}
+            initialInterests={user.interests ?? []}
             saving={profileSaving}
             onClose={() => setEditing(false)}
             onSubmit={handleSubmitEdit}
@@ -267,6 +268,7 @@ export function StudentProfileSelf({
       {/* ─── Métricas ─── */}
       <section className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
         <ProfileMetricCard
+          locked
           label="Asistencia"
           value="12"
           subValue="Eventos este ciclo"

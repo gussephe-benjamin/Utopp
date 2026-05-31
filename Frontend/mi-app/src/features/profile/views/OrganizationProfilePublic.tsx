@@ -209,6 +209,7 @@ export function OrganizationProfilePublic({
           textColor="text-blue-700"
         />
         <ProfileMetricCard
+          locked
           label="Promedio de satisfacción"
           value={user.satisfaction_score !== undefined && user.satisfaction_score !== null ? `${user.satisfaction_score} ★` : "-"}
           icon={<Star className="h-5 w-5 text-amber-500" />}
@@ -216,6 +217,7 @@ export function OrganizationProfilePublic({
           textColor="text-amber-700"
         />
         <ProfileMetricCard
+          locked
           label="# promedio de alumnos por evento"
           value={user.avg_students_per_event !== undefined && user.avg_students_per_event !== null ? `${user.avg_students_per_event}` : "-"}
           subValue={user.avg_students_per_event !== undefined && user.avg_students_per_event !== null ? (user.avg_students_per_event === 1 ? "alumno" : "alumnos") : undefined}

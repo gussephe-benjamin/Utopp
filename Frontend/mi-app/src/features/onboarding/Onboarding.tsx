@@ -218,7 +218,7 @@ export default function Onboarding(): JSX.Element {
     <div className="relative min-h-screen overflow-hidden text-white">
       <OnboardingMeshBackground />
       <div className="relative z-10 mx-auto flex h-screen max-w-md min-h-0 flex-col">
-        <header className="z-30 shrink-0 px-4 pt-6 pb-3 bg-gradient-to-b from-[#1a0a38]/95 via-[#14082a]/85 to-transparent backdrop-blur-sm">
+        <header className="z-30 shrink-0 bg-transparent px-4 pt-6 pb-3">
           <div className="mb-4 flex justify-end">
             <button
               type="button"
@@ -241,7 +241,7 @@ export default function Onboarding(): JSX.Element {
           </div>
         </main>
 
-        <footer className="z-30 shrink-0 border-t border-white/[0.08] bg-gradient-to-t from-[#0c0518]/70 via-[#1a0a38]/25 to-transparent px-4 pb-5 pt-1 backdrop-blur-2xl">
+        <footer className="z-30 shrink-0 bg-transparent px-4 pb-5 pt-1">
           {footerDescription()}
           <div className="flex justify-between gap-4 py-4">
             {step > 1 && (

@@ -1,6 +1,7 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../auth/useAuth";
+import { getLoginEmail, setLoginEmail } from "../../auth/loginEmailStorage";
 import { login as apiLogin } from "../../api/auth.api";
 import { redirectAfterAuthSession } from "../../auth/postAuthRedirect";
 import { Button } from "../../components/ui/button";
@@ -19,8 +20,14 @@ export default function Login() {
   const registeredEmail =
     (location.state as { registeredEmail?: string } | null)?.registeredEmail ?? "";
 
-  const [email, setEmail] = useState(registeredEmail);
+  const [email, setEmail] = useState(() => registeredEmail || getLoginEmail());
   const [password, setPassword] = useState("");
+
+  useEffect(() => {
+    if (registeredEmail) {
+      setLoginEmail(registeredEmail);
+    }
+  }, [registeredEmail]);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,6 +40,7 @@ export default function Login() {
 
     setIsLoading(true);
     setError(null);
+    setLoginEmail(email);
 
     try {
       const data = await apiLogin(email, password);
@@ -76,7 +84,9 @@ export default function Login() {
               autoComplete="username"
               value={email}
               onChange={(e) => {
-                setEmail(e.target.value);
+                const value = e.target.value;
+                setEmail(value);
+                setLoginEmail(value);
                 setError(null);
               }}
               className={`w-full h-14 pl-12 pr-4 rounded-2xl border-gray-200 bg-gray-50/50 focus:bg-white ${TW_AUTH_INPUT_FOCUS} transition-all duration-200`}

@@ -9,6 +9,7 @@ import {
   setProfileImage,
   unfollowUser,
   updateMyProfile,
+  updateInterests,
   type OrganizationSummary,
 } from "../api/users.api"
 import { uploadToCloudinary } from "../api/cloudinary"
@@ -98,11 +99,16 @@ export default function StudentProfilePage({ viewedUserId }: StudentProfilePageP
   }, [viewedUserId])
 
   const handleSaveProfile = useCallback(
-    async (payload: { cycle: number; availability: number }) => {
+    async (payload: { cycle: number; availability: number; interests: string[] }) => {
       setProfileSaving(true)
       try {
-        const updated = await updateMyProfile(payload)
-        setUser((prev) => (prev ? { ...prev, ...updated } : prev))
+        const [updated] = await Promise.all([
+          updateMyProfile({ cycle: payload.cycle, availability: payload.availability }),
+          updateInterests(payload.interests),
+        ])
+        setUser((prev) =>
+          prev ? { ...prev, ...updated, interests: payload.interests } : prev,
+        )
       } finally {
         setProfileSaving(false)
       }

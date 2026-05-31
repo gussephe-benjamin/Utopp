@@ -143,13 +143,13 @@ export default function StudentFeedPage({
               />
             </div>
             <FeedWeeklyHighlightsCarousel />
-            <FeedTabletHighlights />
+            <FeedTabletHighlights userName={userName} />
 
-            <div className="hidden md:block">
+            <div className="hidden lg:block">
               <FeedWelcomeBanner userName={userName} />
             </div>
 
-            <div className="w-full space-y-4 px-4 pt-4 md:px-0">
+            <div className="w-full space-y-4 px-4 pt-2 md:px-0 md:pt-0 lg:pt-4">
               {(() => {
                 const lastPinnedIdx = posts.reduce((acc, p, i) => (p.is_pinned ? i : acc), -1)
                 return posts.map((post, i) => (

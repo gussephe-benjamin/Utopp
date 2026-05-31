@@ -1,6 +1,6 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { Home, Plus, User, Compass } from 'lucide-react'
+import { Home, Plus } from 'lucide-react'
 import PublicationWizard from '../components/PublicationWizard'
 import { useAuth } from '../auth/useAuth'
 import { getMe } from '../api/auth.api'
@@ -259,23 +259,23 @@ export default function DashboardLayout() {
 
       {/* Barra de Navegación Inferior (Móvil) */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/95 backdrop-blur-md border-t border-gray-100/80 shadow-[0_-4px_20px_rgba(0,0,0,0.03)] z-50 px-4">
-        {canCreate ? (
-          <div className="grid h-full grid-cols-3 items-center max-w-[320px] mx-auto justify-items-center">
-            <button
-              onClick={() => {
-                if (isFeedActive) {
-                  window.scrollTo({ top: 0, behavior: 'smooth' })
-                } else {
-                  navigate('/app/inicio')
-                }
-              }}
-              className="flex flex-col items-center justify-center w-12 h-12 active:scale-95 transition-transform"
-            >
-              <div className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${isFeedActive ? 'bg-[#f3efff] text-[#5f38ff] shadow-sm' : 'bg-transparent text-gray-400'}`}>
-                <Home className="w-5.5 h-5.5 stroke-[2]" />
-              </div>
-            </button>
+        <div className="grid h-full grid-cols-3 items-center max-w-[320px] mx-auto justify-items-center">
+          <button
+            onClick={() => {
+              if (isFeedActive) {
+                window.scrollTo({ top: 0, behavior: 'smooth' })
+              } else {
+                navigate('/app/inicio')
+              }
+            }}
+            className="flex flex-col items-center justify-center w-12 h-12 active:scale-95 transition-transform"
+          >
+            <div className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${isFeedActive ? 'bg-[#f3efff] text-[#5f38ff] shadow-sm' : 'bg-transparent text-gray-400'}`}>
+              <Home className="w-5.5 h-5.5 stroke-[2]" />
+            </div>
+          </button>
 
+          {canCreate ? (
             <div className="relative flex items-center justify-center w-12 h-12">
               <button
                 type="button"
@@ -285,59 +285,35 @@ export default function DashboardLayout() {
                 <Plus className="w-5.5 h-5.5 stroke-[3.5]" />
               </button>
             </div>
+          ) : (
+            <div className="w-12 h-12" aria-hidden />
+          )}
 
-            <button
-              onClick={() => navigate('/app/perfil')}
-              className="flex flex-col items-center justify-center w-12 h-12 active:scale-95 transition-transform"
-            >
-              <div className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${isProfileActive ? 'bg-[#f3efff] text-[#5f38ff] shadow-sm' : 'bg-transparent text-gray-400'}`}>
-                <User className="w-5.5 h-5.5 stroke-[2]" />
+          <button
+            onClick={() => navigate('/app/perfil')}
+            className="flex flex-col items-center justify-center w-12 h-12 active:scale-95 transition-transform"
+          >
+            <div className="w-11 h-11 rounded-2xl flex items-center justify-center transition-all">
+              <div
+                className={`rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 p-[2px] shadow-sm ${
+                  isProfileActive ? 'ring-2 ring-violet-200' : ''
+                }`}
+              >
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt={displayName}
+                    className="w-9 h-9 rounded-full object-cover border-2 border-white bg-white"
+                  />
+                ) : (
+                  <div className="w-9 h-9 rounded-full border-2 border-white flex items-center justify-center bg-violet-100 text-violet-700 font-bold text-sm">
+                    {initial}
+                  </div>
+                )}
               </div>
-            </button>
-          </div>
-        ) : (
-          <div className="grid h-full grid-cols-2 items-center justify-items-center max-w-[220px] mx-auto">
-            <button
-              onClick={() => {
-                if (isFeedActive) {
-                  window.scrollTo({ top: 0, behavior: 'smooth' })
-                } else {
-                  navigate('/app/inicio')
-                }
-              }}
-              className="flex flex-col items-center justify-center w-12 h-12 active:scale-95 transition-transform"
-            >
-              <div className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${isFeedActive ? 'bg-[#f3efff] text-[#5f38ff] shadow-sm' : 'bg-transparent text-gray-400'}`}>
-                <Home className="w-5.5 h-5.5 stroke-[2]" />
-              </div>
-            </button>
-
-            <button
-              onClick={() => navigate('/app/perfil')}
-              className="flex flex-col items-center justify-center w-12 h-12 active:scale-95 transition-transform"
-            >
-              <div className="w-11 h-11 rounded-2xl flex items-center justify-center transition-all">
-                <div
-                  className={`rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 p-[2px] shadow-sm ${
-                    isProfileActive ? 'ring-2 ring-violet-200' : ''
-                  }`}
-                >
-                  {avatarUrl ? (
-                    <img
-                      src={avatarUrl}
-                      alt={displayName}
-                      className="w-9 h-9 rounded-full object-cover border-2 border-white bg-white"
-                    />
-                  ) : (
-                    <div className="w-9 h-9 rounded-full border-2 border-white flex items-center justify-center bg-violet-100 text-violet-700 font-bold text-sm">
-                      {initial}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </button>
-          </div>
-        )}
+            </div>
+          </button>
+        </div>
       </div>
 
       <PublicationWizard isOpen={showWizard} onClose={() => setShowWizard(false)} allowedTypes={allowedTypes} />

@@ -76,7 +76,6 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
   const overflowLinks = useMemo(() => actionLinks.slice(3), [actionLinks]);
   const canEdit = currentUserId !== null && post.user_id === currentUserId;
   const showMoreLinksButton = overflowLinks.length > 0;
-  const shouldShowEditButton = canEdit && !showMoreLinksButton;
   const needsDescriptionToggle = post.description.length > DESCRIPTION_PREVIEW_CHARS;
   const descriptionText =
     !descExpanded && needsDescriptionToggle
@@ -464,6 +463,21 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
         }`}
         style={{ maxWidth: `${FEED_POST_CARD_MAX_WIDTH}px` }}
       >
+        {canEdit && (
+          <div className="flex items-center justify-end border-b border-gray-100/80 bg-gray-50/70 px-4 py-2">
+            <button
+              type="button"
+              onClick={() => setEditingPost(true)}
+              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-gray-600 transition-colors hover:bg-white hover:text-[#2f55f6] active:scale-[0.98]"
+              title="Editar publicación"
+              aria-label="Editar publicación"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              Editar
+            </button>
+          </div>
+        )}
+
         {post.is_pinned && (
           <div className="px-4 pt-3.5 flex">
             <span className="inline-flex items-center gap-1.5 bg-[#fff6e6] border border-[#ffe0b2] text-[#b25e00] text-[10px] sm:text-xs font-extrabold px-3 py-1 rounded-full shadow-sm">
@@ -737,17 +751,6 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
                 aria-label="Ver enlaces adicionales"
               >
                 <MoreVertical className="h-4 w-4" />
-              </button>
-            ) : null}
-            {shouldShowEditButton ? (
-              <button
-                type="button"
-                onClick={() => setEditingPost(true)}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 text-gray-600 transition-colors hover:bg-gray-50"
-                title="Editar publicación"
-                aria-label="Editar publicación"
-              >
-                <Pencil className="h-4 w-4" />
               </button>
             ) : null}
           </div>
