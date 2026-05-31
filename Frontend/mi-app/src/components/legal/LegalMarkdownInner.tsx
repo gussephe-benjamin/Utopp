@@ -88,7 +88,10 @@ export default function LegalMarkdownInner({
   const s = styles[variant]
 
   useEffect(() => {
-    onReady?.()
+    const id = requestAnimationFrame(() => {
+      requestAnimationFrame(() => onReady?.())
+    })
+    return () => cancelAnimationFrame(id)
   }, [markdown, onReady])
 
   return (

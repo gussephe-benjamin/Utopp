@@ -3,9 +3,7 @@ import { useNavigate } from "react-router-dom"
 import { ArrowLeft } from "lucide-react"
 import { getCurrentTerms, type TermsCurrent } from "../api/legal.api"
 import LegalMarkdownBody from "../components/legal/LegalMarkdownBody"
-import { useLegalPublicScrollPadding } from "../hooks/useLegalPublicScrollPadding"
-import { useScrollSentinelVisible } from "../hooks/useScrollSentinelVisible"
-import { LEGAL_PUBLIC_SENTINEL_ROOT_MARGIN } from "../shared/constants/brand"
+import { useLegalPublicScrollUnlock } from "../hooks/useLegalPublicScrollUnlock"
 import { navigateBackFromLegalPublic } from "../shared/navigation/legalPublicExit"
 
 function formatDate(iso: string): string {
@@ -22,18 +20,13 @@ function formatDate(iso: string): string {
 export default function TermsPublic() {
   const navigate = useNavigate()
   const scrollRef = useRef<HTMLDivElement>(null)
-  const sentinelRef = useRef<HTMLDivElement>(null)
   const [doc, setDoc] = useState<TermsCurrent | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [hasUnlockedBack, setHasUnlockedBack] = useState(false)
   const [markdownReady, setMarkdownReady] = useState(false)
 
   const handleMarkdownReady = useCallback(() => {
     setMarkdownReady(true)
   }, [])
-
-  const chromeMeasureKey = `${doc?.id ?? "none"}-${error ? "e" : "ok"}`
-  const { headerRef, footerRef, paddingTop, paddingBottom } = useLegalPublicScrollPadding(chromeMeasureKey)
 
   useEffect(() => {
     let cancelled = false
@@ -64,28 +57,18 @@ export default function TermsPublic() {
   }, [doc?.id])
 
   useEffect(() => {
-    setHasUnlockedBack(false)
     setMarkdownReady(false)
   }, [doc?.id])
 
-  const ioActive = Boolean(doc) && !error && markdownReady
-  const ioContentKey = doc ? `${doc.id}-${markdownReady ? 1 : 0}` : null
-  const { sentinelVisible } = useScrollSentinelVisible(ioActive, scrollRef, sentinelRef, ioContentKey, {
-    rootMargin: LEGAL_PUBLIC_SENTINEL_ROOT_MARGIN,
-  })
+  const scrollActive = Boolean(doc) && !error && markdownReady
+  const scrollContentKey = doc ? `${doc.id}-${markdownReady ? 1 : 0}` : null
+  const { reachedEnd, onScroll } = useLegalPublicScrollUnlock(scrollActive, scrollRef, scrollContentKey)
 
-  useEffect(() => {
-    if (sentinelVisible) setHasUnlockedBack(true)
-  }, [sentinelVisible])
-
-  const canGoBack = Boolean(error) || !doc || hasUnlockedBack
+  const canGoBack = Boolean(error) || !doc || reachedEnd
 
   return (
     <div className="flex h-[100dvh] min-h-0 flex-col bg-slate-50 text-slate-900">
-      <header
-        ref={headerRef}
-        className="fixed inset-x-0 top-0 z-40 border-b border-slate-200 bg-white/95 pt-[env(safe-area-inset-top,0px)] shadow-sm backdrop-blur-md"
-      >
+      <header className="shrink-0 border-b border-slate-200 bg-white/95 pt-[env(safe-area-inset-top,0px)] shadow-sm backdrop-blur-md">
         <div className="mx-auto max-w-3xl space-y-2 px-4 py-3">
           {doc && !error ? (
             <>
@@ -109,8 +92,8 @@ export default function TermsPublic() {
 
       <div
         ref={scrollRef}
-        className="mx-auto min-h-0 w-full max-w-3xl flex-1 overflow-y-auto px-4"
-        style={{ paddingTop, paddingBottom }}
+        onScroll={onScroll}
+        className="mx-auto min-h-0 w-full max-w-3xl flex-1 overflow-y-auto px-4 py-4"
       >
         {error && (
           <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</p>
@@ -118,16 +101,11 @@ export default function TermsPublic() {
         {doc && (
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
             <LegalMarkdownBody markdown={doc.content} variant="light" onReady={handleMarkdownReady} />
-            {/* Sin overflow: el IO marca el sentinela visible de inmediato → Volver habilitado. */}
-            <div ref={sentinelRef} className="h-px w-full shrink-0 scroll-mt-0" aria-hidden />
           </div>
         )}
       </div>
 
-      <footer
-        ref={footerRef}
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-[0_-2px_12px_rgba(15,23,42,0.05)] backdrop-blur-md"
-      >
+      <footer className="shrink-0 border-t border-slate-200 bg-white/95 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-[0_-2px_12px_rgba(15,23,42,0.05)] backdrop-blur-md">
         <div className="mx-auto flex w-full max-w-3xl justify-end px-5 py-2.5">
           <button
             type="button"

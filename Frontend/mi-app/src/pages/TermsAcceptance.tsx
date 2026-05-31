@@ -145,8 +145,6 @@ export default function TermsAcceptance() {
           </p>
           <Link
             to={linkTo}
-            target="_blank"
-            rel="noopener noreferrer"
             className="text-xs font-semibold text-white/90 underline underline-offset-2 hover:text-violet-200"
           >
             {linkLabel}

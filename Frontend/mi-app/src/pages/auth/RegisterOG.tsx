@@ -74,8 +74,6 @@ export default function RegisterOG() {
               He leído y acepto los{" "}
               <Link
                 to="/terms"
-                target="_blank"
-                rel="noopener noreferrer"
                 className={TW_AUTH_LEGAL_LINK}
               >
                 términos y condiciones
@@ -96,8 +94,6 @@ export default function RegisterOG() {
               He leído y acepto la{" "}
               <Link
                 to="/privacy"
-                target="_blank"
-                rel="noopener noreferrer"
                 className={TW_AUTH_LEGAL_LINK}
               >
                 política de datos y privacidad

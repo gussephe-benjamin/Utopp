@@ -59,6 +59,3 @@ export const TW_AUTH_CHECKBOX = "text-[#9333EA] focus:ring-[#9333EA]/40";
 
 /** Borde y anillo de focus en inputs email/contraseña (auth). */
 export const TW_AUTH_INPUT_FOCUS = "focus:border-[#9333EA] focus:ring-[#C026D3]/20";
-
-/** `rootMargin` del sentinela en /terms y /privacy (píxeles positivos abajo ≈ varios párrafos antes del final). */
-export const LEGAL_PUBLIC_SENTINEL_ROOT_MARGIN = "0px 0px 280px 0px";
