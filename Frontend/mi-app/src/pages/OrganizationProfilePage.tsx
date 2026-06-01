@@ -16,7 +16,8 @@ import { ROLE_ESTUDIANTE } from "../hooks/useRole"
 import { uploadToCloudinary } from "../api/cloudinary"
 import { OrganizationProfileSelf } from "../features/profile/views/OrganizationProfileSelf"
 import { OrganizationProfilePublic } from "../features/profile/views/OrganizationProfilePublic"
-import { mapSavedPostToFeedPost, type SavedPostRaw } from "../features/profile/lib/postMapper"
+import { mapSavedPostToFeedPost, mapUserPostToFeedPost, type PostOutRaw } from "../features/profile/lib/postMapper"
+import { toProfileUserData } from "../features/profile/lib/profileUserData"
 import type { ProfileUserData } from "../features/profile/views/types"
 import type { FeedPostOut } from "../types/post.types"
 
@@ -52,7 +53,7 @@ export default function OrganizationProfilePage({ viewedUserId }: OrganizationPr
     ;(async () => {
       try {
         let profile: ProfileUserData | null = null
-        let savedRaw: SavedPostRaw[] = []
+        let savedRaw: PostOutRaw[] = []
 
         const [myProfile, myRoles] = await Promise.all([
           getMyProfile().catch(() => null),
@@ -70,10 +71,10 @@ export default function OrganizationProfilePage({ viewedUserId }: OrganizationPr
         if (mounted) setIsOwnProfile(viewingSelf)
 
         if (viewingSelf) {
-          profile = myProfile
-          savedRaw = await getSavedPosts().catch(() => [] as SavedPostRaw[])
+          profile = myProfile ? toProfileUserData(myProfile) : null
+          savedRaw = await getSavedPosts().catch(() => [] as PostOutRaw[])
         } else if (viewedUserId) {
-          profile = await getUserProfile(viewedUserId)
+          profile = toProfileUserData(await getUserProfile(viewedUserId))
           const myFollowing = await getMyFollowingOrganizations().catch(() => [])
           const following = myFollowing.some((org) => org.id === viewedUserId)
           setIsFollowing(following)
@@ -85,8 +86,8 @@ export default function OrganizationProfilePage({ viewedUserId }: OrganizationPr
         setAvatarUrl(profile.profile_image_url ?? null)
 
         // Load organization posts
-        const userPosts = await getUserPosts(profile.id).catch(() => [] as FeedPostOut[])
-        setPosts(userPosts)
+        const userPostsRaw = await getUserPosts(profile.id).catch(() => [] as PostOutRaw[])
+        setPosts(userPostsRaw.map(mapUserPostToFeedPost))
 
         // Load saved posts if it's the current user
         if (viewingSelf && savedRaw.length > 0) {

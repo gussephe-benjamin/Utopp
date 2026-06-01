@@ -11,6 +11,7 @@ import ExplorePage from './ExplorePage'
 import { AppTopBar } from '../features/dashboard/components/AppTopBar'
 import { measureMenuAnchor, type MenuPopoverAnchor } from '../features/dashboard/popoverAnchor'
 import FeedModeResolver from '../features/feed/FeedModeResolver'
+import { AppLink } from '../shared/navigation/AppLink'
 import { TW_UTOPP_GRADIENT_BR } from '../shared/constants/brand'
 
 const FALLBACK_MENU_ANCHOR: MenuPopoverAnchor = { top: 64, right: 12, minWidth: 40 }
@@ -40,7 +41,7 @@ export default function DashboardLayout() {
   const [showFeedFiltersSheet, setShowFeedFiltersSheet] = useState(false)
   const [feedCategoryFiltersActive, setFeedCategoryFiltersActive] = useState(false)
 
-  const accountMenuTriggerRef = useRef<HTMLButtonElement>(null)
+  const accountMenuTriggerRef = useRef<HTMLAnchorElement>(null)
   const feedFiltersTriggerRef = useRef<HTMLButtonElement>(null)
   const [accountMenuAnchor, setAccountMenuAnchor] = useState<MenuPopoverAnchor | null>(null)
   const [filterPopoverAnchor, setFilterPopoverAnchor] = useState<MenuPopoverAnchor | null>(null)
@@ -205,14 +206,7 @@ export default function DashboardLayout() {
   return (
     <div className={`min-h-screen flex flex-col bg-gray-50 ${showWizard ? 'overflow-hidden' : ''}`}>
       <AppTopBar
-        onBrandClick={() => {
-          if (isFeedActive) {
-            window.location.assign(`${window.location.origin}/app/inicio`)
-            return
-          }
-          navigate('/app/inicio')
-        }}
-        onOpenAccountMenu={() => navigate('/app/perfil')}
+        isFeedActive={isFeedActive}
         onOpenFeedFilters={
           isFeedActive
             ? () => {
@@ -260,20 +254,21 @@ export default function DashboardLayout() {
       {/* Barra de Navegación Inferior (Móvil) */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/95 backdrop-blur-md border-t border-gray-100/80 shadow-[0_-4px_20px_rgba(0,0,0,0.03)] z-50 px-4">
         <div className="grid h-full grid-cols-3 items-center max-w-[320px] mx-auto justify-items-center">
-          <button
-            onClick={() => {
+          <AppLink
+            to="/app/inicio"
+            onClick={(event) => {
               if (isFeedActive) {
+                event.preventDefault()
                 window.scrollTo({ top: 0, behavior: 'smooth' })
-              } else {
-                navigate('/app/inicio')
               }
             }}
             className="flex flex-col items-center justify-center w-12 h-12 active:scale-95 transition-transform"
+            aria-label="Ir al inicio"
           >
             <div className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${isFeedActive ? 'bg-[#f3efff] text-[#5f38ff] shadow-sm' : 'bg-transparent text-gray-400'}`}>
               <Home className="w-5.5 h-5.5 stroke-[2]" />
             </div>
-          </button>
+          </AppLink>
 
           {canCreate ? (
             <div className="relative flex items-center justify-center w-12 h-12">
@@ -289,9 +284,10 @@ export default function DashboardLayout() {
             <div className="w-12 h-12" aria-hidden />
           )}
 
-          <button
-            onClick={() => navigate('/app/perfil')}
+          <AppLink
+            to="/app/perfil"
             className="flex flex-col items-center justify-center w-12 h-12 active:scale-95 transition-transform"
+            aria-label="Ir a mi perfil"
           >
             <div className="w-11 h-11 rounded-2xl flex items-center justify-center transition-all">
               <div
@@ -312,7 +308,7 @@ export default function DashboardLayout() {
                 )}
               </div>
             </div>
-          </button>
+          </AppLink>
         </div>
       </div>
 

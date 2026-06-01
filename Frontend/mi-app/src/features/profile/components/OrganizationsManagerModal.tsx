@@ -2,8 +2,7 @@ import { useEffect, useMemo, useState } from "react"
 import { X, Plus, Check, Search } from "lucide-react"
 import type { OrganizationSummary } from "../../../api/users.api"
 import { motion } from "framer-motion"
-import { useNavigate } from "react-router-dom"
-import { profilePath } from "../lib/profileNavigation"
+import { ProfileLink } from "./ProfileLink"
 
 interface OrganizationsManagerModalProps {
   followingOrganizations: OrganizationSummary[]
@@ -258,14 +257,12 @@ function OrgRow({
   currentUserId: number
   onClose: () => void
 }) {
-  const navigate = useNavigate()
   return (
-    <div
-      onClick={() => {
-        navigate(profilePath(org.id, currentUserId))
-        onClose()
-      }}
-      className="flex min-w-0 flex-1 items-center gap-3 cursor-pointer hover:opacity-70 transition-opacity"
+    <ProfileLink
+      userId={org.id}
+      currentUserId={currentUserId}
+      onClick={() => onClose()}
+      className="flex min-w-0 flex-1 items-center gap-3 hover:opacity-70 transition-opacity"
     >
       <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-gray-100">
         {org.profile_image_url ? (
@@ -288,6 +285,6 @@ function OrgRow({
           {org.followers_count ?? 0} {org.followers_count === 1 ? "seguidor" : "seguidores"}
         </p>
       </div>
-    </div>
+    </ProfileLink>
   )
 }

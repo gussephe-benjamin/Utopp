@@ -8,6 +8,7 @@ import {
   type WizardImage,
   type WizardLink,
   type WizardFormData,
+  normalizeWizardLinks,
 } from '../types/post.types'
 import Step1TypeSelection from './Step1_TypeSelection'
 import Step2SubtypeSelection from './Step2_SubtypeSelection'
@@ -239,8 +240,9 @@ export default function PublicationWizard({ isOpen, onClose, allowedTypes }: Pub
 
       // 3. Registrar enlaces
       if (formData.links.length > 0) {
-        setPublishProgress(`Guardando enlaces (${formData.links.length})...`)
-        for (const link of formData.links) {
+        const linksToSave = normalizeWizardLinks(formData.links)
+        setPublishProgress(`Guardando enlaces (${linksToSave.length})...`)
+        for (const link of linksToSave) {
           await addLink(postId, {
             label: link.label,
             url: link.url,

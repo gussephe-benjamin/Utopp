@@ -17,7 +17,8 @@ import { getMyRoles } from "../api/roles.api"
 import { getSavedPosts } from "../api/saved-posts.api"
 import { StudentProfileSelf } from "../features/profile/views/StudentProfileSelf"
 import { StudentProfilePublic } from "../features/profile/views/StudentProfilePublic"
-import { mapSavedPostToFeedPost, type SavedPostRaw } from "../features/profile/lib/postMapper"
+import { mapSavedPostToFeedPost, type PostOutRaw } from "../features/profile/lib/postMapper"
+import { toProfileUserData } from "../features/profile/lib/profileUserData"
 import type { ProfileUserData } from "../features/profile/views/types"
 import type { FeedPostOut } from "../types/post.types"
 
@@ -62,17 +63,17 @@ export default function StudentProfilePage({ viewedUserId }: StudentProfilePageP
 
         if (viewingSelf) {
           const [savedRaw, followingOrgs, orgs, roles] = await Promise.all([
-            getSavedPosts().catch(() => [] as SavedPostRaw[]),
+            getSavedPosts().catch(() => [] as PostOutRaw[]),
             getMyFollowingOrganizations().catch(() => []),
             getOrganizations().catch(() => []),
             getMyRoles().catch(() => []),
           ])
           if (!mounted) return
-          setUser({ ...myProfile, role_name: roles[0]?.name ?? myProfile.role_name ?? "alumno" })
+          setUser(toProfileUserData({ ...myProfile, role_name: roles[0]?.name ?? myProfile.role_name ?? "alumno" }))
           setAvatarUrl(myProfile.profile_image_url ?? null)
           setFollowingOrganizations(followingOrgs)
           setAllOrganizations(orgs)
-          const savedFeedPosts = (savedRaw as SavedPostRaw[])
+          const savedFeedPosts = (savedRaw as PostOutRaw[])
             .filter((post) => post.post_type === "event")
             .map(mapSavedPostToFeedPost)
           setEventSavedPosts(savedFeedPosts)
@@ -85,7 +86,7 @@ export default function StudentProfilePage({ viewedUserId }: StudentProfilePageP
           getUserFollowingOrganizations(viewedUserId).catch(() => []),
         ])
         if (!mounted) return
-        setUser(publicProfile)
+        setUser(toProfileUserData(publicProfile))
         setAvatarUrl(publicProfile.profile_image_url ?? null)
         setFollowingOrganizations(followedOrgs)
       } finally {

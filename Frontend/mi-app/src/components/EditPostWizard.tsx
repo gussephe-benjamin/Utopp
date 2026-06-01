@@ -15,6 +15,7 @@ import {
 import {
   type WizardImage, type WizardLink,
   type PostType, type SubPostType, type PostLinkType,
+  normalizeWizardLinks,
 } from '../types/post.types'
 import Step3LinksForm from './Step3_LinksForm'
 import Step4GeneralInfo from './Step4_GeneralInfo'
@@ -161,7 +162,7 @@ export default function EditPostWizard({ post, onClose, onSaved }: EditPostWizar
         }))
 
       setImages(wizImages)
-      setLinks(wizLinks)
+      setLinks(normalizeWizardLinks(wizLinks))
     }).catch(console.error)
       .finally(() => { setLoading(false); initialLoadDone.current = true; setDirty(false) })
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -290,7 +291,8 @@ export default function EditPostWizard({ post, onClose, onSaved }: EditPostWizar
       }
 
       // 3. Link diff
-      const finalLinkTempIds = new Set(links.map(l => l.tempId))
+      const normalizedLinks = normalizeWizardLinks(links)
+      const finalLinkTempIds = new Set(normalizedLinks.map(l => l.tempId))
       const initLinkMap = new Map(initialLinks.current.map(l => [toTempId(l.id), l]))
 
       // 3a. Deleted links
@@ -302,7 +304,7 @@ export default function EditPostWizard({ post, onClose, onSaved }: EditPostWizar
       }
 
       // 3b. New links
-      const newLinks = links.filter(l => parseBackendId(l.tempId) === null)
+      const newLinks = normalizedLinks.filter(l => parseBackendId(l.tempId) === null)
       if (newLinks.length > 0) setSaveProgress(`Agregando links (${newLinks.length})...`)
       for (const lnk of newLinks) {
         await addLink(postId, {
@@ -310,12 +312,12 @@ export default function EditPostWizard({ post, onClose, onSaved }: EditPostWizar
           url:          lnk.url,
           type:         lnk.type,
           display_type: lnk.display_type,
-          position:     links.indexOf(lnk),
+          position:     normalizedLinks.indexOf(lnk),
         } as LinkCreate)
       }
 
       // 3c. Updated existing links
-      for (const lnk of links) {
+      for (const lnk of normalizedLinks) {
         const bid = parseBackendId(lnk.tempId)
         if (!bid) continue
         const orig = initLinkMap.get(lnk.tempId)
@@ -327,7 +329,7 @@ export default function EditPostWizard({ post, onClose, onSaved }: EditPostWizar
       }
 
       // 3d. Reorder existing links
-      const reorderLinkList = links
+      const reorderLinkList = normalizedLinks
         .filter(l => parseBackendId(l.tempId) !== null)
         .map((l, idx) => ({ link_id: parseBackendId(l.tempId)!, position: idx }))
       if (reorderLinkList.length > 1) {

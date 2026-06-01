@@ -8,6 +8,7 @@ import {
 } from "react";
 import { ListFilter, Plus } from "lucide-react";
 import { UtoppBrandMark } from "../../../shared/brand/UtoppBrandMark";
+import { AppLink } from "../../../shared/navigation/AppLink";
 import {
   TW_UTOPP_GRADIENT_BR,
   TW_UTOPP_GRADIENT_R,
@@ -19,8 +20,7 @@ const PLUS_SIZE_PX = 40;
 const BAR_HORIZONTAL_PADDING_PX = 12;
 
 type FeedBottomBarProps = {
-  onBrandClick: () => void;
-  onOpenAccountMenu: () => void;
+  isFeedActive?: boolean;
   onOpenFeedFilters?: () => void;
   feedCategoryFiltersActive?: boolean;
   onOpenCreate: () => void;
@@ -29,7 +29,7 @@ type FeedBottomBarProps = {
   avatarInitial: string;
   displayName: string;
   isProfileRoute: boolean;
-  accountMenuTriggerRef?: RefObject<HTMLButtonElement | null>;
+  accountMenuTriggerRef?: RefObject<HTMLAnchorElement | null>;
   feedFiltersTriggerRef?: RefObject<HTMLButtonElement | null>;
 };
 
@@ -54,8 +54,7 @@ function slotStyleFromPlusCenter(offsetPx: number, side: "left" | "right"): CSSP
  * en cada segmento entre el + y el borde (reglas par/impar en distributeSegmentSlots).
  */
 export function FeedBottomBar({
-  onBrandClick,
-  onOpenAccountMenu,
+  isFeedActive = false,
   onOpenFeedFilters,
   feedCategoryFiltersActive = false,
   onOpenCreate,
@@ -165,7 +164,13 @@ export function FeedBottomBar({
           >
             <UtoppBrandMark
               variant="header"
-              onClick={onBrandClick}
+              to="/app/inicio"
+              onClick={(event) => {
+                if (isFeedActive) {
+                  event.preventDefault()
+                  window.location.assign(`${window.location.origin}/app/inicio`)
+                }
+              }}
               aria-label="Ir a inicio y recargar"
               className="min-w-0 max-w-full [&_span]:text-base [&_span]:truncate"
             />
@@ -174,17 +179,16 @@ export function FeedBottomBar({
 
         {filterButton}
 
-        <button
+        <AppLink
           ref={accountMenuTriggerRef}
-          type="button"
-          onClick={onOpenAccountMenu}
+          to="/app/perfil"
           style={slotStyleFromPlusCenter(avatarOffset, "right")}
           className={`absolute z-[1] rounded-full p-0.5 shrink-0 transition-shadow ${
             isProfileRoute
               ? TW_UTOPP_RING_PROFILE
               : "ring-0 hover:ring-2 hover:ring-fuchsia-200/60 ring-offset-2"
           }`}
-          aria-label="Menú de cuenta"
+          aria-label="Ir a mi perfil"
           title={displayName}
         >
           {avatarUrl ? (
@@ -200,7 +204,7 @@ export function FeedBottomBar({
               {avatarInitial}
             </div>
           )}
-        </button>
+        </AppLink>
       </div>
     </nav>
   );

@@ -1,9 +1,8 @@
 import { useState } from "react"
 import ReactDOM from "react-dom"
-import { useNavigate } from "react-router-dom"
 import { Calendar as CalendarIcon, X } from "lucide-react"
 import { AnimatePresence, motion } from "framer-motion"
-import { profilePath } from "../../profile/lib/profileNavigation"
+import { ProfileLink } from "../../profile/components/ProfileLink"
 import type { FeedPostOut } from "../../../types/post.types"
 import { formatDeadlineBadge } from "../lib/weeklyHighlightUtils"
 
@@ -20,7 +19,6 @@ export function WeeklyEventsWidget({
   currentUserId,
   compact = false,
 }: WeeklyEventsWidgetProps) {
-  const navigate = useNavigate()
   const [showAllModal, setShowAllModal] = useState(false)
 
   const maxVisible = 3
@@ -60,17 +58,15 @@ export function WeeklyEventsWidget({
                     <span className="text-sm font-bold leading-tight">{dayNumber}</span>
                   </div>
                   <div className="min-w-0 flex-1 pt-0.5">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const base = profilePath(post.user_id, currentUserId)
-                        navigate(`${base}?postId=${post.id}`)
-                      }}
+                    <ProfileLink
+                      userId={post.user_id}
+                      currentUserId={currentUserId}
+                      postId={post.id}
                       className="w-full line-clamp-2 text-left text-xs font-bold leading-snug text-gray-800 hover:text-[#2563EB] break-words"
                       title={title}
                     >
                       {title}
-                    </button>
+                    </ProfileLink>
                     <p className="mt-0.5 truncate text-[10px] text-gray-400">
                       Organizado por: {post.user_name || "Organización"}
                     </p>
@@ -139,17 +135,15 @@ export function WeeklyEventsWidget({
                             <span className="text-sm font-bold leading-tight">{dayNumber}</span>
                           </div>
                           <div className="min-w-0 flex-1 pt-0.5">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const base = profilePath(post.user_id, currentUserId)
-                                navigate(`${base}?postId=${post.id}`)
-                                setShowAllModal(false)
-                              }}
+                            <ProfileLink
+                              userId={post.user_id}
+                              currentUserId={currentUserId}
+                              postId={post.id}
+                              onClick={() => setShowAllModal(false)}
                               className="w-full text-left text-xs font-bold leading-snug text-gray-800 hover:text-[#2563EB] break-words"
                             >
                               {title}
-                            </button>
+                            </ProfileLink>
                             <p className="mt-1 text-[10px] text-gray-400">
                               Organizado por: {post.user_name || "Organización"}
                             </p>

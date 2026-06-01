@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   Bookmark,
   BookmarkCheck,
@@ -34,7 +33,7 @@ import { getDisplayName } from "../lib/display";
 import { PostImageViewerModal } from "./PostImageViewerModal";
 import { UserAvatar } from "./UserAvatar";
 import { resolvePostImageUrl } from "../../../shared/lib/postImageUrl";
-import { profilePath } from "../../profile/lib/profileNavigation";
+import { ProfileLink } from "../../profile/components/ProfileLink";
 
 type PostCardProps = {
   post: FeedPostOut;
@@ -52,8 +51,6 @@ type PostActionLink = {
 };
 
 export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardProps) {
-  const navigate = useNavigate();
-
   const SS_IDX = `utopp:carousel:idx:${post.id}`;
   const SS_IMGS = `utopp:carousel:imgs:${post.id}`;
   const DESCRIPTION_PREVIEW_CHARS = 560;
@@ -181,21 +178,27 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
   const gradient = TYPE_GRADIENTS[post.post_type] ?? TYPE_GRADIENTS.simple_post;
 
   useEffect(() => {
-    if (post.images_count > 0) {
-      listImages(post.id)
-        .then((imgs) => {
-          setImages(imgs);
-          try {
-            sessionStorage.setItem(SS_IMGS, JSON.stringify(imgs));
-          } catch {
-            /* noop */
-          }
-        })
-        .catch(() => {
+    if (post.images_count === 0) return
+
+    let cancelled = false
+    listImages(post.id)
+      .then((imgs) => {
+        if (cancelled) return
+        setImages(imgs)
+        try {
+          sessionStorage.setItem(SS_IMGS, JSON.stringify(imgs))
+        } catch {
           /* noop */
-        });
+        }
+      })
+      .catch(() => {
+        /* noop */
+      })
+
+    return () => {
+      cancelled = true
     }
-  }, [post.id, post.images_count]);
+  }, [post.id, post.images_count])
 
   useEffect(() => {
     let cancelled = false;
@@ -250,10 +253,10 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
     () =>
       images.length > 0
         ? images
-        : post.images_count === 0 && post.image_url
+        : post.image_url
           ? [{ url: post.image_url }]
           : [],
-    [images, post.image_url, post.images_count],
+    [images, post.image_url],
   );
   const resolvedDisplayImages = useMemo(
     () => displayImages.map((image) => ({ ...image, url: resolvePostImageUrl(image.url) })),
@@ -497,11 +500,9 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
             />
             <div className="min-w-0">
               <div className="flex min-w-0 items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() =>
-                    navigate(profilePath(post.user_id, currentUserId))
-                  }
+                <ProfileLink
+                  userId={post.user_id}
+                  currentUserId={currentUserId}
                   className="flex min-w-0 items-center gap-1.5 text-left text-sm font-bold leading-tight text-gray-900 transition-colors hover:text-[#2f55f6]"
                 >
                   <span className="truncate">{getDisplayName(post.user_name, post.user_id)}</span>
@@ -516,7 +517,7 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
                       <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
                     </svg>
                   )}
-                </button>
+                </ProfileLink>
               </div>
               {post.user_email ? (
                 <p className="mt-0.5 truncate text-xs font-medium text-gray-500">{post.user_email}</p>

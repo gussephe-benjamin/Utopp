@@ -1,7 +1,6 @@
-import { useNavigate } from "react-router-dom"
 import { Trophy } from "lucide-react"
 import { TW_UTOPP_GRADIENT_R } from "../../../shared/constants/brand"
-import { profilePath } from "../../profile/lib/profileNavigation"
+import { ProfileLink } from "../../profile/components/ProfileLink"
 import type { OrganizationSummary } from "../../../api/users.api"
 import { getOrgAvatarStyle } from "../lib/weeklyHighlightUtils"
 import { WEEKLY_ORGS_TITLE } from "../constants/weeklyHighlights"
@@ -36,8 +35,6 @@ export function WeeklyOrgsWidget({
   onFollowToggle,
   compact = false,
 }: WeeklyOrgsWidgetProps) {
-  const navigate = useNavigate()
-
   return (
     <div className={compact ? "h-full" : "rounded-xl border border-gray-100 bg-white p-4 shadow-sm"}>
       <div className={`flex items-center gap-2 ${compact ? "mb-3 px-1" : "mb-3.5"}`}>
@@ -69,9 +66,9 @@ export function WeeklyOrgsWidget({
             return (
               <div key={org.id} className="flex items-center justify-between gap-2">
                 <div className="flex min-w-0 items-center gap-2.5">
-                  <button
-                    type="button"
-                    onClick={() => navigate(profilePath(org.id, currentUserId))}
+                  <ProfileLink
+                    userId={org.id}
+                    currentUserId={currentUserId}
                     className="shrink-0 transition-transform hover:scale-105"
                   >
                     {org.profile_image_url ? (
@@ -87,16 +84,16 @@ export function WeeklyOrgsWidget({
                         {initial}
                       </div>
                     )}
-                  </button>
+                  </ProfileLink>
                   <div className="min-w-0">
                     <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => navigate(profilePath(org.id, currentUserId))}
+                      <ProfileLink
+                        userId={org.id}
+                        currentUserId={currentUserId}
                         className="truncate text-xs font-bold text-gray-900 hover:text-[#2563EB]"
                       >
                         {org.full_name}
-                      </button>
+                      </ProfileLink>
                       <VerifiedBadge />
                     </div>
                     <p className="mt-0.5 text-[10px] text-gray-400">{postText}</p>

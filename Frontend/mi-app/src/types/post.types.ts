@@ -230,6 +230,9 @@ export interface WizardImage {
   scale?: number
 }
 
+/** Texto fijo del botón principal al crear/editar publicaciones. */
+export const PRIMARY_LINK_BUTTON_LABEL = 'Participar'
+
 /** Enlace configurado dentro del wizard (antes de enviarse al backend). */
 export interface WizardLink {
   /** ID temporal en el cliente. */
@@ -240,6 +243,15 @@ export interface WizardLink {
   display_type: PostLinkDisplayType
   /** Posición del botón: 0 = principal (grande), 1 = secundario, 2+ = lista desplegable. */
   position: number
+}
+
+/** Asegura posiciones consecutivas y label fijo en el botón principal. */
+export function normalizeWizardLinks(links: WizardLink[]): WizardLink[] {
+  return links.map((link, index) => ({
+    ...link,
+    position: index,
+    label: index === 0 ? PRIMARY_LINK_BUTTON_LABEL : link.label,
+  }))
 }
 
 /** Estructura completa del formulario del wizard de creación de posts. */

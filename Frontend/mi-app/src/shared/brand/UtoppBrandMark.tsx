@@ -1,44 +1,45 @@
+import type { MouseEvent } from "react";
 import { cn } from "../../lib/utils";
-import { TW_UTOPP_GRADIENT_BR, TW_UTOPP_GRADIENT_TEXT } from "../constants/brand";
+import { AppLink } from "../navigation/AppLink";
+import { TW_UTOPP_GRADIENT_TEXT, UTOPP_LOGO_SRC } from "../constants/brand";
 
 type UtoppBrandMarkProps = {
-  /** `header`: barra superior (U + wordmark). `auth`: solo logo U, más grande, centrado. */
+  /** `header`: barra superior (logo + wordmark). `auth`: solo logo, más grande, centrado. */
   variant?: "header" | "auth";
   className?: string;
-  /** Si se define, la marca es un botón (p. ej. recarga o navegación). */
-  onClick?: () => void;
+  /** Ruta interna; habilita clic central y «Abrir en nueva pestaña». */
+  to?: string;
+  /** Clic izquierdo adicional (p. ej. recarga en la misma ruta). */
+  onClick?: (event: MouseEvent<HTMLAnchorElement | HTMLButtonElement>) => void;
   "aria-label"?: string;
 };
 
 /**
- * Marca Utopp: cuadrado con “U” en gradiente; en barra incluye wordmark “utopp”.
+ * Marca Utopp: logo 2D en barra; en header incluye wordmark «Utopp».
  */
 export function UtoppBrandMark({
   variant = "header",
   className,
+  to,
   onClick,
   "aria-label": ariaLabel = "Utopp",
 }: UtoppBrandMarkProps) {
   const isAuth = variant === "auth";
 
   const markBox = (
-    <div
+    <img
+      src={UTOPP_LOGO_SRC}
+      alt=""
+      aria-hidden
       className={cn(
-        "flex items-center justify-center text-white font-bold leading-none shrink-0",
-        isAuth
-          ? cn(
-              "relative w-[4.25rem] h-[4.25rem] text-3xl rounded-2xl overflow-hidden shadow-[0_6px_28px_rgba(15,23,42,0.45),inset_0_1px_0_rgba(255,255,255,0.22)]",
-              TW_UTOPP_GRADIENT_BR,
-            )
-          : cn("w-9 h-9 text-lg rounded-xl shadow-sm", TW_UTOPP_GRADIENT_BR),
+        "shrink-0 object-contain",
+        isAuth ? "h-[4.25rem] w-[4.25rem]" : "h-9 w-9",
       )}
-    >
-      U
-    </div>
+    />
   );
 
   const wordmark = !isAuth ? (
-    <span className={cn("font-bold tracking-tight text-lg", TW_UTOPP_GRADIENT_TEXT)}>utopp</span>
+    <span className={cn("font-bold tracking-tight text-lg", TW_UTOPP_GRADIENT_TEXT)}>Utopp</span>
   ) : null;
 
   const innerClass = cn(
@@ -55,6 +56,14 @@ export function UtoppBrandMark({
       {wordmark}
     </>
   );
+
+  if (to) {
+    return (
+      <AppLink to={to} onClick={onClick} className={innerClass} aria-label={ariaLabel}>
+        {content}
+      </AppLink>
+    );
+  }
 
   if (onClick) {
     return (

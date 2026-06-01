@@ -15,9 +15,8 @@ export const UTOPP_BRAND = {
 export const AUTH_SCREEN_OVERLAY_GRADIENT =
   "linear-gradient(to bottom right, rgba(255, 255, 255, 0.66), rgba(116, 113, 113, 0.61), rgba(48, 46, 46, 0.68))";
 
-/** Logo oficial Utopp (CDN del repo). Centralizado para login/register y branding. */
-export const UTOPP_LOGO_SRC =
-  "https://raw.githubusercontent.com/gussephe-benjamin/Utopp/refs/heads/main/Frontend/mi-app/public/tempo-image-20251218T034846856Z.png";
+/** Logo oficial Utopp 2D (local). */
+export const UTOPP_LOGO_SRC = "/utopp-2d.png";
 
 /** Imagen de fondo del campus UTEC en pantallas auth (default de `AuthScreenLayout`). */
 export const AUTH_BACKGROUND_IMAGE_URL =

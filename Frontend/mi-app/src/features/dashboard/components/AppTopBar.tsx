@@ -1,6 +1,7 @@
 import type { RefObject } from "react";
 import { ListFilter, Plus } from "lucide-react";
 import { UtoppBrandMark } from "../../../shared/brand/UtoppBrandMark";
+import { AppLink } from "../../../shared/navigation/AppLink";
 import {
   TW_UTOPP_GRADIENT_R,
 } from "../../../shared/constants/brand";
@@ -8,10 +9,8 @@ import {
 // ─── Barra superior (dashboard): marca, crear, filtros (feed), avatar ───────
 
 type AppTopBarProps = {
-  /** Recarga completa al pulsar la marca (p. ej. ir a inicio). */
-  onBrandClick: () => void;
-  /** Abrir panel de cuenta (desde avatar). */
-  onOpenAccountMenu: () => void;
+  /** Si la ruta activa es el feed (inicio): clic en marca recarga la página. */
+  isFeedActive?: boolean;
   /** Abrir filtros del feed (solo en ruta inicio); si no se pasa, no se muestra el botón. */
   onOpenFeedFilters?: () => void;
   /** Resalta el botón de filtros cuando hay filtros por categoría activos. */
@@ -26,15 +25,14 @@ type AppTopBarProps = {
   displayName: string;
   /** Resalta avatar cuando la ruta es perfil */
   isProfileRoute: boolean;
-  /** Anclaje del menú cuenta (popover estilo GitHub). */
-  accountMenuTriggerRef?: RefObject<HTMLButtonElement | null>;
+  /** Anclaje del avatar de perfil (popover estilo GitHub). */
+  accountMenuTriggerRef?: RefObject<HTMLAnchorElement | null>;
   /** Anclaje del popover de filtros del feed. */
   feedFiltersTriggerRef?: RefObject<HTMLButtonElement | null>;
 };
 
 export function AppTopBar({
-  onBrandClick,
-  onOpenAccountMenu,
+  isFeedActive = false,
   onOpenFeedFilters,
   feedCategoryFiltersActive = false,
   onOpenCreate,
@@ -51,7 +49,13 @@ export function AppTopBar({
       <div className="h-full max-w-[1320px] mx-auto px-3 sm:px-4 flex items-center justify-between gap-3">
         <UtoppBrandMark
           variant="header"
-          onClick={onBrandClick}
+          to="/app/inicio"
+          onClick={(event) => {
+            if (isFeedActive) {
+              event.preventDefault()
+              window.location.assign(`${window.location.origin}/app/inicio`)
+            }
+          }}
           aria-label="Ir a inicio y recargar"
         />
 
@@ -96,16 +100,15 @@ export function AppTopBar({
             </button>
           )}
 
-          <button
+          <AppLink
             ref={accountMenuTriggerRef}
-            type="button"
-            onClick={onOpenAccountMenu}
+            to="/app/perfil"
             className={`rounded-full p-[2px] shrink-0 transition-shadow bg-gradient-to-br from-blue-600 to-fuchsia-500 shadow-sm ${
               isProfileRoute
                 ? "ring-2 ring-violet-200"
                 : "hover:brightness-110"
             }`}
-            aria-label="Menú de cuenta"
+            aria-label="Ir a mi perfil"
             title={displayName}
           >
             {avatarUrl ? (
@@ -119,7 +122,7 @@ export function AppTopBar({
                 {avatarInitial}
               </div>
             )}
-          </button>
+          </AppLink>
         </div>
       </div>
     </header>

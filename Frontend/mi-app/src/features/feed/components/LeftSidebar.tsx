@@ -1,7 +1,7 @@
 import { UserCircle } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { INTERESTS } from "../../../constants/interests";
+import { AppLink } from "../../../shared/navigation/AppLink";
 
 /** Referencia estable: evita bucle infinito cuando `interests` no se pasa como prop. */
 const EMPTY_INTERESTS: string[] = []
@@ -33,7 +33,6 @@ export function LeftSidebar({
   onSaveInterests,
   variant = "student",
 }: LeftSidebarProps) {
-  const navigate = useNavigate();
   const interestsList = interests ?? EMPTY_INTERESTS
   const [editingInterests, setEditingInterests] = useState(false)
   const [draftInterests, setDraftInterests] = useState<string[]>(interestsList)
@@ -97,12 +96,12 @@ export function LeftSidebar({
             <p className="text-xs text-gray-400 mt-0.5 italic">Sin carrera registrada</p>
           )}
           
-          <button
-            onClick={() => navigate("/app/perfil")}
-            className="mt-4 w-full rounded-full border border-violet-200 px-3 py-2.5 text-xs font-semibold text-violet-600 transition-colors hover:bg-violet-50"
+          <AppLink
+            to="/app/perfil"
+            className="mt-4 block w-full rounded-full border border-violet-200 px-3 py-2.5 text-center text-xs font-semibold text-violet-600 transition-colors hover:bg-violet-50"
           >
             Ver perfil completo
-          </button>
+          </AppLink>
         </div>
       </div>
 

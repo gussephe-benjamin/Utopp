@@ -2,10 +2,9 @@ import { useEffect, useState } from 'react'
 import ReactDOM from 'react-dom'
 import { X, Bookmark, ChevronLeft, ChevronRight, Calendar, ExternalLink, Link } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { useNavigate } from 'react-router-dom'
 import { getPost } from '../api/posts.api'
 import { getMyProfile } from '../api/users.api'
-import { profilePath } from '../features/profile/lib/profileNavigation'
+import { ProfileLink } from '../features/profile/components/ProfileLink'
 import { unsavePost } from '../api/saved-posts.api'
 import { POST_TYPE_LABELS, POST_TYPE_ICONS, SUBTYPE_LABELS } from '../types/post.types'
 import { TW_UTOPP_GRADIENT_BR, TW_UTOPP_GRADIENT_R } from '../shared/constants/brand'
@@ -77,7 +76,6 @@ const timeAgo = (iso?: string) => {
 const MAX_DESC_CHARS = 1000
 
 export default function PostDetailModal({ postId, onClose, onUnsaved }: PostDetailModalProps) {
-  const navigate = useNavigate()
   const [currentUserId, setCurrentUserId] = useState<number | null>(null)
   const [post, setPost]             = useState<PostDetail | null>(null)
   const [loading, setLoading]       = useState(false)
@@ -242,13 +240,11 @@ export default function PostDetailModal({ postId, onClose, onUnsaved }: PostDeta
             <div className="space-y-0">
               {/* Author row */}
               <div className="px-5 pt-4 pb-3 flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    navigate(profilePath(post.user_id, currentUserId))
-                    onClose()
-                  }}
-                  className="flex items-center gap-3 min-w-0 text-left hover:opacity-90 transition-opacity"
+                <ProfileLink
+                  userId={post.user_id}
+                  currentUserId={currentUserId}
+                  onClick={() => onClose()}
+                  className="flex items-center gap-3 min-w-0 hover:opacity-90 transition-opacity"
                   title="Ver perfil del autor"
                 >
                   {post.user?.profile_image_url ? (
@@ -269,7 +265,7 @@ export default function PostDetailModal({ postId, onClose, onUnsaved }: PostDeta
                     ) : null}
                     <p className="text-xs text-gray-400">{timeAgo(post.created_at)}</p>
                   </div>
-                </button>
+                </ProfileLink>
               </div>
 
               {/* Image carousel (slide CSS) */}

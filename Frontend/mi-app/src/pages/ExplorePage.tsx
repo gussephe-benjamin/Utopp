@@ -1,13 +1,11 @@
 import { useState } from "react"
-import { useNavigate } from "react-router-dom"
 import { Calendar as CalendarIcon, Compass, Search, Trophy, Users, X } from "lucide-react"
 import { useWeeklyFeedHighlights } from "../features/feed/hooks/useWeeklyFeedHighlights"
 import { formatDeadlineBadge } from "../features/feed/lib/weeklyHighlightUtils"
-import { profilePath } from "../features/profile/lib/profileNavigation"
+import { ProfileLink } from "../features/profile/components/ProfileLink"
 import { TW_UTOPP_GRADIENT_R, TW_UTOPP_GRADIENT_BR } from "../shared/constants/brand"
 
 export default function ExplorePage() {
-  const navigate = useNavigate()
   const {
     organizations,
     deadlinePosts,
@@ -131,16 +129,14 @@ export default function ExplorePage() {
                       <span className="text-sm font-bold leading-tight">{dayNumber}</span>
                     </div>
                     <div className="min-w-0 flex-1">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const base = profilePath(post.user_id, currentUserId)
-                          navigate(`${base}?postId=${post.id}`)
-                        }}
+                      <ProfileLink
+                        userId={post.user_id}
+                        currentUserId={currentUserId}
+                        postId={post.id}
                         className="w-full text-left text-xs font-bold leading-snug text-gray-800 hover:text-[#2563EB] break-words"
                       >
                         {title}
-                      </button>
+                      </ProfileLink>
                       <p className="mt-1 text-[10px] text-gray-400">
                         Organizado por: <span className="font-semibold text-gray-500">{post.user_name || "Organización"}</span>
                       </p>
@@ -179,9 +175,9 @@ export default function ExplorePage() {
                   className="flex items-center justify-between gap-3 rounded-xl border border-gray-100 bg-white p-4 shadow-sm hover:border-violet-100 transition-all"
                 >
                   <div className="flex min-w-0 items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => navigate(profilePath(org.id, currentUserId))}
+                    <ProfileLink
+                      userId={org.id}
+                      currentUserId={currentUserId}
                       className="shrink-0 transition-transform hover:scale-105"
                     >
                       {org.profile_image_url ? (
@@ -197,15 +193,15 @@ export default function ExplorePage() {
                           {initial}
                         </div>
                       )}
-                    </button>
+                    </ProfileLink>
                     <div className="min-w-0">
-                      <button
-                        type="button"
-                        onClick={() => navigate(profilePath(org.id, currentUserId))}
-                        className="truncate text-xs font-bold text-gray-900 hover:text-[#2563EB] block text-left"
+                      <ProfileLink
+                        userId={org.id}
+                        currentUserId={currentUserId}
+                        className="truncate text-xs font-bold text-gray-900 hover:text-[#2563EB] block"
                       >
                         {org.full_name}
-                      </button>
+                      </ProfileLink>
                       <p className="mt-0.5 text-[9px] text-gray-400">{postText}</p>
                     </div>
                   </div>

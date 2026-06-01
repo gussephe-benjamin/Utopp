@@ -1,5 +1,6 @@
 import { type ChangeEvent, useMemo, useRef, useState } from "react"
 import { useNavigate } from "react-router-dom"
+import { ProfileLink } from "../components/ProfileLink"
 import { AnimatePresence, motion } from "framer-motion"
 import {
   Check,
@@ -331,10 +332,11 @@ export function StudentProfileSelf({
             ) : (
               <div className="flex flex-wrap gap-4 pt-2 justify-center sm:justify-start">
                 {followingOrganizations.map((org) => (
-                  <div
+                  <ProfileLink
                     key={org.id}
-                    onClick={() => setManagingOrgs(true)}
-                    className="flex flex-col items-center gap-2 group cursor-pointer"
+                    userId={org.id}
+                    currentUserId={user.id}
+                    className="flex flex-col items-center gap-2 group"
                   >
                     {/* Círculo con logo/iniciales */}
                     <div className="h-16 w-16 rounded-full bg-white p-0.5 border border-gray-100 shadow-sm transition-transform group-hover:scale-105 duration-200 flex items-center justify-center overflow-hidden">
@@ -354,7 +356,7 @@ export function StudentProfileSelf({
                     <span className="text-[11px] font-bold text-gray-600 group-hover:text-violet-600 transition-colors truncate max-w-[80px] text-center">
                       {org.full_name ?? `Org ${org.id}`}
                     </span>
-                  </div>
+                  </ProfileLink>
                 ))}
               </div>
             )}
