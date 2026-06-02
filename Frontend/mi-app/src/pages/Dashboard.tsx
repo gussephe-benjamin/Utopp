@@ -5,7 +5,7 @@ import PublicationWizard from '../components/PublicationWizard'
 import { useAuth } from '../auth/useAuth'
 import { getMe } from '../api/auth.api'
 import { getMyProfile, type UserProfileResponse } from '../api/users.api'
-import { useRole, ROLE_ORGANIZACION } from '../hooks/useRole'
+import { useRole } from '../hooks/useRole'
 import Profile from '../pages/Profile'
 import { AppTopBar } from '../features/dashboard/components/AppTopBar'
 import { measureMenuAnchor, type MenuPopoverAnchor } from '../features/dashboard/popoverAnchor'
@@ -24,7 +24,7 @@ export default function DashboardLayout() {
   const location  = useLocation()
   const { logout } = useAuth()
 
-  const { canCreate, allowedTypes, roleName } = useRole()
+  const { canCreate, allowedTypes } = useRole()
 
   useEffect(() => {
     getMe()
@@ -121,7 +121,6 @@ export default function DashboardLayout() {
 
   const isFeedActive    = location.pathname === '/app/inicio'
   const isProfileActive = location.pathname.startsWith('/app/perfil')
-  const isExploreActive = location.pathname === '/app/explorar'
   const profileViewIdMatch = location.pathname.match(/^\/app\/perfil\/(\d+)$/)
   const profileViewId = profileViewIdMatch ? Number(profileViewIdMatch[1]) : undefined
 

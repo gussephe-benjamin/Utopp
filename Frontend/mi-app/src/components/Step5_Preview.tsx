@@ -88,17 +88,17 @@ export default function Step5Preview({
     getMyProfile()
       .then((profile) => {
         setUserId(profile.id)
-        setUserName(profile.full_name || profile.email)
-        setUserEmail(profile.email ?? null)
+        setUserName(profile.full_name ?? profile.email ?? '')
+        setUserEmail(profile.email ?? '')
         if (profile.profile_image_url) {
           setAvatarUrl(profile.profile_image_url)
         } else {
-          const saved = localStorage.getItem(`avatar_${profile.id}`)
+          const saved = localStorage.getItem(`avatar_${profile.id}`) ?? ''
           if (saved) setAvatarUrl(saved)
         }
       })
-      .catch(() => setUserName('Tú'))
-  }, [])
+      .catch(() => { setUserName('Tú'); return })
+  }, [setUserId, setUserName, setUserEmail, setAvatarUrl])
 
   useEffect(() => {
     if (currentImage >= totalImages && totalImages > 0) {
@@ -127,7 +127,7 @@ export default function Step5Preview({
                 userName={userName ?? 'Tú'}
                 userId={userId ?? 0}
                 gradient={gradient}
-                profileImageUrl={avatarUrl}
+                profileImageUrl={avatarUrl ?? undefined}
                 currentUserId={userId}
               />
               <div className="min-w-0">

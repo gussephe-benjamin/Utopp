@@ -374,7 +374,7 @@ export default function EditPostWizard({ post, onClose, onSaved }: EditPostWizar
             deadline_at={deadlineAt}
             images={images}
             tags={tags}
-            requiresDeadline={post.post_type === 'announcement'}
+            requiresDeadline={post?.post_type === 'announcement'}
             onChange={d => {
               setTitle(d.title)
               setDescription(d.description)
@@ -398,8 +398,8 @@ export default function EditPostWizard({ post, onClose, onSaved }: EditPostWizar
         }
         return (
           <Step5Preview
-            postType={post.post_type as PostType}
-            subtype={(post.subtype ?? '') as SubPostType | ''}
+            postType={post?.post_type as PostType}
+            subtype={(post?.subtype ?? '') as SubPostType | ''}
             title={title}
             description={description}
             deadline_at={deadlineAt}
@@ -412,8 +412,8 @@ export default function EditPostWizard({ post, onClose, onSaved }: EditPostWizar
       case 4:
         return (
           <Step5Preview
-            postType={post.post_type as PostType}
-            subtype={(post.subtype ?? '') as SubPostType | ''}
+            postType={post?.post_type as PostType}
+            subtype={(post?.subtype ?? '') as SubPostType | ''}
             title={title}
             description={description}
             deadline_at={deadlineAt}
