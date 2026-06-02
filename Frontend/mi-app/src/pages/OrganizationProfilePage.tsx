@@ -16,7 +16,7 @@ import { ROLE_ESTUDIANTE } from "../hooks/useRole"
 import { uploadToCloudinary } from "../api/cloudinary"
 import { OrganizationProfileSelf } from "../features/profile/views/OrganizationProfileSelf"
 import { OrganizationProfilePublic } from "../features/profile/views/OrganizationProfilePublic"
-import { mapSavedPostToFeedPost, mapUserPostToFeedPost, type PostOutRaw } from "../features/profile/lib/postMapper"
+import { mapPostOutToFeedPost, type PostOutRaw } from "../features/profile/lib/postMapper"
 import { toProfileUserData } from "../features/profile/lib/profileUserData"
 import type { ProfileUserData } from "../features/profile/views/types"
 import type { FeedPostOut } from "../types/post.types"
@@ -87,11 +87,11 @@ export default function OrganizationProfilePage({ viewedUserId }: OrganizationPr
 
         // Load organization posts
         const userPostsRaw = await getUserPosts(profile.id).catch(() => [] as PostOutRaw[])
-        setPosts(userPostsRaw.map(mapUserPostToFeedPost))
+        setPosts(userPostsRaw.map((post: PostOutRaw) => mapPostOutToFeedPost(post)))
 
         // Load saved posts if it's the current user
         if (viewingSelf && savedRaw.length > 0) {
-          const mappedSaved = savedRaw.map(mapSavedPostToFeedPost)
+          const mappedSaved = savedRaw.map((post: PostOutRaw) => mapPostOutToFeedPost(post, { is_saved: true }))
           setSavedPosts(mappedSaved)
         }
       } catch (err) {

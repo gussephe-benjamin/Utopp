@@ -2,7 +2,6 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Home, Plus } from 'lucide-react'
 import PublicationWizard from '../components/PublicationWizard'
-import { useAuth } from '../auth/useAuth'
 import { getMe } from '../api/auth.api'
 import { getMyProfile, type UserProfileResponse } from '../api/users.api'
 import { useRole } from '../hooks/useRole'
@@ -22,7 +21,6 @@ const FALLBACK_MENU_ANCHOR: MenuPopoverAnchor = { top: 64, right: 12, minWidth: 
 export default function DashboardLayout() {
   const navigate  = useNavigate()
   const location  = useLocation()
-  const { logout } = useAuth()
 
   const { canCreate, allowedTypes } = useRole()
 
@@ -35,7 +33,7 @@ export default function DashboardLayout() {
   }, [navigate])
 
   const [showWizard, setShowWizard]           = useState(false)
-  const [showOptionsModal, ] = useState(false)
+  const [showOptionsModal] = useState(false)
   const [showFeedFiltersSheet, setShowFeedFiltersSheet] = useState(false)
   const [feedCategoryFiltersActive, setFeedCategoryFiltersActive] = useState(false)
 
@@ -191,11 +189,6 @@ export default function DashboardLayout() {
       window.removeEventListener('scroll', syncFilterMenuAnchor, true)
     }
   }, [showFeedFiltersSheet, syncFilterMenuAnchor])
-
-  const handleLogout = () => {
-    logout()
-    navigate('/login')
-  }
 
   const displayName = userName || userEmail || 'Usuario'
   const initial     = displayName.charAt(0).toUpperCase()

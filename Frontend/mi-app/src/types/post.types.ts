@@ -6,7 +6,6 @@ import {
   MessageSquare,
   Plane,
   Briefcase,
-  Search,
   Award,
   Presentation,
   Palette,
