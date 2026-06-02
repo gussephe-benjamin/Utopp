@@ -10,13 +10,20 @@ import {
   Pencil,
   Star,
   X,
+  Calendar,
+  ChevronDown,
+  Check,
+  Archive,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { listImages, type PostImage } from "../../../api/post-images.api";
 import { listLinks } from "../../../api/post-links.api";
-import { savePost, unsavePost } from "../../../api/saved-posts.api";  
+import { savePost, unsavePost } from "../../../api/saved-posts.api";
+import { archivePost, unarchivePost } from "../../../api/posts.api";
+import { participate, updateParticipation, cancelParticipation } from "../../../api/participants.api";
 import EditPostWizard from "../../../components/EditPostWizard";
 import { POST_TYPE_LABELS, SUBTYPE_LABELS, type FeedPostOut } from "../../../types/post.types";
+import { getWordTruncatedText } from "../../../shared/lib/wordCount";
 import {
   aspectRatioValue,
   FEED_POST_CARD_MAX_WIDTH,
@@ -49,7 +56,6 @@ type PostActionLink = {
 export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardProps) {
   const SS_IDX = `utopp:carousel:idx:${post.id}`;
   const SS_IMGS = `utopp:carousel:imgs:${post.id}`;
-  const DESCRIPTION_PREVIEW_CHARS = 560;
   const ULTRA_WIDE_RATIO = 2.5;
   const WIDE_RATIO = 1.45;
   const TALL_RATIO = 0.78;
@@ -64,15 +70,44 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
   const touchStartXRef = useRef<number | null>(null);
   const touchDeltaXRef = useRef<number>(0);
   const didSwipeRef = useRef(false);
+  const [archiving, setArchiving] = useState(false);
+
+  const handleArchiveToggle = async () => {
+    if (archiving) return;
+    if (post.status !== "archived") {
+      const ok = window.confirm(
+        "¿Estás seguro de que deseas archivar esta publicación? Dejará de mostrarse en el feed público y no podrás editarla."
+      );
+      if (!ok) return;
+    }
+    setArchiving(true);
+    try {
+      if (post.status === "archived") {
+        const updated = await unarchivePost(post.id);
+        onEdited({ ...post, ...updated } as FeedPostOut);
+      } else {
+        const updated = await archivePost(post.id);
+        onEdited({ ...post, ...updated } as FeedPostOut);
+      }
+    } catch (e) {
+      console.error("Error archiving/unarchiving post:", e);
+    } finally {
+      setArchiving(false);
+    }
+  };
 
   const visibleLinks = useMemo(() => actionLinks.slice(0, 3), [actionLinks]);
   const overflowLinks = useMemo(() => actionLinks.slice(3), [actionLinks]);
   const canEdit = currentUserId !== null && post.user_id === currentUserId;
   const showMoreLinksButton = overflowLinks.length > 0;
-  const needsDescriptionToggle = post.description.length > DESCRIPTION_PREVIEW_CHARS;
+
+  const { truncatedText, needsDescriptionToggle } = useMemo(() => {
+    return getWordTruncatedText(post.description, 30);
+  }, [post.description]);
+
   const descriptionText =
     !descExpanded && needsDescriptionToggle
-      ? `${post.description.slice(0, DESCRIPTION_PREVIEW_CHARS)}…`
+      ? truncatedText
       : post.description;
 
   const getTagStyles = (tag: string) => {
@@ -432,11 +467,11 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
           post.is_pinned
             ? "border-amber-200/75 shadow-[0_4px_24px_rgba(245,158,11,0.04)] ring-1 ring-amber-100/30"
             : "border-gray-100"
-        }`}
+        } ${post.status === "archived" ? "opacity-75" : ""}`}
         style={{ maxWidth: `${FEED_POST_CARD_MAX_WIDTH}px` }}
       >
         {canEdit && (
-          <div className="flex items-center justify-end border-b border-gray-100/80 bg-gray-50/70 px-4 py-2">
+          <div className="flex items-center justify-end gap-2 border-b border-gray-100/80 bg-gray-50/70 px-4 py-2">
             <button
               type="button"
               onClick={() => setEditingPost(true)}
@@ -446,6 +481,25 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
             >
               <Pencil className="h-3.5 w-3.5" />
               Editar
+            </button>
+            <button
+              type="button"
+              onClick={handleArchiveToggle}
+              disabled={archiving}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors active:scale-[0.98] ${
+                post.status === "archived"
+                  ? "bg-amber-100 text-amber-800 hover:bg-amber-200"
+                  : "text-gray-600 hover:bg-white hover:text-amber-600"
+              }`}
+              title={post.status === "archived" ? "Desarchivar publicación" : "Archivar publicación"}
+              aria-label={post.status === "archived" ? "Desarchivar publicación" : "Archivar publicación"}
+            >
+              {archiving ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Archive className="h-3.5 w-3.5" />
+              )}
+              {post.status === "archived" ? "Desarchivar" : "Archivar"}
             </button>
           </div>
         )}
@@ -500,6 +554,11 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
 
           <div className="max-w-[48%] shrink-0 text-right">
             <div className="flex flex-wrap justify-end gap-1.5">
+              {post.status === "archived" && (
+                <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-bold text-amber-700">
+                  Archivado
+                </span>
+              )}
               <span className="rounded-full border border-gray-100 bg-gray-50 px-2.5 py-0.5 text-xs font-semibold text-gray-600">
                 {POST_TYPE_LABELS[post.post_type]}
               </span>
@@ -536,7 +595,12 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
               {post.title}
             </h3>
           ) : null}
-          <p className="mt-1 whitespace-pre-line text-sm font-medium leading-relaxed text-gray-600">
+          <p 
+            onClick={needsDescriptionToggle ? () => setDescExpanded((v) => !v) : undefined}
+            className={`mt-1 whitespace-pre-line text-sm font-medium leading-relaxed text-gray-600 ${
+              needsDescriptionToggle ? "cursor-pointer hover:text-gray-800 transition-colors select-none" : ""
+            }`}
+          >
             {descriptionText}
           </p>
           {needsDescriptionToggle ? (

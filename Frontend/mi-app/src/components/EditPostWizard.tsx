@@ -440,7 +440,7 @@ export default function EditPostWizard({ post, onClose, onSaved }: EditPostWizar
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[80] flex items-center justify-center p-4" onClick={tryClose}
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[80] flex items-center justify-center p-4"
         >
           <motion.div 
             initial={{ scale: 0.95, opacity: 0 }}

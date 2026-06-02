@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { Bookmark, ChevronLeft, ChevronRight, Clock, Link, MoreVertical, X } from 'lucide-react'
 import { getMyProfile } from '../api/users.api'
 import {
@@ -10,6 +10,7 @@ import {
   SUBTYPE_LABELS,
 } from '../types/post.types'
 import { formatDate, isExpired, timeRemaining } from '../shared/lib/date'
+import { getWordTruncatedText } from '../shared/lib/wordCount'
 import { PostImageViewerModal } from '../features/feed/components/PostImageViewerModal'
 import { UserAvatar } from '../features/feed/components/UserAvatar'
 import { TYPE_GRADIENTS } from '../features/feed/constants/typeGradients'
@@ -32,8 +33,6 @@ interface Step5PreviewProps {
   tags?: string[]
   aspectRatio?: PostAspectRatio
 }
-
-const DESCRIPTION_PREVIEW_CHARS = 560
 
 function getTagStyles(tag: string): string {
   const lower = tag.toLowerCase()
@@ -74,11 +73,13 @@ export default function Step5Preview({
   const gradient = TYPE_GRADIENTS[postType] ?? TYPE_GRADIENTS.simple_post
   const mediaAspectRatio = aspectRatioValue(aspectRatio)
   const totalImages = readyImages.length
+  const { truncatedText, needsDescriptionToggle } = useMemo(() => {
+    return getWordTruncatedText(description, 30)
+  }, [description])
 
-  const needsDescriptionToggle = description.length > DESCRIPTION_PREVIEW_CHARS
   const descriptionText =
     !descExpanded && needsDescriptionToggle
-      ? `${description.slice(0, DESCRIPTION_PREVIEW_CHARS)}…`
+      ? truncatedText
       : description
 
   const visibleLinks = links.slice(0, 3)
@@ -185,7 +186,12 @@ export default function Step5Preview({
                 {title}
               </h3>
             ) : null}
-            <p className="mt-1 whitespace-pre-line text-sm font-medium leading-relaxed text-gray-600">
+            <p 
+              onClick={needsDescriptionToggle ? () => setDescExpanded((v) => !v) : undefined}
+              className={`mt-1 whitespace-pre-line text-sm font-medium leading-relaxed text-gray-600 ${
+                needsDescriptionToggle ? "cursor-pointer hover:text-gray-800 transition-colors select-none" : ""
+              }`}
+            >
               {descriptionText}
             </p>
             {needsDescriptionToggle ? (
