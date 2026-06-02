@@ -50,6 +50,10 @@ api.interceptors.response.use(
       }
     }
     if (error.response?.status === 401 && !originalRequest._retried) {
+      const isAuthRequest = originalRequest.url?.includes("/auth/login") || originalRequest.url?.includes("/google/login")
+      if (isAuthRequest || window.location.pathname === "/login") {
+        return Promise.reject(error)
+      }
       originalRequest._retried = true
       try {
         const refreshResponse = await axios.post(`${baseURL}/auth/refresh`, {}, {
