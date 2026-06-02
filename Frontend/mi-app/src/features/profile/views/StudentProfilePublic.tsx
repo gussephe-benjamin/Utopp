@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react"
-import { Mail, Copy, Check, BarChart3, Clock, FileText, Trophy } from "lucide-react"
+  import { useMemo, useState } from "react"
+import { Mail, Copy, Check, BarChart3, Clock } from "lucide-react"
 import { AVAILABILITY_OPTIONS, CAREER_OPTIONS } from "../constants/profileOptions"
 import type { OrganizationSummary } from "../../../api/users.api"
 import type { ProfileUserData } from "./types"
@@ -29,7 +29,6 @@ export function StudentProfilePublic({
     [user.availability],
   )
   const availabilityLabel = availabilityOption?.label ?? "No definida"
-  const availabilityEmoji = availabilityOption?.emoji ?? "⏰"
 
   const copyEmail = async () => {
     if (!user.email) return

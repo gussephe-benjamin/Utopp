@@ -7,9 +7,6 @@ import {
   Copy,
   Pencil,
   Mail,
-  GraduationCap,
-  BookOpen,
-  User,
   X,
   Settings2,
   AlertCircle,
@@ -17,7 +14,6 @@ import {
   Loader2,
   BarChart3,
   Clock,
-  FileText,
   Trophy,
   Bookmark,
   LogOut,
@@ -95,7 +91,6 @@ export function StudentProfileSelf({
   )
   const availabilityLabel = availabilityOption?.label ?? "No definida"
   const availabilityEmoji = availabilityOption?.emoji ?? "⏰"
-  const roleLabel = user.role_name ?? "Estudiante"
 
   const copyEmail = async () => {
     if (!user.email) return

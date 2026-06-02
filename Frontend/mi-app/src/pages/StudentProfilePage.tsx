@@ -17,7 +17,7 @@ import { getMyRoles } from "../api/roles.api"
 import { getSavedPosts } from "../api/saved-posts.api"
 import { StudentProfileSelf } from "../features/profile/views/StudentProfileSelf"
 import { StudentProfilePublic } from "../features/profile/views/StudentProfilePublic"
-import { mapSavedPostToFeedPost, type PostOutRaw } from "../features/profile/lib/postMapper"
+import { mapPostOutToFeedPost, type PostOutRaw } from "../features/profile/lib/postMapper"
 import { toProfileUserData } from "../features/profile/lib/profileUserData"
 import type { ProfileUserData } from "../features/profile/views/types"
 import type { FeedPostOut } from "../types/post.types"
@@ -74,9 +74,9 @@ export default function StudentProfilePage({ viewedUserId }: StudentProfilePageP
           setFollowingOrganizations(followingOrgs)
           setAllOrganizations(orgs)
           const savedFeedPosts = (savedRaw as PostOutRaw[])
-            .filter((post) => post.post_type === "event")
-            .map(mapSavedPostToFeedPost)
-          setEventSavedPosts(savedFeedPosts)
+            .filter((post: PostOutRaw) => post.post_type === "event")
+            .map((post: PostOutRaw) => mapPostOutToFeedPost(post, { is_saved: true }))
+          setEventSavedPosts(savedFeedPosts as FeedPostOut[])
           return
         }
 

@@ -52,7 +52,6 @@ export function useWeeklyFeedHighlights() {
 
         const feed = await getFeed({ page: 1, size: 50 })
         const now = Date.now()
-        const weekMs = 7 * 24 * 60 * 60 * 1000
         const withDeadline = sortByDeadline(feed.items ?? [])
 
         const upcoming = withDeadline.filter((p) => new Date(p.deadline_at!).getTime() >= now)

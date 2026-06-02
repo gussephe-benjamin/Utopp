@@ -10,15 +10,11 @@ import {
   Pencil,
   Star,
   X,
-  Calendar,
-  ChevronDown,
-  Check,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { listImages, type PostImage } from "../../../api/post-images.api";
 import { listLinks } from "../../../api/post-links.api";
-import { savePost, unsavePost } from "../../../api/saved-posts.api";
-import { participate, updateParticipation, cancelParticipation } from "../../../api/participants.api";
+import { savePost, unsavePost } from "../../../api/saved-posts.api";  
 import EditPostWizard from "../../../components/EditPostWizard";
 import { POST_TYPE_LABELS, SUBTYPE_LABELS, type FeedPostOut } from "../../../types/post.types";
 import {
@@ -127,10 +123,6 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
   const [savingPost, setSavingPost] = useState(false);
   const [editingPost, setEditingPost] = useState(false);
 
-  const [participationStatus, setParticipationStatus] = useState<string | null>(
-    post.participation_status ?? null
-  );
-  const [participationLoading, setParticipationLoading] = useState(false);
   const [participationMenuOpen, setParticipationMenuOpen] = useState(false);
   const participationRef = useRef<HTMLDivElement>(null);
 
@@ -151,29 +143,6 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
     };
   }, [participationMenuOpen]);
 
-  const handleParticipationSelect = async (newStatus: "going" | "interested" | "cancel") => {
-    if (!currentUserId || participationLoading) return;
-    setParticipationLoading(true);
-    setParticipationMenuOpen(false);
-
-    try {
-      if (newStatus === "cancel") {
-        await cancelParticipation(post.id);
-        setParticipationStatus(null);
-      } else {
-        if (participationStatus) {
-          await updateParticipation(post.id, newStatus);
-        } else {
-          await participate(post.id, newStatus);
-        }
-        setParticipationStatus(newStatus);
-      }
-    } catch (err) {
-      console.error("Error setting participation:", err);
-    } finally {
-      setParticipationLoading(false);
-    }
-  };
 
   const gradient = TYPE_GRADIENTS[post.post_type] ?? TYPE_GRADIENTS.simple_post;
 

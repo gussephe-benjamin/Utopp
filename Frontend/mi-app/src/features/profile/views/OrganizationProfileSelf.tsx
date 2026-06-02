@@ -463,7 +463,7 @@ interface TabButtonProps {
   icon: React.ReactNode
 }
 
-function TabButton({ id, active, onClick, label, icon }: TabButtonProps) {
+function TabButton({ active, onClick, label, icon }: TabButtonProps) {
   return (
     <button
       onClick={onClick}

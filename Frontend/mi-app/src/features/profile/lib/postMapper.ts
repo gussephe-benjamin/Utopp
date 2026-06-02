@@ -1,4 +1,5 @@
-import type { FeedPostOut, PostAspectRatio, PostType, SubPostType, TimeStatus } from "../../../types/post.types"
+import type { PostAspectRatio } from "../../../shared/lib/aspectRatio"
+import type { FeedPostOut, PostType, SubPostType, TimeStatus } from "../../../types/post.types"
 
 interface PostOutUser {
   id?: number
@@ -24,7 +25,7 @@ export interface PostOutRaw {
   tags?: string[] | null
   deadline_at?: string | null
   created_at: string
-  aspect_ratio?: PostAspectRatio | string
+  aspect_ratio?: string
   is_pinned?: boolean
   pin_priority?: number
   user?: PostOutUser | null
@@ -66,16 +67,6 @@ export function mapPostOutToFeedPost(raw: PostOutRaw, options: MapPostOutOptions
     pin_priority: raw.pin_priority ?? 0,
     is_saved: options.is_saved ?? false,
     status: raw.status,
-    aspect_ratio: (raw.aspect_ratio as PostAspectRatio | undefined) ?? undefined,
-  }
-}
-
-/** Alias para posts guardados (`/users/me/saved-posts`). */
-export function mapSavedPostToFeedPost(raw: PostOutRaw): FeedPostOut {
-  return mapPostOutToFeedPost(raw, { is_saved: true })
-}
-
-/** Alias para posts de perfil (`/users/{id}/posts`). */
-export function mapUserPostToFeedPost(raw: PostOutRaw): FeedPostOut {
-  return mapPostOutToFeedPost(raw)
+    aspect_ratio: raw.aspect_ratio ?? undefined as unknown as PostAspectRatio,
+  } as FeedPostOut
 }

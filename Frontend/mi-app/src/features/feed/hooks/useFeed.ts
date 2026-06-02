@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { getFeed } from "../../../api/feed.api"
-import { getMyProfile } from "../../../api/users.api"
+import { getMyProfile, type UserProfileResponse } from "../../../api/users.api"
 import type { FeedPostOut, FeedResponse } from "../../../types/post.types"
 
 type UseFeedOptions = {
@@ -32,17 +32,7 @@ export function useFeed({ pageSize = 10 }: UseFeedOptions = {}) {
   useEffect(() => {
     getMyProfile()
       .then(
-        (d: {
-          id: number
-          full_name?: string
-          profile_image_url?: string
-          career?: string
-          cycle?: number
-          interests?: string[]
-          posts_count?: number
-          followers_count?: number
-          following_count?: number
-        }) => {
+        (d: UserProfileResponse) => {
           setCurrentUserId(d.id)
           if (d.full_name) setUserName(d.full_name)
           if (d.profile_image_url) setAvatarUrl(d.profile_image_url)
@@ -52,10 +42,9 @@ export function useFeed({ pageSize = 10 }: UseFeedOptions = {}) {
           setUserPostsCount(d.posts_count ?? 0)
           setUserFollowersCount(d.followers_count ?? 0)
           setUserFollowingCount(d.following_count ?? 0)
-        },
-      )
-      .catch(() => {})
-  }, [])
+        })
+      .catch(() => { return })
+  }, [setCurrentUserId, setUserName, setAvatarUrl, setUserCareer, setUserCycle, setUserInterests, setUserPostsCount, setUserFollowersCount, setUserFollowingCount])
 
   useEffect(() => {
     setPosts([])
