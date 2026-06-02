@@ -108,7 +108,7 @@ export default function StudentProfilePage({ viewedUserId }: StudentProfilePageP
           updateInterests(payload.interests),
         ])
         setUser((prev) =>
-          prev ? { ...prev, ...updated, interests: payload.interests } : prev,
+          prev ? { ...prev, ...updated, interests: payload.interests } as ProfileUserData : prev,
         )
       } finally {
         setProfileSaving(false)

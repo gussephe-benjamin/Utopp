@@ -1,9 +1,9 @@
 import { useState } from "react"
-import { Calendar as CalendarIcon, Compass, Search, Trophy, Users, X } from "lucide-react"
+import { Calendar as CalendarIcon, Search, Users, X } from "lucide-react"
 import { useWeeklyFeedHighlights } from "../features/feed/hooks/useWeeklyFeedHighlights"
 import { formatDeadlineBadge } from "../features/feed/lib/weeklyHighlightUtils"
 import { ProfileLink } from "../features/profile/components/ProfileLink"
-import { TW_UTOPP_GRADIENT_R, TW_UTOPP_GRADIENT_BR } from "../shared/constants/brand"
+import { TW_UTOPP_GRADIENT_R } from "../shared/constants/brand"
 
 export default function ExplorePage() {
   const {

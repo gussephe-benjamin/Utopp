@@ -4,10 +4,9 @@ import { Home, Plus } from 'lucide-react'
 import PublicationWizard from '../components/PublicationWizard'
 import { useAuth } from '../auth/useAuth'
 import { getMe } from '../api/auth.api'
-import { getMyProfile } from '../api/users.api'
+import { getMyProfile, type UserProfileResponse } from '../api/users.api'
 import { useRole, ROLE_ORGANIZACION } from '../hooks/useRole'
 import Profile from '../pages/Profile'
-import ExplorePage from './ExplorePage'
 import { AppTopBar } from '../features/dashboard/components/AppTopBar'
 import { measureMenuAnchor, type MenuPopoverAnchor } from '../features/dashboard/popoverAnchor'
 import FeedModeResolver from '../features/feed/FeedModeResolver'
@@ -26,7 +25,6 @@ export default function DashboardLayout() {
   const { logout } = useAuth()
 
   const { canCreate, allowedTypes, roleName } = useRole()
-  const isOrg = roleName === ROLE_ORGANIZACION
 
   useEffect(() => {
     getMe()
@@ -37,13 +35,13 @@ export default function DashboardLayout() {
   }, [navigate])
 
   const [showWizard, setShowWizard]           = useState(false)
-  const [showOptionsModal, setShowOptionsModal] = useState(false)
+  const [showOptionsModal, ] = useState(false)
   const [showFeedFiltersSheet, setShowFeedFiltersSheet] = useState(false)
   const [feedCategoryFiltersActive, setFeedCategoryFiltersActive] = useState(false)
 
   const accountMenuTriggerRef = useRef<HTMLAnchorElement>(null)
   const feedFiltersTriggerRef = useRef<HTMLButtonElement>(null)
-  const [accountMenuAnchor, setAccountMenuAnchor] = useState<MenuPopoverAnchor | null>(null)
+  const [, setAccountMenuAnchor] = useState<MenuPopoverAnchor | null>(null)
   const [filterPopoverAnchor, setFilterPopoverAnchor] = useState<MenuPopoverAnchor | null>(null)
 
   const onCategoryFiltersActiveChange = useCallback((active: boolean) => {
@@ -57,7 +55,7 @@ export default function DashboardLayout() {
 
   useEffect(() => {
     getMyProfile()
-      .then((d: { id: number; full_name?: string; email?: string; profile_image_url?: string }) => {
+      .then((d: UserProfileResponse) => {
         setCurrentUserId(d.id)
         setUserName(d.full_name ?? null)
         setUserEmail(d.email ?? null)
