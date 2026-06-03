@@ -10,9 +10,6 @@ import {
   Pencil,
   Star,
   X,
-  Calendar,
-  ChevronDown,
-  Check,
   Archive,
 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -20,7 +17,6 @@ import { listImages, type PostImage } from "../../../api/post-images.api";
 import { listLinks } from "../../../api/post-links.api";
 import { savePost, unsavePost } from "../../../api/saved-posts.api";
 import { archivePost, unarchivePost } from "../../../api/posts.api";
-import { participate, updateParticipation, cancelParticipation } from "../../../api/participants.api";
 import EditPostWizard from "../../../components/EditPostWizard";
 import { POST_TYPE_LABELS, SUBTYPE_LABELS, type FeedPostOut } from "../../../types/post.types";
 import { getWordTruncatedText } from "../../../shared/lib/wordCount";
@@ -101,7 +97,7 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
   const canEdit = currentUserId !== null && post.user_id === currentUserId;
   const showMoreLinksButton = overflowLinks.length > 0;
 
-  const { truncatedText, needsDescriptionToggle } = useMemo(() => {
+  const { truncatedText, needsToggle: needsDescriptionToggle } = useMemo(() => {
     return getWordTruncatedText(post.description, 30);
   }, [post.description]);
 

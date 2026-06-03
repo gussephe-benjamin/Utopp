@@ -73,7 +73,7 @@ export default function Step5Preview({
   const gradient = TYPE_GRADIENTS[postType] ?? TYPE_GRADIENTS.simple_post
   const mediaAspectRatio = aspectRatioValue(aspectRatio)
   const totalImages = readyImages.length
-  const { truncatedText, needsDescriptionToggle } = useMemo(() => {
+  const { truncatedText, needsToggle: needsDescriptionToggle } = useMemo(() => {
     return getWordTruncatedText(description, 30)
   }, [description])
 
