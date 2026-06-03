@@ -20,15 +20,14 @@
 
 ## I — Identificación de los Titulares
 
-El presente servicio denominado **Utopp** es de titularidad exclusiva de las siguientes personas naturales (en adelante, de manera conjunta, «Los Titulares»), quienes actúan en calidad de responsables del tratamiento de datos personales y propietarios de la plataforma tecnológica descrita en este documento:
+El presente servicio denominado **Utopp** es de titularidad exclusiva de tres personas naturales que actúan de forma conjunta bajo la denominación «Los Titulares», quienes son propietarios en igualdad de condiciones y de forma solidaria del proyecto, software, código, marca y todos los activos vinculados a Utopp. A efectos de identificación del Responsable del Tratamiento, el representante de contacto designado por Los Titulares es:
 
 | Titular | DNI |
 |---|---|
 | Jose Adrian Sait Gomez Pfuño | 74373181 |
-| Harley Huaman Peña | 74208943 | 
-| Gussephe Benjamin Ibañez | 70673755 | 
 
-A la fecha de emisión del presente documento, Los Titulares no han constituido una persona jurídica ni registrado la marca «Utopp» ante las autoridades competentes, toda vez que dichos procesos requieren de capital inicial del que aún no dispone el equipo fundador. En consecuencia, la titularidad de todos los derechos sobre el proyecto, servicio, plataforma y marca recae, de forma exclusiva y solidaria, sobre las tres personas naturales identificadas precedentemente, hasta que, en el futuro, se constituya la persona jurídica correspondiente a la cual se transferirán dichos derechos.
+
+A la fecha de emisión del presente documento, Los Titulares no han constituido una persona jurídica, toda vez que dicho proceso requiere de capital inicial del que aún no dispone el equipo fundador. En consecuencia, la titularidad de todos los derechos sobre el proyecto, servicio, plataforma y marca recae de forma exclusiva y solidaria sobre los tres Titulares, hasta que en el futuro se constituya la persona jurídica correspondiente a la cual se transferirán dichos derechos. La designación de un representante de contacto no modifica esta titularidad conjunta ni exime a los demás Titulares de sus responsabilidades legales.
 
 Correo electrónico de contacto oficial: **contacto.utopp@gmail.com**
 
@@ -62,7 +61,7 @@ Para los efectos de los presentes TyC, los términos que se enuncian a continuac
 
 **Organizador:** Usuario con rol Root, Administrador, Oficina u Organización, facultado para crear y gestionar Oportunidades dentro de la Instancia Institucional.
 
-**Titulares:** Las tres personas naturales identificadas en la Sección I, quienes ostentan la propiedad del proyecto Utopp y actúan como Responsables del Tratamiento de datos personales durante la fase de piloto.
+**Titulares:** Las tres personas naturales propietarias del proyecto Utopp en igualdad de condiciones y de forma solidaria, quienes actúan como Responsables del Tratamiento de datos personales durante la fase de piloto, representadas a efectos de contacto e identificación por la persona indicada en la Sección I.
 
 **Dominio Institucional:** Extensión del correo electrónico corporativo o académico que identifica a una institución educativa y que es utilizada como mecanismo de verificación de pertenencia a una Instancia Institucional.
 

@@ -26,15 +26,14 @@
 
 ## I — Identificación del Responsable del Tratamiento
 
-De conformidad con la Ley N.° 29733 — Ley de Protección de Datos Personales y su Reglamento aprobado por Decreto Supremo N.° 003-2013-JUS, el Responsable del Tratamiento de los datos personales recopilados a través de Utopp Plataforma durante la fase de piloto son las siguientes personas naturales, que actúan de forma conjunta bajo la denominación «Los Titulares»:
+De conformidad con la Ley N.° 29733 — Ley de Protección de Datos Personales y su Reglamento aprobado por Decreto Supremo N.° 003-2013-JUS, el Responsable del Tratamiento de los datos personales recopilados a través de Utopp durante la fase de piloto es el equipo de tres personas naturales que actúa de forma conjunta bajo la denominación «Los Titulares». A efectos de identificación y canal de contacto, el representante designado por Los Titulares es:
 
 | Titular | DNI |
 |---|---|
 | Jose Adrian Sait Gomez Pfuño | 74373181 |
-| Harley Huaman Peña | 74208943 | 
-| Gussephe Benjamin Ibañez | 70673755 | 
 
-A la fecha de emisión del presente documento, Los Titulares no han constituido persona jurídica ni registrado la marca «Utopp» ante las autoridades competentes. En consecuencia, la condición de Responsable del Tratamiento recae de forma exclusiva y solidaria sobre dichas personas naturales, hasta la futura constitución de la persona jurídica a la cual se transferirán dichos derechos y obligaciones.
+
+A la fecha de emisión del presente documento, Los Titulares no han constituido persona jurídica ante las autoridades competentes. La condición de Responsable del Tratamiento recae de forma exclusiva y solidaria sobre los tres Titulares, hasta la futura constitución de la persona jurídica a la cual se transferirán dichos derechos y obligaciones. La designación de un representante de contacto no modifica la responsabilidad solidaria del conjunto de Los Titulares frente a las obligaciones derivadas del tratamiento de datos personales.
 
 Correo electrónico de contacto oficial: **contacto.utopp@gmail.com**
 
