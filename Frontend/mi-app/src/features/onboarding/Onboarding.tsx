@@ -10,7 +10,6 @@ import type { OnboardingData as OnboardingPayload } from "../../api/onboarding.a
 import StepBar from "./components/StepBar";
 import { AxiosError } from "axios";
 import { Check } from "lucide-react";
-
 import { useEffect } from "react";
 import { checkOnboardingCompleted } from "./functions/isCompleteVerificate";
 
@@ -219,15 +218,6 @@ export default function Onboarding(): JSX.Element {
       <OnboardingMeshBackground />
       <div className="relative z-10 mx-auto flex h-screen max-w-md min-h-0 flex-col">
         <header className="z-30 shrink-0 bg-transparent px-4 pt-6 pb-3">
-          <div className="mb-4 flex justify-end">
-            <button
-              type="button"
-              onClick={() => navigate("/app/inicio", { replace: true })}
-              className="text-sm font-semibold text-violet-100/70 transition-colors hover:text-white"
-            >
-              Saltar
-            </button>
-          </div>
           <StepBar step={step} />
           {stepHeading()}
         </header>
