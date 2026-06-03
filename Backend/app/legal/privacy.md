@@ -28,15 +28,15 @@
 
 De conformidad con la Ley N.° 29733 — Ley de Protección de Datos Personales y su Reglamento aprobado por Decreto Supremo N.° 003-2013-JUS, el Responsable del Tratamiento de los datos personales recopilados a través de Utopp Plataforma durante la fase de piloto son las siguientes personas naturales, que actúan de forma conjunta bajo la denominación «Los Titulares»:
 
-| Titular | DNI | Domicilio |
-|---|---|---|
-| FUNDADOR1 | DNI1 | DOMICILIO1 |
-| FUNDADOR2 | DNI2 | DOMICILIO2 |
-| FUNDADOR3 | DNI3 | DOMICILIO3 |
+| Titular | DNI |
+|---|---|
+| Jose Adrian Sait Gomez Pfuño | 74373181 |
+| Harley Huaman Peña | 74208943 | 
+| Gussephe Benjamin Ibañez | 70673755 | 
 
 A la fecha de emisión del presente documento, Los Titulares no han constituido persona jurídica ni registrado la marca «Utopp» ante las autoridades competentes. En consecuencia, la condición de Responsable del Tratamiento recae de forma exclusiva y solidaria sobre dichas personas naturales, hasta la futura constitución de la persona jurídica a la cual se transferirán dichos derechos y obligaciones.
 
-Correo electrónico de contacto oficial: **CAMBIARCUENTADECORREO@utopp.com**
+Correo electrónico de contacto oficial: **contacto.utopp@gmail.com**
 
 ---
 

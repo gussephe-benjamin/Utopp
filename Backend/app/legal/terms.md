@@ -22,15 +22,15 @@
 
 El presente servicio denominado **Utopp** es de titularidad exclusiva de las siguientes personas naturales (en adelante, de manera conjunta, «Los Titulares»), quienes actúan en calidad de responsables del tratamiento de datos personales y propietarios de la plataforma tecnológica descrita en este documento:
 
-| Titular | DNI | Domicilio |
-|---|---|---|
-| FUNDADOR1 | DNI1 | DOMICILIO1 |
-| FUNDADOR2 | DNI2 | DOMICILIO2 |
-| FUNDADOR3 | DNI3 | DOMICILIO3 |
+| Titular | DNI |
+|---|---|
+| Jose Adrian Sait Gomez Pfuño | 74373181 |
+| Harley Huaman Peña | 74208943 | 
+| Gussephe Benjamin Ibañez | 70673755 | 
 
 A la fecha de emisión del presente documento, Los Titulares no han constituido una persona jurídica ni registrado la marca «Utopp» ante las autoridades competentes, toda vez que dichos procesos requieren de capital inicial del que aún no dispone el equipo fundador. En consecuencia, la titularidad de todos los derechos sobre el proyecto, servicio, plataforma y marca recae, de forma exclusiva y solidaria, sobre las tres personas naturales identificadas precedentemente, hasta que, en el futuro, se constituya la persona jurídica correspondiente a la cual se transferirán dichos derechos.
 
-Correo electrónico de contacto oficial: **CAMBIARCUENTADECORREO@utopp.com**
+Correo electrónico de contacto oficial: **contacto.utopp@gmail.com**
 
 ---
 
