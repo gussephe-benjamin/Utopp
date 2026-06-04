@@ -16,6 +16,7 @@ import {
   type MenuPopoverAnchor,
 } from "../features/dashboard/popoverAnchor"
 import type { FeedViewProps } from "../features/feed/types"
+import { formatShortDisplayName } from "../features/feed/lib/display"
 
 import ExplorePage from "./ExplorePage"
 
@@ -58,6 +59,8 @@ export default function StudentFeedPage({
     onCategoryFiltersActiveChange?.(selectedTags.length > 0)
   }, [onCategoryFiltersActiveChange, selectedTags])
 
+  const bannerUserName = formatShortDisplayName(userName)
+
   const handleSaveInterests = async (nextInterests: string[]) => {
     setInterestsSaving(true)
     setInterestsError(null)
@@ -95,7 +98,7 @@ export default function StudentFeedPage({
 
         <div className="w-full min-w-0 max-w-[700px] flex-1 space-y-0 md:space-y-5">
           <div className="mb-3 block w-full rounded-b-[32px] bg-gradient-to-b from-[#2f55f6] via-[#614bf8] to-[#803ef8] px-6 pb-7 pt-7 text-white shadow-lg md:hidden">
-            <h1 className="text-2xl font-bold tracking-tight">Hola, {userName}</h1>
+            <h1 className="text-2xl font-bold tracking-tight">Hola, {bannerUserName}</h1>
             <p className="mt-0.5 text-xs font-medium text-white/80">Bienvenido a Utopp</p>
           </div>
 
@@ -143,10 +146,10 @@ export default function StudentFeedPage({
               />
             </div>
             <FeedWeeklyHighlightsCarousel />
-            <FeedTabletHighlights userName={userName} />
+            <FeedTabletHighlights userName={bannerUserName} />
 
             <div className="hidden lg:block">
-              <FeedWelcomeBanner userName={userName} />
+              <FeedWelcomeBanner userName={bannerUserName} />
             </div>
 
             <div className="w-full space-y-4 px-4 pt-2 md:px-0 md:pt-0 lg:pt-4">

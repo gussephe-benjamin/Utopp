@@ -1,9 +1,10 @@
-import { GoogleLogin as GoogleLoginButton } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "./useAuth";
 import { useState } from "react";
 import { googleLogin } from "../api/auth.api";
 import { redirectAfterAuthSession } from "./postAuthRedirect";
+import { GoogleButton } from "../features/auth/components/GoogleButton";
+import { AUTH_GOOGLE } from "../features/auth/constants/authCopy";
 
 export default function GoogleLogin() {
   const { login } = useAuth();
@@ -11,14 +12,11 @@ export default function GoogleLogin() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleGoogleSuccess = async (credentialResponse: { credential?: string }) => {
-    if (!credentialResponse.credential) return;
-
+  const handleGoogleSuccess = async (credential: string) => {
     setIsLoading(true);
     setError(null);
     try {
-      // Usa el interceptor de axios (base URL, headers, refresh automático)
-      const data = await googleLogin(credentialResponse.credential);
+      const data = await googleLogin(credential);
       login(data.access_token);
       await redirectAfterAuthSession(navigate);
     } catch (err) {
@@ -30,19 +28,20 @@ export default function GoogleLogin() {
   };
 
   return (
-    <div className="flex flex-col items-center gap-3 w-full">
-      {isLoading ? (
-        <div className="flex items-center gap-2 text-gray-500 text-sm py-2">
-          <div className="w-4 h-4 border-2 border-gray-300 border-t-[#9333EA] rounded-full animate-spin" />
-          <span>Validando con Google...</span>
-        </div>
-      ) : (
-        <GoogleLoginButton
-          onSuccess={handleGoogleSuccess}
-          onError={() => setError("Login con Google falló. Intenta de nuevo.")}
-        />
+    <div className="flex w-full flex-col gap-3">
+      <GoogleButton
+        variant="login"
+        recommended
+        isLoading={isLoading}
+        loadingLabel={AUTH_GOOGLE.validatingLogin}
+        onSuccess={handleGoogleSuccess}
+        onError={() => setError("Login con Google falló. Intenta de nuevo.")}
+      />
+      {error && (
+        <p className="text-center text-xs text-red-600" role="alert" aria-live="polite">
+          {error}
+        </p>
       )}
-      {error && <p className="text-red-500 text-xs text-center">{error}</p>}
     </div>
   );
 }

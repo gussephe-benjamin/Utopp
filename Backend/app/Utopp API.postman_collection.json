@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "22f00328-432a-40fe-889c-39c0c30030d5",
     "name": "Utopp API",
-    "description": "# Utopp API\n\nAPI REST del backend de Utopp, plataforma de publicaciones académicas para la comunidad UTEC. Construida con FastAPI + SQLAlchemy + PostgreSQL.\n\n## Arquitectura\nCapas: Routers (endpoints HTTP) → Services (lógica de negocio) → Models (SQLAlchemy/PostgreSQL) → Schemas (Pydantic). Autenticación: JWT Bearer Token obtenido en `/auth/login` o `/google/login`.\n\n## Tablas y relaciones\n\n**`users`** — Usuarios registrados. Campos: `id`, `email`, `full_name`, `career`, `cycle`, `interests` (JSONB), `availability`, `onboarding_completed`.\n\n**`posts`** — Publicaciones. FK: `user_id → users`. Campos clave: `title` (nullable), `description`, `post_type` (enum), `subtype` (enum), `status` (draft/published/archived), `time_status` (no_deadline/in_time/out_of_time), `deadline_at`, `tags` (JSONB), `specific_fields` (JSONB).\n\nTipos de post: `international_opportunity`, `event`, `academic_project`, `announcement`, `simple_post`.\nSubtipos por tipo: international_opportunity → [intercambio, pasantia, investigacion, 4+1] | event → [conferencia, arte, emprendimiento, hackathon, voluntariado, deporte, visita_academica, empleo] | academic_project → [competencia, proyecto_investigacion] | announcement → [comunicado, urgente] | simple_post → [informativo, pregunta, debate].\n\n**`post_images`** — Imágenes de posts. FK: `post_id → posts`. Campos: `cloudinary_id`, `url`, `position`.\n\n**`post_links`** — Links de posts. FK: `post_id → posts`. Campos: `label`, `url`, `type`, `display_type`, `position`.\n\n**`follows`** — Seguimiento entre usuarios. FKs: `follower_id → users`, `following_id → users`. Clave compuesta única.\n\n**`saved_posts`** — Posts guardados como favoritos. FKs: `user_id → users`, `post_id → posts`. Clave compuesta única.\n\n**`event_participants`** — Participación en eventos/proyectos. FKs: `user_id → users`, `post_id → posts`. Campo: `status` (interested/going/attended).\n\n**`roles`** — Roles del sistema (ej: admin). Campos: `id`, `name`, `description`.\n\n**`user_roles`** — Asignación de roles. FKs: `user_id → users`, `role_id → roles`.\n\n## Flujo recomendado\n1. **Legal:** `GET /legal/terms/current` y `GET /legal/privacy/current` (los tests de la carpeta Legal guardan `terms_document_id` y `privacy_document_id`).\n2. `POST /auth/register` o `POST /google/register` — incluir esos ids en el body.\n3. `POST /auth/login` — Obtener token (`{{token}}`)\n4. Si falta consentimiento: `POST /legal/accept` con ids vigentes.\n5. `POST /onboarding/update` — Completar perfil\n6. Crear post (endpoints especializados o `POST /posts/`)\n7. `POST /posts/{{post_id}}/publish` — Publicar\n8. `GET /feed` — Ver en el feed",
+    "description": "# Utopp API\n\nAPI REST del backend de Utopp, plataforma de publicaciones académicas para la comunidad académica. Construida con FastAPI + SQLAlchemy + PostgreSQL.\n\n## Arquitectura\nCapas: Routers (endpoints HTTP) → Services (lógica de negocio) → Models (SQLAlchemy/PostgreSQL) → Schemas (Pydantic). Autenticación: JWT Bearer Token obtenido en `/auth/login` o `/google/login`.\n\n## Tablas y relaciones\n\n**`users`** — Usuarios registrados. Campos: `id`, `email`, `full_name`, `career`, `cycle`, `interests` (JSONB), `availability`, `onboarding_completed`.\n\n**`posts`** — Publicaciones. FK: `user_id → users`. Campos clave: `title` (nullable), `description`, `post_type` (enum), `subtype` (enum), `status` (draft/published/archived), `time_status` (no_deadline/in_time/out_of_time), `deadline_at`, `tags` (JSONB), `specific_fields` (JSONB).\n\nTipos de post: `international_opportunity`, `event`, `academic_project`, `announcement`, `simple_post`.\nSubtipos por tipo: international_opportunity → [intercambio, pasantia, investigacion, 4+1] | event → [conferencia, arte, emprendimiento, hackathon, voluntariado, deporte, visita_academica, empleo] | academic_project → [competencia, proyecto_investigacion] | announcement → [comunicado, urgente] | simple_post → [informativo, pregunta, debate].\n\n**`post_images`** — Imágenes de posts. FK: `post_id → posts`. Campos: `cloudinary_id`, `url`, `position`.\n\n**`post_links`** — Links de posts. FK: `post_id → posts`. Campos: `label`, `url`, `type`, `display_type`, `position`.\n\n**`follows`** — Seguimiento entre usuarios. FKs: `follower_id → users`, `following_id → users`. Clave compuesta única.\n\n**`saved_posts`** — Posts guardados como favoritos. FKs: `user_id → users`, `post_id → posts`. Clave compuesta única.\n\n**`event_participants`** — Participación en eventos/proyectos. FKs: `user_id → users`, `post_id → posts`. Campo: `status` (interested/going/attended).\n\n**`roles`** — Roles del sistema (ej: admin). Campos: `id`, `name`, `description`.\n\n**`user_roles`** — Asignación de roles. FKs: `user_id → users`, `role_id → roles`.\n\n## Flujo recomendado\n1. **Legal:** `GET /legal/terms/current` y `GET /legal/privacy/current` (los tests de la carpeta Legal guardan `terms_document_id` y `privacy_document_id`).\n2. `POST /auth/register` o `POST /google/register` — incluir esos ids en el body.\n3. `POST /auth/login` — Obtener token (`{{token}}`)\n4. Si falta consentimiento: `POST /legal/accept` con ids vigentes.\n5. `POST /onboarding/update` — Completar perfil\n6. Crear post (endpoints especializados o `POST /posts/`)\n7. `POST /posts/{{post_id}}/publish` — Publicar\n8. `GET /feed` — Ver en el feed",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "45592436",
     "_collection_link": "https://go.postman.co/collection/45592436-22f00328-432a-40fe-889c-39c0c30030d5?source=collection_link"
@@ -507,7 +507,7 @@
       "name": "Users",
       "item": [
         {
-          "name": "List All Users (legacy)",
+          "name": "List All Users (full)",
           "request": {
             "auth": {
               "type": "noauth"
@@ -524,7 +524,135 @@
                 "all-users"
               ]
             },
-            "description": "GET /users/all-users — Lista todos los usuarios de la tabla `users`. Endpoint legacy sin paginación. No requiere autenticación."
+            "description": "GET /users/all-users — Lista **todos** los usuarios de la tabla `users` sin paginación. Devuelve `UserFullOut`: id, email, full_name, hashed_password (hash bcrypt, no texto plano), is_onboarding_completed, career, cycle, interests, availability, weekly_availability, description, contacts, google_id, last_accepted_legal_document_id, last_accepted_privacy_document_id, created_at y roles. No requiere autenticación."
+          },
+          "response": []
+        },
+        {
+          "name": "Get User By Email",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/by-email?email=alumno@utec.edu.pe",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "by-email"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "alumno@utec.edu.pe"
+                }
+              ]
+            },
+            "description": "GET /users/by-email?email=... — Busca un usuario por correo (case-insensitive) y devuelve todos los campos (`UserFullOut`), incluido `hashed_password`. Responde 404 si no existe. No requiere autenticación."
+          },
+          "response": []
+        },
+        {
+          "name": "Get User By ID (full)",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/by-id/{{user_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "by-id",
+                "{{user_id}}"
+              ]
+            },
+            "description": "GET /users/by-id/{user_id} — Busca un usuario por ID y devuelve todos los campos (`UserFullOut`), incluido `hashed_password`. Distinto de GET /users/{user_id} (perfil público sin email ni contraseña). Responde 404 si no existe. No requiere autenticación."
+          },
+          "response": []
+        },
+        {
+          "name": "List All Students",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/students",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "students"
+              ]
+            },
+            "description": "GET /users/students — Lista todos los alumnos: usuarios con rol `estudiante` y usuarios legacy sin rol asignado. Devuelve array de `UserFullOut` sin paginación. No requiere autenticación."
+          },
+          "response": []
+        },
+        {
+          "name": "List All Organizations (full)",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/organizations/all",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "organizations",
+                "all"
+              ]
+            },
+            "description": "GET /users/organizations/all — Lista todas las organizaciones estudiantiles con datos completos del usuario (`UserFullOut`). Sin paginación. No requiere autenticación."
+          },
+          "response": []
+        },
+        {
+          "name": "List Organizations (summary)",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/organizations?page=1&size=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "organizations"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "GET /users/organizations — Lista organizaciones estudiantiles con resumen: id, full_name, profile_image_url, followers_count, posts_count, interaction_score. Paginado (`page`, `size`). No requiere autenticación."
           },
           "response": []
         },
@@ -910,7 +1038,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"title\": \"Hackathon UTEC 2025\",\n    \"description\": \"Evento de programación competitiva de 48 horas\",\n    \"post_type\": \"event\",\n    \"subtype\": \"hackathon\",\n    \"tags\": [\"programación\", \"competencia\", \"tech\"],\n    \"specific_fields\": {\n        \"location\": \"Campus UTEC\",\n        \"max_participants\": 100\n    },\n    \"deadline_at\": \"2025-12-31T23:59:59\"\n}"
+              "raw": "{\n    \"title\": \"Hackathon Utopp 2025\",\n    \"description\": \"Evento de programación competitiva de 48 horas\",\n    \"post_type\": \"event\",\n    \"subtype\": \"hackathon\",\n    \"tags\": [\"programación\", \"competencia\", \"tech\"],\n    \"specific_fields\": {\n        \"location\": \"Campus principal\",\n        \"max_participants\": 100\n    },\n    \"deadline_at\": \"2025-12-31T23:59:59\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/posts/",
@@ -1040,7 +1168,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"subtype\": \"competencia\",\n  \"title\": \"Hackathon UTEC 2026\",\n  \"description\": \"Proyecto de IA para...\",\n  \"tags\": [\"ia\", \"hackathon\"],\n  \"deadline_at\": \"2026-06-01T00:00:00Z\",\n  \"participants_needed\": 5,\n  \"estimated_time\": \"2 semanas\"\n}"
+              "raw": "{\n  \"subtype\": \"competencia\",\n  \"title\": \"Hackathon Utopp 2026\",\n  \"description\": \"Proyecto de IA para...\",\n  \"tags\": [\"ia\", \"hackathon\"],\n  \"deadline_at\": \"2026-06-01T00:00:00Z\",\n  \"participants_needed\": 5,\n  \"estimated_time\": \"2 semanas\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/posts//academic-projects",
@@ -1262,7 +1390,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"title\": \"Hackathon UTEC 2025 - Actualizado\",\n    \"description\": \"Evento actualizado con nueva descripción\",\n    \"tags\": [\"programación\", \"competencia\", \"tech\", \"actualizado\"]\n}"
+              "raw": "{\n    \"title\": \"Hackathon Utopp 2025 - Actualizado\",\n    \"description\": \"Evento actualizado con nueva descripción\",\n    \"tags\": [\"programación\", \"competencia\", \"tech\", \"actualizado\"]\n}"
             },
             "url": {
               "raw": "{{base_url}}/posts/{{post_id}}",
@@ -1541,7 +1669,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"label\": \"Formulario de inscripción\",\n    \"url\": \"https://forms.google.com/hackathon-utec-2025\",\n    \"type\": \"action\",\n    \"display_type\": \"button\",\n    \"position\": 0\n}"
+              "raw": "{\n    \"label\": \"Formulario de inscripción\",\n    \"url\": \"https://forms.google.com/hackathon-utopp-2025\",\n    \"type\": \"action\",\n    \"display_type\": \"button\",\n    \"position\": 0\n}"
             },
             "url": {
               "raw": "{{base_url}}/posts/{{post_id}}/links",
@@ -2243,7 +2371,7 @@
                 "bootstrap-admin"
               ]
             },
-            "description": "POST /setup/bootstrap-admin — Asigna el rol **administrador** al primer usuario del sistema.\n\n**Condiciones de uso:**\n- Solo funciona si **no existe ningún admin** en la base de datos. Si ya hay un admin, responde `409 Conflict`.\n- El usuario indicado debe existir previamente (registrado en `/auth/register` o Google). Si no existe, responde `404 Not Found`.\n- No requiere autenticación JWT; está protegido por la lógica de \"primer admin únicamente\".\n\n**Body:**\n```json\n{ \"email\": \"correo@utec.edu.pe\" }\n```\n\n**Respuesta `201 Created`:**\n```json\n{\n  \"user_id\": 1,\n  \"user_email\": \"correo@utec.edu.pe\",\n  \"role_id\": 4,\n  \"role_identifier\": 4,\n  \"role_name\": \"administrador\",\n  \"assigned_at\": \"2025-01-01T00:00:00\"\n}\n```\n\n**Errores:**\n- `404 Not Found` → el correo no corresponde a ningún usuario registrado.\n- `409 Conflict` → ya existe al menos un administrador en el sistema.\n\n**Cuándo usarlo:** Una única vez al inicializar el sistema por primera vez, para designar al primer administrador antes de poder gestionar roles desde la UI."
+            "description": "POST /setup/bootstrap-admin — Asigna el rol **administrador** al primer usuario del sistema.\n\n**Condiciones de uso:**\n- Solo funciona si **no existe ningún admin** en la base de datos. Si ya hay un admin, responde `409 Conflict`.\n- El usuario indicado debe existir previamente (registrado en `/auth/register` o Google). Si no existe, responde `404 Not Found`.\n- No requiere autenticación JWT; está protegido por la lógica de \"primer admin únicamente\".\n\n**Body:**\n```json\n{ \"email\": \"correo institucional\" }\n```\n\n**Respuesta `201 Created`:**\n```json\n{\n  \"user_id\": 1,\n  \"user_email\": \"correo institucional\",\n  \"role_id\": 4,\n  \"role_identifier\": 4,\n  \"role_name\": \"administrador\",\n  \"assigned_at\": \"2025-01-01T00:00:00\"\n}\n```\n\n**Errores:**\n- `404 Not Found` → el correo no corresponde a ningún usuario registrado.\n- `409 Conflict` → ya existe al menos un administrador en el sistema.\n\n**Cuándo usarlo:** Una única vez al inicializar el sistema por primera vez, para designar al primer administrador antes de poder gestionar roles desde la UI."
           },
           "response": []
         },

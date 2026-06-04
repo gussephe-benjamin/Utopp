@@ -6,7 +6,7 @@
 | |_| | | || |_| |  __/|  __/
  \___/  |_| \___/|_|   |_| 
 
-**Plataforma de publicaciones académicas para la comunidad UTEC**
+**Plataforma de publicaciones académicas para tu comunidad universitaria**
 
 [![Version](https://img.shields.io/badge/versión-v1.1.0-6366f1?style=flat-square)](https://github.com/gussephe-benjamin/Utopp/tags)
 [![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?style=flat-square&logo=fastapi)](https://fastapi.tiangolo.com/)
@@ -21,7 +21,7 @@
 
 ## ¿Qué es Utopp?
 
-**Utopp** es la red social académica interna de UTEC. Centraliza convocatorias, proyectos, eventos, anuncios y publicaciones de la comunidad universitaria en un único feed inteligente con filtros, prioridades y sistema de roles.
+**Utopp** es la red social académica que centraliza convocatorias, proyectos, eventos, anuncios y publicaciones de la comunidad en un único feed inteligente con filtros, prioridades y sistema de roles.
 
 Cada usuario tiene un rol que determina qué puede publicar, qué nivel de visibilidad tienen sus publicaciones y si puede marcarlas con **prioridad máxima** para que aparezcan siempre al tope del feed.
 
@@ -326,7 +326,7 @@ curl -X POST http://localhost:8000/setup/bootstrap-admin \
   -d '{
     "email": "admin@utec.edu.pe",
     "password": "contraseña_segura",
-    "full_name": "Admin UTEC"
+    "full_name": "Admin Utopp"
   }'
 ```
 
@@ -460,11 +460,11 @@ Los usuarios con rol `oficina`, `administrador` o `root` ven el botón **"Priori
 ```
 Feed resultante:
 ┌─────────────────────────────────────────┐
-│ 📌 Publicación destacada   [UTEC Root]  │  pin_priority = 3
-│ 📌 Publicación destacada   [UTEC Admin] │  pin_priority = 2
-│ 📌 Publicación destacada   [UTEC Ofic.] │  pin_priority = 1
+│ 📌 Publicación destacada   [Root]        │  pin_priority = 3
+│ 📌 Publicación destacada   [Admin]      │  pin_priority = 2
+│ 📌 Publicación destacada   [Oficina]     │  pin_priority = 1
 ├──── — Publicaciones generales — ────────┤  ← Divisor automático
-│  Evento: Hackathon UTEC                 │
+│  Evento: Hackathon Utopp                │
 │  Convocatoria: Beca investigación       │
 │  Proyecto: App de movilidad             │
 │  ...                                    │
@@ -477,7 +477,7 @@ Al desactivar el pin, la publicación regresa al flujo normal del feed sin neces
 
 <div align="center">
 
-Desarrollado para la comunidad **UTEC** · versión **v1.1.0**
+Desarrollado para conectar la comunidad académica · versión **v1.1.0**
 
 </div>
 

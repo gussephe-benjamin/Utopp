@@ -40,7 +40,7 @@ export function LeftSidebar({
   const isOrganization = variant === "organization";
   const displayName = userName ?? (isOrganization ? "Organización" : "Usuario");
   const academicLine = isOrganization
-    ? "Organización Estudiantil · UTEC"
+    ? "Organización estudiantil"
     : [career, cycle ? `Ciclo ${cycle}` : null].filter(Boolean).join(" · ");
   const selectedInterests = useMemo(
     () => INTERESTS.filter((interest) => interestsList.includes(interest.id)),

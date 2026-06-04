@@ -527,8 +527,6 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
                   <span className="truncate">{getDisplayName(post.user_name, post.user_id)}</span>
                   {post.user_name && (
                     post.user_name.includes("IEEE") ||
-                    post.user_name.includes("UTEC Career") ||
-                    post.user_name.includes("UTEC Emprende") ||
                     post.user_name.includes("TECHO")
                   ) && (
                     <svg className="w-3.5 h-3.5 text-blue-500 fill-current shrink-0" viewBox="0 0 24 24">

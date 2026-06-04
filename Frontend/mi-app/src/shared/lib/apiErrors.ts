@@ -1,5 +1,8 @@
 import type { AxiosError } from "axios";
 
+const INSTITUTIONAL_EMAIL_MESSAGE =
+  "Este correo no está autorizado. Usa tu correo institucional registrado en la plataforma.";
+
 /** Errores de login / sesión (respuesta típica `{ detail: string }`). */
 export function parseAuthApiError(err: unknown): string {
   const axiosErr = err as AxiosError<{ detail?: string }>;
@@ -7,10 +10,13 @@ export function parseAuthApiError(err: unknown): string {
   if (detail) {
     if (detail.includes("Credenciales") || detail.includes("credenciales"))
       return "Correo o contraseña incorrectos. Verifica tus datos.";
-    if (detail.includes("organización") || detail.includes("utec"))
-      return "Solo se permiten correos institucionales UTEC (@utec.edu.pe).";
-    if (detail.includes("expirado"))
-      return "Tu sesión expiró. Por favor inicia sesión nuevamente.";
+    if (
+      detail.includes("organización") ||
+      detail.includes("dominio") ||
+      detail.includes("autorizado") ||
+      detail.includes("institucional")
+    )
+      return INSTITUTIONAL_EMAIL_MESSAGE;
     return detail;
   }
   const status = axiosErr?.response?.status;
@@ -30,8 +36,13 @@ export function parseRegisterApiError(err: unknown): string {
   }
   if (typeof detail === "string") {
     if (detail.includes("ya registrado")) return "Este email ya está registrado. Intenta iniciar sesión.";
-    if (detail.includes("organización") || detail.includes("dominio") || detail.includes("utec"))
-      return "Solo se permiten correos institucionales UTEC (@utec.edu.pe).";
+    if (
+      detail.includes("organización") ||
+      detail.includes("dominio") ||
+      detail.includes("autorizado") ||
+      detail.includes("institucional")
+    )
+      return INSTITUTIONAL_EMAIL_MESSAGE;
     return detail;
   }
   if (Array.isArray(detail)) {

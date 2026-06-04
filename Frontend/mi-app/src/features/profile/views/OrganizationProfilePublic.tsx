@@ -139,7 +139,7 @@ export function OrganizationProfilePublic({
                 {user.full_name ?? "Organización"}
               </h1>
               <p className="mt-1 text-sm font-semibold text-gray-600">
-                Organización Estudiantil · UTEC
+                Organización estudiantil
               </p>
               {user.email && (
                 <div className="mt-2 flex items-center justify-center md:justify-start gap-1.5 text-sm text-gray-600">

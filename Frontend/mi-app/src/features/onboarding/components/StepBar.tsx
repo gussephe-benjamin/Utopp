@@ -1,6 +1,6 @@
 import { Check } from "lucide-react";
 
-const steps = [1, 2, 3, 4];
+const steps = [1, 2, 3, 4, 5];
 
 /** Solid fill so the track line does not show through inactive step dots */
 const INACTIVE_DOT_BG = "bg-[#220C49]";

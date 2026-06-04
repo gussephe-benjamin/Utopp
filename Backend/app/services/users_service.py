@@ -1,10 +1,12 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import select
+from sqlalchemy import select, func
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 
 from app.models.user import User
+from app.models.role import Role
+from app.models.user_role import UserRole
 from app.core.security import hash_password, verify_password
 from app.core.config import settings
 from app.database.session import get_db
@@ -14,8 +16,8 @@ SECRET_KEY = settings.JWT_SECRET_KEY
 ALGORITHM = settings.ALGORITHM
 
 def get_user_by_email(db: Session, email: str) -> User | None:
-    """Busca un usuario por email. Retorna None si no existe."""
-    stmt = select(User).where(User.email == email)
+    """Busca un usuario por email (case-insensitive). Retorna None si no existe."""
+    stmt = select(User).where(func.lower(User.email) == func.lower(email))
     return db.scalar(stmt)
 
 
@@ -59,6 +61,42 @@ def get_all_users(db: Session, *, offset: int = 0, limit: int = 100):
     """Retorna usuarios con límite para evitar lecturas masivas."""
     stmt = select(User).offset(offset).limit(limit)
     return db.scalars(stmt).all()
+
+
+def get_all_users_complete(db: Session) -> list[User]:
+    """Retorna todos los usuarios sin paginación."""
+    return list(db.scalars(select(User).order_by(User.id.asc())).all())
+
+
+def get_users_by_role(db: Session, role_name: str) -> list[User]:
+    """Retorna usuarios que tienen un rol específico."""
+    user_ids = (
+        select(User.id)
+        .join(UserRole, UserRole.user_id == User.id)
+        .join(Role, Role.id == UserRole.role_id)
+        .where(Role.name == role_name)
+        .distinct()
+    )
+    stmt = select(User).where(User.id.in_(user_ids)).order_by(User.id.asc())
+    return list(db.scalars(stmt).all())
+
+
+def get_students(db: Session) -> list[User]:
+    """Retorna estudiantes y usuarios legacy sin rol asignado."""
+    users_with_student_role = (
+        select(User.id)
+        .join(UserRole, UserRole.user_id == User.id)
+        .join(Role, Role.id == UserRole.role_id)
+        .where(Role.name == role_service.STUDENT_ROLE_NAME)
+    )
+    users_without_role = (
+        select(User.id)
+        .outerjoin(UserRole, UserRole.user_id == User.id)
+        .where(UserRole.user_id.is_(None))
+    )
+    student_ids = users_with_student_role.union(users_without_role)
+    stmt = select(User).where(User.id.in_(student_ids)).order_by(User.id.asc())
+    return list(db.scalars(stmt).all())
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
@@ -134,7 +172,7 @@ def obtener_organizacion(email):
         return None
 
 def is_domUtec(email):
-    """Verifica si el email pertenece al dominio UTEC."""
+    """Verifica si el email pertenece al dominio institucional habilitado."""
     
     org = obtener_organizacion(email=email)
     

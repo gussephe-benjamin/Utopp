@@ -113,9 +113,9 @@ export default function Register() {
     }
     if (e.target.name === "email") {
       const val = e.target.value.trim();
-      setEmailStatus(isValidUtecEmail(val) ? "checking" : "idle");
+      setEmailStatus(isValidInstitutionalEmail(val) ? "checking" : "idle");
       if (emailDebounceRef.current) clearTimeout(emailDebounceRef.current);
-      if (isValidUtecEmail(val)) {
+      if (isValidInstitutionalEmail(val)) {
         emailDebounceRef.current = setTimeout(async () => {
           try {
             const { available } = await checkEmail(val);
@@ -140,15 +140,14 @@ export default function Register() {
   ], [form.password, form.confirmPassword]);
 
 
-  // Función para evaluar el dominio del correo y restringir correo diferentes a UTEC
-  const isValidUtecEmail = (email: string): boolean => {
+  const isValidInstitutionalEmail = (email: string): boolean => {
     return /^[^\s@]+@utec\.edu\.pe$/i.test(email);
   };
 
   const emailBorderClass =
     form.email.length === 0
       ? "border-gray-200"
-      : !isValidUtecEmail(form.email)
+      : !isValidInstitutionalEmail(form.email)
         ? "border-red-400 focus:border-red-500 focus:ring-red-400/20"
         : emailStatus === "taken"
           ? "border-red-400 focus:border-red-500 focus:ring-red-400/20"
@@ -167,7 +166,7 @@ export default function Register() {
     if (!form.full_name.trim())                          return "El nombre de usuario es obligatorio";
     if (usernameStatus === "taken")                      return "El nombre de usuario ya está en uso";
     if (!form.email)                                     return "El email es obligatorio";
-    if (!isValidUtecEmail(form.email))                   return "Solo se permiten correos institucionales UTEC (@utec.edu.pe)";
+    if (!isValidInstitutionalEmail(form.email))                   return "Usa tu correo institucional autorizado para registrarte";
     if (emailStatus === "taken")                         return "Este correo ya está registrado. Intenta iniciar sesión.";
     if (!form.password)                                  return "La contraseña es obligatoria";
     if (form.password.length < 6)                        return "La contraseña debe tener al menos 6 caracteres";
@@ -252,25 +251,25 @@ export default function Register() {
                 <Input
                   type="email"
                   name="email"
-                  placeholder="Email institucional UTEC"
+                  placeholder="Tu correo institucional"
                   value={form.email}
                   onChange={handleChange}
                   required
                   className={`h-14 pl-12 pr-10 rounded-2xl bg-gray-50 border ${emailBorderClass} transition-colors`}
                 />
                 <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                  {isValidUtecEmail(form.email) && emailStatus === "checking"  && <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />}
-                  {isValidUtecEmail(form.email) && emailStatus === "available" && <CheckCircle2 className="w-4 h-4 text-green-500" />}
-                  {isValidUtecEmail(form.email) && emailStatus === "taken"     && <XCircle className="w-4 h-4 text-red-500" />}
+                  {isValidInstitutionalEmail(form.email) && emailStatus === "checking"  && <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />}
+                  {isValidInstitutionalEmail(form.email) && emailStatus === "available" && <CheckCircle2 className="w-4 h-4 text-green-500" />}
+                  {isValidInstitutionalEmail(form.email) && emailStatus === "taken"     && <XCircle className="w-4 h-4 text-red-500" />}
                 </div>
               </div>
-              {form.email.length > 0 && !isValidUtecEmail(form.email) && (
-                <p className="text-xs text-red-500 px-1">Solo se permiten correos @utec.edu.pe</p>
+              {form.email.length > 0 && !isValidInstitutionalEmail(form.email) && (
+                <p className="text-xs text-red-500 px-1">Ingresa un correo institucional válido</p>
               )}
-              {isValidUtecEmail(form.email) && emailStatus === "taken" && (
+              {isValidInstitutionalEmail(form.email) && emailStatus === "taken" && (
                 <p className="text-xs text-red-500 px-1">Este correo ya está registrado. Intenta iniciar sesión.</p>
               )}
-              {isValidUtecEmail(form.email) && emailStatus === "available" && (
+              {isValidInstitutionalEmail(form.email) && emailStatus === "available" && (
                 <p className="text-xs text-green-600 px-1">Correo disponible</p>
               )}
             </div>
@@ -442,9 +441,7 @@ export default function Register() {
             </div>
 
             <GoogleRegister
-              termsAccepted={termsAccepted}
-              privacyAccepted={privacyAccepted}
-              legalReady={legalReady}
+              legalReady={legalReady && termsAccepted && privacyAccepted}
             />
           </form>
 

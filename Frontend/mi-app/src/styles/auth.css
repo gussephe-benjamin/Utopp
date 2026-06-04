@@ -1,0 +1,317 @@
+/* Animaciones de las pantallas de autenticación (login / register).
+
+   CSS puro: sin librerías externas. */
+
+
+
+@keyframes authSlideInFromRight {
+
+  from {
+
+    opacity: 0;
+
+    transform: translateX(24px);
+
+  }
+
+  to {
+
+    opacity: 1;
+
+    transform: translateX(0);
+
+  }
+
+}
+
+
+
+@keyframes authSlideInFromLeft {
+
+  from {
+
+    opacity: 0;
+
+    transform: translateX(-24px);
+
+  }
+
+  to {
+
+    opacity: 1;
+
+    transform: translateX(0);
+
+  }
+
+}
+
+
+
+@keyframes authSlideOutToLeft {
+
+  from {
+
+    opacity: 1;
+
+    transform: translateX(0);
+
+  }
+
+  to {
+
+    opacity: 0;
+
+    transform: translateX(-16px);
+
+  }
+
+}
+
+
+
+@keyframes authSlideOutToRight {
+
+  from {
+
+    opacity: 1;
+
+    transform: translateX(0);
+
+  }
+
+  to {
+
+    opacity: 0;
+
+    transform: translateX(16px);
+
+  }
+
+}
+
+
+
+@keyframes authFadeIn {
+
+  from {
+
+    opacity: 0;
+
+    transform: translateY(8px);
+
+  }
+
+  to {
+
+    opacity: 1;
+
+    transform: translateY(0);
+
+  }
+
+}
+
+
+
+@keyframes authShake {
+
+  0%,
+
+  100% {
+
+    transform: translateX(0);
+
+  }
+
+  20% {
+
+    transform: translateX(-6px);
+
+  }
+
+  40% {
+
+    transform: translateX(6px);
+
+  }
+
+  60% {
+
+    transform: translateX(-4px);
+
+  }
+
+  80% {
+
+    transform: translateX(4px);
+
+  }
+
+}
+
+
+
+@keyframes authEllipsis {
+
+  0% {
+
+    content: "";
+
+  }
+
+  25% {
+
+    content: ".";
+
+  }
+
+  50% {
+
+    content: "..";
+
+  }
+
+  75% {
+
+    content: "...";
+
+  }
+
+}
+
+
+
+.auth-panel-enter {
+
+  animation: authSlideInFromRight 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+
+}
+
+
+
+.auth-panel-enter-from-login {
+
+  animation: authSlideInFromLeft 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+
+}
+
+
+
+.auth-panel-exit-to-left {
+
+  animation: authSlideOutToLeft 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+
+}
+
+
+
+.auth-panel-exit-to-right {
+
+  animation: authSlideOutToRight 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+
+}
+
+
+
+/* El header (título/subtítulo) entra con un leve retraso para dar profundidad. */
+
+.auth-panel-header {
+
+  animation: authFadeIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+
+  animation-delay: 40ms;
+
+}
+
+
+
+.auth-shake {
+
+  animation: authShake 0.4s ease-in-out;
+
+}
+
+
+
+.auth-ellipsis::after {
+
+  content: "";
+
+  animation: authEllipsis 1.2s steps(1, end) infinite;
+
+}
+
+
+
+/* OrgCarousel — transición con movimiento horizontal (panel izquierdo). */
+@keyframes orgSlideOutLeft {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+}
+
+@keyframes orgSlideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.org-slide-out {
+  animation: orgSlideOutLeft 220ms cubic-bezier(0.4, 0, 1, 1) forwards;
+  pointer-events: none;
+}
+
+.org-slide-in {
+  animation: orgSlideInRight 300ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+
+
+@media (prefers-reduced-motion: reduce) {
+
+  .auth-panel-enter,
+
+  .auth-panel-enter-from-login,
+
+  .auth-panel-exit-to-left,
+
+  .auth-panel-exit-to-right,
+
+  .auth-panel-header,
+
+  .auth-shake,
+
+  .auth-ellipsis::after,
+
+  .org-slide-out,
+
+  .org-slide-in {
+
+    animation: none;
+
+  }
+
+  .org-slide-out {
+    opacity: 0;
+    transition: opacity 200ms ease;
+  }
+
+  .org-slide-in {
+    opacity: 1;
+    transition: opacity 200ms ease;
+  }
+
+}
+
+

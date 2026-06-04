@@ -4,16 +4,18 @@
  * Endpoints del backend (prefix: /onboarding):
  *   POST /onboarding/isComplete — Verifica si un usuario completó el onboarding
  *   GET  /onboarding/me         — Estado de onboarding del usuario autenticado
- *   POST /onboarding/update     — Completa el onboarding (career, interests, cycle, availability)
+ *   POST /onboarding/update     — Completa el onboarding (career, interests, cycle, availability, weekly_availability)
  */
 
 import api from "./axios"
+import type { WeeklyAvailabilityPayload } from "../features/onboarding/lib/weeklyAvailability"
 
 export interface OnboardingData {
   career: string
   interests: string[]
   cycle: number
   availability: number
+  weekly_availability: WeeklyAvailabilityPayload
 }
 
 /**
@@ -40,7 +42,7 @@ export async function getOnboardingStatus() {
 /**
  * POST /onboarding/update
  * Completa el proceso de onboarding del usuario autenticado.
- * Guarda career, interests, availability y cycle.
+ * Guarda career, interests, availability, cycle y weekly_availability.
  * Solo se puede ejecutar una vez por usuario. Error 403 si ya fue completado.
  * Auth: Requerida.
  */

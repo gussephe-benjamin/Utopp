@@ -24,7 +24,7 @@ router = APIRouter()
 # ============================================================
 # POST /auth/login
 # Autentica un usuario con email y contraseña.
-# Valida que el correo pertenezca al dominio UTEC.
+# Valida que el correo pertenezca al dominio institucional autorizado.
 # Devuelve un JWT access token.
 # Auth: No requerida
 # ============================================================
@@ -34,12 +34,10 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=401, detail="Credenciales inválidas")
     
-    dominio_permitido = "utec"
-    
     if is_domUtec(user.email) is not True:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"El correo {user.email} no pertenece a la organización {dominio_permitido}",
+            detail="El correo no está autorizado. Usa tu correo institucional registrado en la plataforma.",
         )
         
     token = create_access_token(subject=str(user.id))
@@ -49,7 +47,7 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
 # ============================================================
 # POST /auth/register
 # Registra un nuevo usuario con email, contraseña y nombre.
-# Valida que el email no esté en uso y que pertenezca a UTEC.
+# Valida que el email no esté en uso y que pertenezca al dominio institucional autorizado.
 # Auth: No requerida
 # ============================================================
 @router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
@@ -58,11 +56,10 @@ def register(payload: UserCreate, request: Request, db: Session = Depends(get_db
 
     if get_user_by_email(db, payload.email):
         raise HTTPException(status_code=400, detail="Email ya registrado")
-    org = "utec"
     if is_domUtec(payload.email) is not True:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"El correo {payload.email} no pertenece a la organización {org}",
+            detail="El correo no está autorizado. Usa tu correo institucional registrado en la plataforma.",
         )
     if not legal_service.register_legal_ids_match_active(
         db, payload.terms_document_id, payload.privacy_document_id

@@ -2,7 +2,7 @@
  * API de Autenticación
  *
  * Endpoints del backend:
- *   POST /auth/login      — Login con email y contraseña (UTEC)
+ *   POST /auth/login      — Login con email y contraseña
  *   POST /auth/register   — Registro con email, contraseña y nombre
  *   POST /auth/refresh    — Renueva el JWT del usuario autenticado
  *   GET  /auth/me         — Datos básicos del usuario autenticado
@@ -30,7 +30,7 @@ export interface AuthMeResponse {
 /**
  * POST /auth/login
  * Autentica un usuario con email y contraseña.
- * Valida dominio UTEC. Devuelve { access_token }.
+ * Valida correo institucional autorizado. Devuelve { access_token }.
  * Auth: No requerida.
  */
 export async function login(email: string, password: string) {
@@ -41,7 +41,7 @@ export async function login(email: string, password: string) {
 /**
  * POST /auth/register
  * Registra un nuevo usuario con email, contraseña y nombre.
- * Error 400 si el email ya existe. Valida dominio UTEC.
+ * Error 400 si el email ya existe. Valida correo institucional autorizado.
  * Auth: No requerida.
  */
 export async function register(

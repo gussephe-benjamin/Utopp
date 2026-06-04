@@ -5,6 +5,33 @@ from config import API_BASE_URL
 from auth_helpers import register_then_login_access_token
 
 
+USER_FULL_OUT_FIELDS = [
+    "id",
+    "email",
+    "full_name",
+    "hashed_password",
+    "is_onboarding_completed",
+    "career",
+    "cycle",
+    "interests",
+    "availability",
+    "weekly_availability",
+    "description",
+    "contacts",
+    "google_id",
+    "last_accepted_legal_document_id",
+    "last_accepted_privacy_document_id",
+    "created_at",
+    "roles",
+]
+
+
+def assert_user_full_out_schema(data: dict) -> None:
+    for field in USER_FULL_OUT_FIELDS:
+        assert field in data, f"Missing field: {field}"
+    assert isinstance(data["roles"], list)
+
+
 class TestUsersAPI:
     """Integration tests for Users API endpoints."""
     
@@ -58,11 +85,80 @@ class TestUsersAPI:
     # ==================== Tests without authentication ====================
     
     def test_list_all_users(self, client):
-        """Test GET /users/all-users - List all users."""
+        """Test GET /users/all-users - List all users with full schema."""
         response = client.get("/users/all-users")
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, list)
+        if len(data) > 0:
+            assert_user_full_out_schema(data[0])
+
+    def test_get_user_by_email(self, client, auth_headers):
+        """Test GET /users/by-email - Get user by email with full schema."""
+        me_response = client.get("/users/me", headers=auth_headers)
+        assert me_response.status_code == 200
+        email = me_response.json()["email"]
+
+        response = client.get("/users/by-email", params={"email": email})
+        assert response.status_code == 200
+        data = response.json()
+        assert_user_full_out_schema(data)
+        assert data["email"] == email
+
+    def test_get_user_by_email_not_found(self, client):
+        """Test GET /users/by-email - 404 for unknown email."""
+        response = client.get(
+            "/users/by-email",
+            params={"email": f"missing.{uuid.uuid4().hex}@utec.edu.pe"},
+        )
+        assert response.status_code == 404
+
+    def test_get_user_by_id_full(self, client, auth_headers):
+        """Test GET /users/by-id/{user_id} - Get user by id with full schema."""
+        me_response = client.get("/users/me", headers=auth_headers)
+        assert me_response.status_code == 200
+        user_id = me_response.json()["id"]
+
+        response = client.get(f"/users/by-id/{user_id}")
+        assert response.status_code == 200
+        data = response.json()
+        assert_user_full_out_schema(data)
+        assert data["id"] == user_id
+
+    def test_get_user_by_id_full_not_found(self, client):
+        """Test GET /users/by-id/{user_id} - 404 for unknown id."""
+        response = client.get("/users/by-id/99999999")
+        assert response.status_code == 404
+
+    def test_list_students(self, client, auth_headers):
+        """Test GET /users/students - List students with full schema."""
+        response = client.get("/users/students")
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+        assert len(data) >= 1
+        assert_user_full_out_schema(data[0])
+
+        me_response = client.get("/users/me", headers=auth_headers)
+        student_ids = {item["id"] for item in data}
+        assert me_response.json()["id"] in student_ids
+
+    def test_list_organizations_all(self, client, org_headers):
+        """Test GET /users/organizations/all - List organizations with full schema."""
+        me_response = client.get("/users/me", headers=org_headers)
+        assert me_response.status_code == 200
+        org_user_id = me_response.json()["id"]
+
+        response = client.get("/users/organizations/all")
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+        assert len(data) >= 1
+        assert_user_full_out_schema(data[0])
+        assert org_user_id in {item["id"] for item in data}
+        assert "organización estudiantil" in data[0]["roles"] or any(
+            "organización estudiantil" in item["roles"] for item in data
+        )
     
     def test_check_username_available(self, client):
         """Test GET /users/check-username - Check username availability."""

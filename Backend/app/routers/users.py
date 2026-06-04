@@ -16,7 +16,7 @@ from app.models.user_profile_image import UserProfileImage
 from app.models.saved_post import SavedPost
 from app.models.event_participant import PostParticipant
 from app.schemas.user import (
-    UserResponse_total,
+    UserFullOut,
     UserOut,
     UserPublicOut,
     UserUpdate,
@@ -24,9 +24,16 @@ from app.schemas.user import (
     OrganizationSummaryOut,
 )
 from app.schemas.post import PostOut
-from app.services.users_service import get_all_users
+from app.services.users_service import (
+    get_all_users_complete,
+    get_user_by_email,
+    get_user_by_id,
+    get_students,
+    get_users_by_role,
+)
 from app.services.profile_service import follow as svc_follow, unfollow as svc_unfollow, update_interests as svc_update_interests
 from app.services.role_service import ORG_ROLE_NAME, STUDENT_ROLE_NAME, assign_student_role
+from app.dependencies.permissions import get_user_roles
 
 router = APIRouter()
 
@@ -242,17 +249,84 @@ def _make_user_out(db: Session, user: User) -> UserOut:
     )
 
 
+def _make_user_full_out(db: Session, user: User) -> UserFullOut:
+    roles = get_user_roles(user, db)
+    contacts = user.contacts
+    if isinstance(contacts, dict):
+        contacts = {
+            str(key): value if isinstance(value, str) else str(value)
+            for key, value in contacts.items()
+        }
+    base = UserFullOut.model_validate(user)
+    return base.model_copy(update={"roles": roles, "contacts": contacts})
+
+
+def _make_user_full_out_list(db: Session, users: list[User]) -> list[UserFullOut]:
+    return [_make_user_full_out(db, user) for user in users]
+
+
 # ============================================================
 # GET /users/all-users
-# Lista todos los usuarios registrados (legacy).
+# Lista todos los usuarios registrados con todos los campos.
 # Auth: No requerida
 # ============================================================
-@router.get("/all-users", response_model=list[UserResponse_total])
+@router.get("/all-users", response_model=list[UserFullOut])
 def list_users(
-    pagination: PaginationParams = Depends(),
     db: Session = Depends(get_db),
 ):
-    return get_all_users(db, offset=pagination.offset, limit=pagination.size)
+    users = get_all_users_complete(db)
+    return _make_user_full_out_list(db, users)
+
+
+# ============================================================
+# GET /users/by-email?email=...
+# Busca un usuario por correo con todos los campos.
+# Auth: No requerida
+# ============================================================
+@router.get("/by-email", response_model=UserFullOut)
+def get_user_by_email_endpoint(
+    email: str,
+    db: Session = Depends(get_db),
+):
+    user = get_user_by_email(db, email)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuario no encontrado",
+        )
+    return _make_user_full_out(db, user)
+
+
+# ============================================================
+# GET /users/by-id/{user_id}
+# Busca un usuario por ID con todos los campos.
+# Auth: No requerida
+# ============================================================
+@router.get("/by-id/{user_id}", response_model=UserFullOut)
+def get_user_by_id_full_endpoint(
+    user_id: int,
+    db: Session = Depends(get_db),
+):
+    user = get_user_by_id(db, user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuario no encontrado",
+        )
+    return _make_user_full_out(db, user)
+
+
+# ============================================================
+# GET /users/students
+# Lista todos los alumnos (rol estudiante + legacy sin rol).
+# Auth: No requerida
+# ============================================================
+@router.get("/students", response_model=list[UserFullOut])
+def list_students(
+    db: Session = Depends(get_db),
+):
+    users = get_students(db)
+    return _make_user_full_out_list(db, users)
 
 
 # ============================================================
@@ -386,6 +460,19 @@ def get_user_following_organizations(
         )
         for row in rows
     ]
+
+
+# ============================================================
+# GET /users/organizations/all
+# Lista todas las organizaciones con datos completos del usuario.
+# Auth: No requerida
+# ============================================================
+@router.get("/organizations/all", response_model=list[UserFullOut])
+def list_organizations_full(
+    db: Session = Depends(get_db),
+):
+    users = get_users_by_role(db, ORG_ROLE_NAME)
+    return _make_user_full_out_list(db, users)
 
 
 # ============================================================

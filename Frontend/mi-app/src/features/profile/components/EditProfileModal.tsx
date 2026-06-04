@@ -142,7 +142,7 @@ export function EditProfileModal({
           <div className="flex gap-2.5 rounded-xl bg-violet-50/65 border border-violet-100/40 p-3.5 mt-2">
             <Info className="h-4 w-4 text-violet-700 shrink-0 mt-0.5" />
             <p className="text-[11px] font-medium leading-relaxed text-violet-800">
-              La carrera y el correo institucional no son editables ya que se sincronizan directamente con UTEC.
+              La carrera y el correo provienen de tu registro y no se pueden editar aquí.
             </p>
           </div>
         </div>

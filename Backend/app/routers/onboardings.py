@@ -74,6 +74,7 @@ def complete_onboarding(
     user.interests = data.interests
     user.availability = data.availability
     user.cycle = data.cycle
+    user.weekly_availability = data.weekly_availability
     user.is_onboarding_completed = True
 
     print(user.career)

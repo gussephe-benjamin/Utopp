@@ -26,6 +26,7 @@ import type { ProfileUserData } from "./types"
 import { ProfileMetricCard } from "../components/ProfileMetricCard"
 import { ProfilePostItem } from "../components/ProfilePostItem"
 import { TW_UTOPP_GRADIENT_R } from "../../../shared/constants/brand"
+import { formatShortDisplayName } from "../../feed/lib/display"
 import { EditProfileModal } from "../components/EditProfileModal"
 import { OrganizationsManagerModal } from "../components/OrganizationsManagerModal"
 import { INTERESTS } from "../../../constants/interests"
@@ -111,6 +112,11 @@ export function StudentProfileSelf({
     event.target.value = ""
   }
 
+  const displayName = useMemo(
+    () => (user.full_name ? formatShortDisplayName(user.full_name) : "Estudiante"),
+    [user.full_name],
+  )
+
   const avatarInitial = (user.full_name ?? "U").charAt(0).toUpperCase()
 
   return (
@@ -194,10 +200,10 @@ export function StudentProfileSelf({
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between md:pl-[152px]">
             <div className="min-w-0 flex-1">
               <h1 className="text-2xl font-black tracking-tight text-gray-900 md:text-3xl uppercase leading-none break-words w-full">
-                {user.full_name ?? "Estudiante"}
+                {displayName}
               </h1>
               <p className="mt-2 text-xs md:text-sm font-semibold text-gray-600 leading-snug">
-                {careerLabel} {user.cycle ? `· Ciclo ${user.cycle}` : ""} · UTEC
+                {careerLabel}{user.cycle ? ` · Ciclo ${user.cycle}` : ""}
               </p>
 
               {user.email && (

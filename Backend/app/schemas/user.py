@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
@@ -29,6 +29,30 @@ class UserResponse_total(BaseModel):
     cycle: int | None = None
     is_onboarding_completed: bool
     created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class UserFullOut(BaseModel):
+    """Salida administrativa con todos los campos del modelo User y roles."""
+    id: int
+    email: str
+    full_name: Optional[str] = None
+    hashed_password: Optional[str] = None
+    is_onboarding_completed: bool = False
+    career: Optional[str] = None
+    cycle: Optional[int] = None
+    interests: Optional[List[str]] = None
+    availability: Optional[int] = None
+    weekly_availability: Optional[Dict] = None
+    description: Optional[str] = None
+    contacts: Optional[Dict[str, Any]] = None
+    google_id: Optional[str] = None
+    last_accepted_legal_document_id: Optional[int] = None
+    last_accepted_privacy_document_id: Optional[int] = None
+    created_at: datetime
+    roles: List[str] = []
 
     class Config:
         from_attributes = True

@@ -43,7 +43,7 @@ bg-gradient-to-r from-[#2f55f6] to-[#ba4ef8] bg-clip-text text-transparent
 ### Logo y Assets
 
 - **Logo oficial (CDN):** `https://raw.githubusercontent.com/gussephe-benjamin/Utopp/refs/heads/main/Frontend/mi-app/public/tempo-image-20251218T034846856Z.png`
-- **Fondo de pantallas auth:** Campus UTEC desde `posgrado.utec.edu.pe`
+- **Fondo de pantallas auth:** Foto de campus institucional (portada login/register)
 - **Overlay auth:** `linear-gradient(to bottom right, rgba(255,255,255,0.66), rgba(116,113,113,0.61), rgba(48,46,46,0.68))`
 
 ---
@@ -375,7 +375,7 @@ ring-1 ring-amber-100/30
 
 ### Pantalla de Autenticación
 - **Layout:** Dos columnas en escritorio (formulario | imagen campus), una columna en móvil
-- **Overlay:** Gradiente semitransparente sobre la foto del campus UTEC
+- **Overlay:** Gradiente semitransparente sobre la foto del campus
 - **Inputs:** `focus:border-[#9333EA] focus:ring-[#C026D3]/20`
 - **Links legales:** `text-[#9333EA] underline underline-offset-2 hover:text-[#C026D3]`
 - **Headings:** `text-[#9333EA]` (violeta)

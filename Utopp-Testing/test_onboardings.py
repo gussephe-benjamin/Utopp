@@ -8,6 +8,22 @@ from config import API_BASE_URL
 from auth_helpers import with_legal_ids
 
 
+SAMPLE_WEEKLY_AVAILABILITY = {
+    "disponibilidad a la semana": {
+        "lunes": ["mañana", "tarde"],
+        "martes": ["tarde"],
+        "miercoles": [],
+        "jueves": ["noche"],
+        "viernes": ["mañana"],
+        "sabado": [],
+    }
+}
+
+
+def with_weekly_availability(payload: dict) -> dict:
+    return {**payload, "weekly_availability": SAMPLE_WEEKLY_AVAILABILITY}
+
+
 class TestOnboardingsAPI:
     """Integration tests for Onboarding API endpoints."""
 
@@ -72,24 +88,24 @@ class TestOnboardingsAPI:
     @pytest.fixture
     def completed_context(self, client, create_user_and_token):
         ctx = create_user_and_token()
-        payload = {
+        payload = with_weekly_availability({
             "career": "Computer Science",
             "interests": ["AI", "Backend"],
             "availability": 20,
             "cycle": 5,
-        }
+        })
         update_response = client.post("/onboarding/update", json=payload, headers=ctx["headers"])
         assert update_response.status_code == 200, update_response.text
         return ctx
 
     @pytest.fixture
     def valid_onboarding_payload(self):
-        return {
+        return with_weekly_availability({
             "career": "Computer Science",
             "interests": ["AI", "Backend"],
             "availability": 20,
             "cycle": 5,
-        }
+        })
 
     # ==================== Happy Path Tests (10) ====================
 
@@ -254,7 +270,43 @@ class TestOnboardingsAPI:
         assert response.status_code == 422
 
     def test_update_missing_cycle(self, client, auth_headers):
-        payload = {"career": "Computer Science", "interests": ["AI"], "availability": 10}
+        payload = with_weekly_availability({
+            "career": "Computer Science",
+            "interests": ["AI"],
+            "availability": 10,
+        })
+        response = client.post("/onboarding/update", json=payload, headers=auth_headers)
+        assert response.status_code == 422
+
+    def test_update_missing_weekly_availability(self, client, auth_headers):
+        payload = {
+            "career": "Computer Science",
+            "interests": ["AI"],
+            "availability": 10,
+            "cycle": 3,
+        }
+        response = client.post("/onboarding/update", json=payload, headers=auth_headers)
+        assert response.status_code == 422
+
+    def test_update_invalid_weekly_availability_day(self, client, auth_headers):
+        payload = with_weekly_availability({
+            "career": "CS",
+            "interests": ["AI"],
+            "availability": 10,
+            "cycle": 3,
+        })
+        payload["weekly_availability"]["disponibilidad a la semana"]["domingo"] = ["mañana"]
+        response = client.post("/onboarding/update", json=payload, headers=auth_headers)
+        assert response.status_code == 422
+
+    def test_update_invalid_weekly_availability_slot(self, client, auth_headers):
+        payload = with_weekly_availability({
+            "career": "CS",
+            "interests": ["AI"],
+            "availability": 10,
+            "cycle": 3,
+        })
+        payload["weekly_availability"]["disponibilidad a la semana"]["lunes"] = ["madrugada"]
         response = client.post("/onboarding/update", json=payload, headers=auth_headers)
         assert response.status_code == 422
 
@@ -300,7 +352,12 @@ class TestOnboardingsAPI:
         assert response.status_code == 422
 
     def test_update_accepts_empty_interests_list(self, client, auth_headers):
-        payload = {"career": "CS", "interests": [], "availability": 10, "cycle": 3}
+        payload = with_weekly_availability({
+            "career": "CS",
+            "interests": [],
+            "availability": 10,
+            "cycle": 3,
+        })
         response = client.post("/onboarding/update", json=payload, headers=auth_headers)
         assert response.status_code == 200
 
@@ -327,47 +384,62 @@ class TestOnboardingsAPI:
         assert response.status_code == 403
 
     def test_update_allows_long_career_text(self, client, auth_headers):
-        payload = {
+        payload = with_weekly_availability({
             "career": "x" * 512,
             "interests": ["AI", "Robotics"],
             "availability": 10,
             "cycle": 3,
-        }
+        })
         response = client.post("/onboarding/update", json=payload, headers=auth_headers)
         assert response.status_code == 200
 
     def test_update_allows_special_chars_career(self, client, auth_headers):
-        payload = {
+        payload = with_weekly_availability({
             "career": "Ing. Sistemas - IA & Data #1",
             "interests": ["AI", "Backend"],
             "availability": 10,
             "cycle": 3,
-        }
+        })
         response = client.post("/onboarding/update", json=payload, headers=auth_headers)
         assert response.status_code == 200
 
     def test_update_allows_whitespace_career(self, client, auth_headers):
-        payload = {
+        payload = with_weekly_availability({
             "career": "   Computer Science   ",
             "interests": ["AI"],
             "availability": 10,
             "cycle": 3,
-        }
+        })
         response = client.post("/onboarding/update", json=payload, headers=auth_headers)
         assert response.status_code == 200
 
     def test_update_accepts_zero_availability(self, client, auth_headers):
-        payload = {"career": "CS", "interests": ["AI"], "availability": 0, "cycle": 3}
+        payload = with_weekly_availability({
+            "career": "CS",
+            "interests": ["AI"],
+            "availability": 0,
+            "cycle": 3,
+        })
         response = client.post("/onboarding/update", json=payload, headers=auth_headers)
         assert response.status_code == 200
 
     def test_update_accepts_zero_cycle(self, client, auth_headers):
-        payload = {"career": "CS", "interests": ["AI"], "availability": 10, "cycle": 0}
+        payload = with_weekly_availability({
+            "career": "CS",
+            "interests": ["AI"],
+            "availability": 10,
+            "cycle": 0,
+        })
         response = client.post("/onboarding/update", json=payload, headers=auth_headers)
         assert response.status_code == 200
 
     def test_update_accepts_negative_cycle(self, client, auth_headers):
-        payload = {"career": "CS", "interests": ["AI"], "availability": 10, "cycle": -1}
+        payload = with_weekly_availability({
+            "career": "CS",
+            "interests": ["AI"],
+            "availability": 10,
+            "cycle": -1,
+        })
         response = client.post("/onboarding/update", json=payload, headers=auth_headers)
         assert response.status_code == 200
 

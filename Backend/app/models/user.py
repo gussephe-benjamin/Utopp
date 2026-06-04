@@ -16,6 +16,7 @@ class User(Base):
     career: Mapped[str | None] = mapped_column(String(255), nullable=True)
     interests: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
     availability: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    weekly_availability: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     description: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     contacts: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     

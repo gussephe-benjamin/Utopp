@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { Calendar as CalendarIcon, Search, Users, X } from "lucide-react"
 import { useWeeklyFeedHighlights } from "../features/feed/hooks/useWeeklyFeedHighlights"
+import { filterEventsByQuery } from "../features/feed/lib/eventSearch"
 import { formatDeadlineBadge } from "../features/feed/lib/weeklyHighlightUtils"
 import { ProfileLink } from "../features/profile/components/ProfileLink"
 import { TW_UTOPP_GRADIENT_R } from "../shared/constants/brand"
@@ -21,13 +22,7 @@ export default function ExplorePage() {
   const [activeTab, setActiveTab] = useState<"events" | "organizations">("events")
   const [searchQuery, setSearchQuery] = useState("")
 
-  // Filtros locales por buscador
-  const filteredEvents = deadlinePosts.filter((post) => {
-    const title = (post.title ?? "").toLowerCase()
-    const org = (post.user_name ?? "").toLowerCase()
-    const query = searchQuery.toLowerCase()
-    return title.includes(query) || org.includes(query)
-  })
+  const filteredEvents = filterEventsByQuery(deadlinePosts, searchQuery)
 
   const filteredOrgs = organizations.filter((org) => {
     const name = (org.full_name ?? "").toLowerCase()

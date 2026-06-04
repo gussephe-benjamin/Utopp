@@ -6,6 +6,7 @@ import Login from "./pages/auth/Login"
 import DashboardLayout from "./pages/Dashboard"
 import Onboarding from "./features/onboarding/Onboarding"
 import RegisterOG from "./pages/auth/RegisterOG"
+import { AuthRouteLayout } from "./features/auth/components/AuthRouteLayout"
 import TermsAcceptance from "./pages/TermsAcceptance"
 import TermsPublic from "./pages/TermsPublic"
 import PrivacyPublic from "./pages/PrivacyPublic"
@@ -18,8 +19,11 @@ function App() {
           {/* Ruta por defecto - redirige según estado de autenticación y onboarding */}
           <Route path="/" element={<AppRoute />} />
 
-          {/* Ruta direccionamiento al Login */}
-          <Route path="/login" element={<Login />} />
+          {/* Auth: layout compartido para transición fluida login ↔ register */}
+          <Route element={<AuthRouteLayout />}>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<RegisterOG />} />
+          </Route>
 
           <Route path="/terms" element={<TermsPublic />} />
           <Route path="/privacy" element={<PrivacyPublic />} />
@@ -55,16 +59,6 @@ function App() {
             }
           />
 
-          {/* Ruta direccionamiento al Register */}
-          <Route
-            path="/register"
-            element={
-          
-                <RegisterOG/>
-          
-            }
-          />
-          
           {/* Ruta comodín para capturar cualquier ruta inexistente y redirigir a la raíz */}
           <Route path="*" element={<Navigate to="/" replace />} />
 

@@ -17,7 +17,7 @@ type AuthScreenLayoutProps = {
 };
 
 /**
- * Shell visual compartido: gradiente + foto UTEC, orbes, líneas diagonales y contenedor centrado.
+ * Shell visual compartido: gradiente + foto de campus, orbes, líneas diagonales y contenedor centrado.
  * La imagen se precarga con `Image()`; hasta entonces se muestra el gradiente (nunca fondo “vacío”).
  */
 export function AuthScreenLayout({

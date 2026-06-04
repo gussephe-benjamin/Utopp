@@ -2,6 +2,7 @@ import { useState } from "react";
 import StepCareer from "./steps/StepCareer";
 import StepInterests from "./steps/StepInterests";
 import StepAvailability from "./steps/StepAvailability";
+import StepWeeklySchedule from "./steps/StepWeeklySchedule";
 import CycleStep from "./steps/StepCycle";
 import { useNavigate } from "react-router-dom";
 import type { JSX } from "react";
@@ -12,6 +13,12 @@ import { AxiosError } from "axios";
 import { Check } from "lucide-react";
 import { useEffect } from "react";
 import { checkOnboardingCompleted } from "./functions/isCompleteVerificate";
+import {
+  countDaysWithSelection,
+  countSelectedSlots,
+  createEmptyWeeklyAvailability,
+  getInitiallySelectedDays,
+} from "./lib/weeklyAvailability";
 
 export type OnboardingData = Omit<OnboardingPayload, "cycle" | "availability"> & {
   cycle: number | null;
@@ -49,7 +56,11 @@ export default function Onboarding(): JSX.Element {
     cycle: null,
     interests: [],
     availability: null,
+    weekly_availability: createEmptyWeeklyAvailability(),
   });
+  const [selectedWeekDays, setSelectedWeekDays] = useState(() =>
+    getInitiallySelectedDays(createEmptyWeeklyAvailability()),
+  );
 
   const next = () => setStep((s) => s + 1);
   const back = () => setStep((s) => s - 1);
@@ -62,6 +73,7 @@ export default function Onboarding(): JSX.Element {
     if (step === 2) return data.cycle !== null;
     if (step === 3) return data.interests.length >= MIN_INTERESTS;
     if (step === 4) return data.availability !== null;
+    if (step === 5) return countSelectedSlots(data.weekly_availability) > 0;
     return false;
   };
 
@@ -75,6 +87,7 @@ export default function Onboarding(): JSX.Element {
         ...data,
         cycle: data.cycle,
         availability: data.availability,
+        weekly_availability: data.weekly_availability,
       };
 
       await updateOnboarding(payload);
@@ -119,6 +132,23 @@ export default function Onboarding(): JSX.Element {
       return (
         <p className="text-center text-xs text-violet-100/85 pt-3 px-4 animate-in fade-in duration-300">
           Esto nos ayuda a recomendarte la cantidad ideal de eventos
+        </p>
+      );
+    }
+
+    if (step === 5) {
+      const selectedSlots = countSelectedSlots(data.weekly_availability);
+      const selectedDays = countDaysWithSelection(data.weekly_availability);
+      const markedDaysWithoutSlots =
+        selectedWeekDays.length > 0 && selectedSlots === 0;
+
+      return (
+        <p className="text-center text-xs text-violet-100/85 pt-3 px-4 animate-in fade-in duration-300">
+          {selectedSlots > 0
+            ? `${selectedDays} ${selectedDays === 1 ? "día" : "días"} · ${selectedSlots} ${selectedSlots === 1 ? "horario seleccionado" : "horarios seleccionados"}`
+            : markedDaysWithoutSlots
+              ? "Selecciona al menos un horario en los días marcados"
+              : "Marca tus días disponibles y elige al menos un horario"}
         </p>
       );
     }
@@ -178,6 +208,20 @@ export default function Onboarding(): JSX.Element {
             <p className="text-violet-100/80 text-base">A la semana, aproximadamente</p>
           </div>
         );
+      case 5:
+        return (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 pt-1">
+            <h1 className="text-3xl font-bold text-white mb-2">
+              Indica tus días y horarios{" "}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-fuchsia-400">
+                disponibles
+              </span>
+            </h1>
+            <p className="text-violet-100/80 text-base">
+              Primero marca los días en los que puedes asistir y luego elige tus franjas horarias.
+            </p>
+          </div>
+        );
       default:
         return <></>;
     }
@@ -228,6 +272,14 @@ export default function Onboarding(): JSX.Element {
             {step === 2 && <CycleStep data={data} setData={setData} />}
             {step === 3 && <StepInterests data={data} setData={setData} />}
             {step === 4 && <StepAvailability data={data} setData={setData} />}
+            {step === 5 && (
+              <StepWeeklySchedule
+                data={data}
+                setData={setData}
+                selectedDays={selectedWeekDays}
+                setSelectedDays={setSelectedWeekDays}
+              />
+            )}
           </div>
         </main>
 
@@ -247,14 +299,14 @@ export default function Onboarding(): JSX.Element {
             <button
               type="button"
               disabled={!canContinue()}
-              onClick={step < 4 ? next : finishOnboarding}
+              onClick={step < 5 ? next : finishOnboarding}
               className={`flex flex-1 items-center justify-center rounded-2xl py-3 font-semibold transition-all duration-300 transform active:scale-[0.98] ${
                 canContinue()
                   ? "bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white shadow-lg shadow-violet-500/30 hover:brightness-105"
                   : "cursor-not-allowed bg-white/10 text-white/50"
               }`}
             >
-              {step < 4
+              {step < 5
                 ? showCareerInNext
                   ? <span className="text-center leading-tight">Siguiente</span>
                   : "Siguiente"

@@ -2,6 +2,7 @@ import type { RefObject } from "react";
 import { ListFilter, Plus } from "lucide-react";
 import { UtoppBrandMark } from "../../../shared/brand/UtoppBrandMark";
 import { AppLink } from "../../../shared/navigation/AppLink";
+import { EventSearchBar } from "../../feed/components/EventSearchBar";
 import {
   TW_UTOPP_GRADIENT_R,
 } from "../../../shared/constants/brand";
@@ -58,6 +59,12 @@ export function AppTopBar({
           }}
           aria-label="Ir a inicio y recargar"
         />
+
+        {isFeedActive && (
+          <div className="hidden md:flex min-w-0 flex-1 justify-center px-2 lg:px-6">
+            <EventSearchBar compact className="w-full max-w-[420px]" />
+          </div>
+        )}
 
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           {canCreate && (

@@ -18,7 +18,7 @@ export const AUTH_SCREEN_OVERLAY_GRADIENT =
 /** Logo oficial Utopp 2D (local). */
 export const UTOPP_LOGO_SRC = "/utopp-2d.png";
 
-/** Imagen de fondo del campus UTEC en pantallas auth (default de `AuthScreenLayout`). */
+/** Imagen de fondo del campus en pantallas auth (default de `AuthScreenLayout`). */
 export const AUTH_BACKGROUND_IMAGE_URL =
   "https://posgrado.utec.edu.pe/sites/default/files/2023-08/Campus-utec---nuestro-enfoque---web.jpg";
 
@@ -57,4 +57,31 @@ export const TW_AUTH_FOOTER_LINK =
 export const TW_AUTH_CHECKBOX = "text-[#9333EA] focus:ring-[#9333EA]/40";
 
 /** Borde y anillo de focus en inputs email/contraseña (auth). */
-export const TW_AUTH_INPUT_FOCUS = "focus:border-[#9333EA] focus:ring-[#C026D3]/20";
+export const TW_AUTH_INPUT_FOCUS =
+  "focus:border-[#9333EA] focus:ring-2 focus:ring-[#9333EA]/25 focus-visible:outline-none";
+
+/** Card glass en pantallas auth (login/register). */
+export const TW_AUTH_GLASS_CARD =
+  "bg-white/85 backdrop-blur-xl border border-white/70 shadow-[0_8px_40px_rgba(37,99,235,0.08)] rounded-3xl";
+
+/** Panel derecho del layout auth split. */
+export const TW_AUTH_PANEL_BG = "bg-gray-50/90";
+
+/** Panel izquierdo (propuesta de valor). */
+export const TW_AUTH_VALUE_PANEL_BG =
+  "bg-gradient-to-br from-[#eef2ff] via-[#f4f3ff] to-[#fbf2fc]";
+
+/** Overlay de marca sobre la foto de campus en el panel izquierdo (texto blanco encima). */
+export const AUTH_LEFT_PANEL_OVERLAY =
+  "linear-gradient(135deg, rgba(37,99,235,0.88) 0%, rgba(147,51,234,0.82) 55%, rgba(192,38,211,0.78) 100%)";
+
+/** Gradiente de marca sólido (fallback cuando no carga la imagen). */
+export const TW_AUTH_BRAND_GRADIENT =
+  "bg-gradient-to-br from-[#2563EB] via-[#9333EA] to-[#C026D3]";
+
+/** Focus visible unificado en botones auth. */
+export const TW_AUTH_FOCUS_RING =
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2";
+
+/** Transición estándar auth (150–250ms). */
+export const TW_AUTH_TRANSITION = "transition-all duration-200 ease-out motion-reduce:transition-none";

@@ -1,1 +1,1 @@
-export const WEEKLY_ORGS_TITLE = "Orgs de UTEC"
+export const WEEKLY_ORGS_TITLE = "Organizaciones destacadas"

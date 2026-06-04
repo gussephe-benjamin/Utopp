@@ -1,22 +1,16 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import GoogleRegister from "../../auth/GoogleRegister";
-import { AuthScreenLayout } from "../../shared/layout/AuthScreenLayout";
+import { TransitionLink } from "../../features/auth/components/TransitionLink";
 import { getCurrentPrivacy, getCurrentTerms, type TermsCurrent } from "../../api/legal.api";
-import {
-  TW_AUTH_CHECKBOX,
-  TW_AUTH_FOOTER_LINK,
-  TW_AUTH_HEADING,
-  TW_AUTH_LEGAL_LINK,
-} from "../../shared/constants/brand";
+import { TW_AUTH_LEGAL_LINK } from "../../shared/constants/brand";
+import { AUTH_REGISTER } from "../../features/auth/constants/authCopy";
 
 export default function RegisterOG() {
-  const navigate = useNavigate();
-  const [termsDoc, setTermsDoc] = useState<TermsCurrent | null>(null);
-  const [privacyDoc, setPrivacyDoc] = useState<TermsCurrent | null>(null);
+  const [, setTermsDoc] = useState<TermsCurrent | null>(null);
+  const [, setPrivacyDoc] = useState<TermsCurrent | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [termsChecked, setTermsChecked] = useState(false);
-  const [privacyChecked, setPrivacyChecked] = useState(false);
+  const [legalReady, setLegalReady] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -26,10 +20,12 @@ export default function RegisterOG() {
         if (!cancelled) {
           setTermsDoc(t);
           setPrivacyDoc(p);
+          setLegalReady(true);
         }
       } catch {
         if (!cancelled) {
-          setLoadError("No se pudieron cargar los textos legales. Recarga la página o intenta más tarde.");
+          setLoadError(AUTH_REGISTER.legalLoadError);
+          setLegalReady(false);
         }
       }
     })();
@@ -38,88 +34,42 @@ export default function RegisterOG() {
     };
   }, []);
 
-  const legalReady = !!termsDoc && !!privacyDoc && !loadError;
-
   return (
-    <AuthScreenLayout>
-      <div className="bg-white rounded-3xl shadow-2xl p-8">
-        <div className="text-center mb-6">
-          <h1 className={`text-2xl font-bold ${TW_AUTH_HEADING}`}>Crear cuenta</h1>
-          <p className="text-gray-500 text-sm">Únete a la comunidad Utopp</p>
-        </div>
-
-        {loadError && (
-          <p className="text-red-600 text-sm text-center mb-4">{loadError}</p>
-        )}
-
-        <div className="relative my-4">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-200" />
+    <div className="flex flex-col gap-6">
+          <div className="auth-panel-header text-center">
+            <h2 className="text-2xl font-bold text-slate-900">{AUTH_REGISTER.title}</h2>
+            <p className="mt-1 text-sm text-slate-500">{AUTH_REGISTER.subtitle}</p>
           </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="px-4 bg-white text-gray-400">utopp</span>
-          </div>
-        </div>
 
-        <div className="space-y-4 mb-6">
-          <label className="flex items-start gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              className={`mt-0.5 size-4 rounded border-gray-300 ${TW_AUTH_CHECKBOX}`}
-              checked={termsChecked}
-              onChange={(e) => setTermsChecked(e.target.checked)}
-              disabled={!legalReady}
-            />
-            <span className="text-sm text-gray-700">
-              He leído y acepto los{" "}
-              <Link
-                to="/terms"
-                className={TW_AUTH_LEGAL_LINK}
-              >
-                términos y condiciones
-              </Link>
-              .
-            </span>
-          </label>
+          {loadError && (
+            <p className="text-center text-sm text-red-600" role="alert">
+              {loadError}
+            </p>
+          )}
 
-          <label className="flex items-start gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              className={`mt-0.5 size-4 rounded border-gray-300 ${TW_AUTH_CHECKBOX}`}
-              checked={privacyChecked}
-              onChange={(e) => setPrivacyChecked(e.target.checked)}
-              disabled={!legalReady}
-            />
-            <span className="text-sm text-gray-700">
-              He leído y acepto la{" "}
-              <Link
-                to="/privacy"
-                className={TW_AUTH_LEGAL_LINK}
-              >
-                política de datos y privacidad
-              </Link>
-              .
-            </span>
-          </label>
-        </div>
+          <GoogleRegister legalReady={legalReady} />
 
-        <GoogleRegister
-          termsAccepted={termsChecked}
-          privacyAccepted={privacyChecked}
-          legalReady={legalReady}
-        />
+          <p className="text-center text-xs leading-relaxed text-slate-400">
+            {AUTH_REGISTER.legalPrefix}{" "}
+            <Link to="/terms" className={TW_AUTH_LEGAL_LINK}>
+              {AUTH_REGISTER.termsLabel}
+            </Link>{" "}
+            {AUTH_REGISTER.legalMiddle}{" "}
+            <Link to="/privacy" className={TW_AUTH_LEGAL_LINK}>
+              {AUTH_REGISTER.privacyLabel}
+            </Link>
+            .
+          </p>
 
-        <p className="text-center mt-6 text-gray-500 text-sm">
-          ¿Ya tienes cuenta?{" "}
-          <button
-            type="button"
-            onClick={() => navigate("/login")}
-            className={TW_AUTH_FOOTER_LINK}
-          >
-            Inicia sesión
-          </button>
-        </p>
-      </div>
-    </AuthScreenLayout>
+          <p className="text-center text-sm text-slate-500">
+            {AUTH_REGISTER.footerQuestion}{" "}
+            <TransitionLink
+              to="/login"
+              className="font-medium text-violet-600 hover:text-violet-700 hover:underline"
+            >
+              {AUTH_REGISTER.footerAction}
+            </TransitionLink>
+          </p>
+    </div>
   );
 }

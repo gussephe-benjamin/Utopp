@@ -33,7 +33,7 @@ export function RightSidebar({ showTrending = true }: RightSidebarProps) {
           <div className="mb-3.5 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Flame className="h-4 w-4 fill-current text-orange-500" />
-              <h4 className="text-sm font-bold text-gray-800">Trending en UTEC</h4>
+              <h4 className="text-sm font-bold text-gray-800">En tendencia esta semana</h4>
             </div>
           </div>
           <div className="flex flex-col gap-3">

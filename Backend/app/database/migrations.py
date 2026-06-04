@@ -419,3 +419,18 @@ def run_migrations(engine: Engine) -> None:
         """))
 
         conn.commit()
+
+        # 17. Disponibilidad semanal detallada (onboarding)
+        conn.execute(text("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name = 'users' AND column_name = 'weekly_availability'
+                ) THEN
+                    ALTER TABLE users ADD COLUMN weekly_availability JSONB;
+                END IF;
+            END$$;
+        """))
+
+        conn.commit()
