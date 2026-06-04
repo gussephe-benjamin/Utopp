@@ -52,7 +52,7 @@ function AuthShowcaseSection() {
   if (!loading && !hasEvents && !hasOrganizations) return null;
 
   return (
-    <div className="mt-10 space-y-3">
+    <div className="mt-10 space-y-3 [@media(max-height:860px)]:mt-6 [@media(max-height:660px)]:hidden">
       {(loading || hasEvents) && (
         <div className="flex items-center gap-2 px-1">
           <CalendarDays className="h-4 w-4 shrink-0 text-white/90" aria-hidden />
@@ -104,7 +104,7 @@ export function AuthLeftPanel({ compact = false }: AuthLeftPanelProps) {
 
   return (
     <div
-      className={`relative flex h-full flex-col justify-center overflow-hidden px-8 py-12 lg:px-12 xl:px-16 ${TW_AUTH_BRAND_GRADIENT}`}
+      className={`relative flex h-full flex-col justify-center overflow-hidden px-8 py-12 lg:px-12 xl:px-16 [@media(max-height:760px)]:py-6 ${TW_AUTH_BRAND_GRADIENT}`}
     >
       <div
         className="pointer-events-none absolute inset-0"
@@ -117,7 +117,7 @@ export function AuthLeftPanel({ compact = false }: AuthLeftPanelProps) {
       />
 
       <div className="relative z-10 max-w-lg">
-        <div className="mb-10">
+        <div className="mb-10 [@media(max-height:760px)]:mb-6">
           <UtoppLogoWhite />
         </div>
 
@@ -131,7 +131,7 @@ export function AuthLeftPanel({ compact = false }: AuthLeftPanelProps) {
           {AUTH_VALUE.subheadline}
         </p>
 
-        <ul className="mt-8 space-y-3.5">
+        <ul className="mt-8 space-y-3.5 [@media(max-height:820px)]:hidden">
           {AUTH_VALUE.benefits.map((benefit, index) => {
             const Icon = benefitIcons[index] ?? MessageCircle;
             return (

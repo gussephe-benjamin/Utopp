@@ -26,10 +26,13 @@ export const AUTH_LOGIN = {
 export const AUTH_REGISTER = {
   title: "Únete a la comunidad",
   subtitle: "Comienza en segundos con tu cuenta de Google",
-  legalPrefix: "Al continuar, aceptas los",
-  termsLabel: "Términos",
-  legalMiddle: "y la",
+  legalCheckboxPrefix: "He leído y acepto los",
+  termsLabel: "Términos y condiciones",
+  legalCheckboxMiddle: "y la",
   privacyLabel: "Política de Privacidad",
+  legalNudgeTitle: "Un último paso para unirte",
+  legalNudgeBody:
+    "Confirma que aceptas nuestros términos para formar parte de la comunidad Utopp.",
   footerQuestion: "¿Ya tienes cuenta?",
   footerAction: "Inicia sesión",
   legalLoadError:

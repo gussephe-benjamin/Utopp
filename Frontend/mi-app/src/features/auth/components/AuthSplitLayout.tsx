@@ -27,8 +27,9 @@ export function AuthSplitLayout({ children }: AuthSplitLayoutProps) {
         <AuthLeftPanel />
       </div>
 
-      {/* Panel derecho (auth) */}
-      <div className="relative z-10 -mt-4 flex flex-1 items-start justify-center rounded-t-3xl bg-white px-6 pt-8 pb-12 md:mt-0 md:w-7/12 md:items-center md:rounded-none md:bg-[#F8FAFC] md:px-8 md:py-8 xl:w-1/2 xl:px-10">
+      {/* Panel derecho (auth) — `safe center` mantiene el contenido centrado
+          cuando cabe y lo alinea arriba (con scroll, sin recortar) en pantallas bajas. */}
+      <div className="relative z-10 -mt-4 flex flex-1 items-start justify-center rounded-t-3xl bg-white px-6 pt-8 pb-12 md:mt-0 md:w-7/12 md:overflow-y-auto md:rounded-none md:bg-[#F8FAFC] md:px-8 md:py-8 md:[align-items:safe_center] xl:w-1/2 xl:px-10">
         {children}
       </div>
     </div>

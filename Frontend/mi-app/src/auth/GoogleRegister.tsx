@@ -8,18 +8,30 @@ import { GoogleButton } from "../features/auth/components/GoogleButton";
 import { AUTH_GOOGLE } from "../features/auth/constants/authCopy";
 
 export interface GoogleRegisterProps {
-  /** Ambos documentos legales cargaron correctamente. */
-  legalReady: boolean;
+  /** Documentos legales cargados correctamente. */
+  legalDocsReady: boolean;
+  /** Usuario marcó el checkbox de términos y privacidad. */
+  legalAccepted: boolean;
+  /** Se invoca si el usuario intenta continuar sin aceptar los términos. */
+  onLegalRequired?: () => void;
 }
 
-export default function GoogleRegister({ legalReady }: GoogleRegisterProps) {
+export default function GoogleRegister({
+  legalDocsReady,
+  legalAccepted,
+  onLegalRequired,
+}: GoogleRegisterProps) {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleGoogleSuccess = async (credential: string) => {
-    if (!legalReady) return;
+    if (!legalDocsReady) return;
+    if (!legalAccepted) {
+      onLegalRequired?.();
+      return;
+    }
 
     setIsLoading(true);
     setError(null);
@@ -52,21 +64,26 @@ export default function GoogleRegister({ legalReady }: GoogleRegisterProps) {
     }
   };
 
+  const showLegalGate = legalDocsReady && !legalAccepted && !isLoading;
+
   return (
-    <div className="flex w-full flex-col gap-3">
-      {!legalReady && (
-        <p className="text-center text-xs text-gray-500" aria-live="polite">
-          Cargando términos y política de privacidad…
-        </p>
-      )}
+    <div className="relative flex w-full flex-col gap-3">
       <GoogleButton
         variant="register"
-        disabled={!legalReady}
+        disabled={!legalDocsReady}
         isLoading={isLoading}
         loadingLabel={AUTH_GOOGLE.registering}
         onSuccess={handleGoogleSuccess}
         onError={() => setError("Registro con Google falló. Intenta de nuevo.")}
       />
+      {showLegalGate && (
+        <button
+          type="button"
+          className="absolute inset-0 z-20 h-12 w-full cursor-pointer rounded-2xl"
+          aria-label="Acepta los términos y condiciones y la política de privacidad para continuar"
+          onClick={() => onLegalRequired?.()}
+        />
+      )}
       {error && (
         <p className="text-center text-xs text-red-600" role="alert" aria-live="polite">
           {error}

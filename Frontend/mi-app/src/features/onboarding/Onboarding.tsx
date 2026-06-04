@@ -10,7 +10,7 @@ import { updateOnboarding } from "../../api/onboarding.api";
 import type { OnboardingData as OnboardingPayload } from "../../api/onboarding.api";
 import StepBar from "./components/StepBar";
 import { AxiosError } from "axios";
-import { Check } from "lucide-react";
+import { Check, ChevronRight } from "lucide-react";
 import { useEffect } from "react";
 import { checkOnboardingCompleted } from "./functions/isCompleteVerificate";
 import {
@@ -75,6 +75,12 @@ export default function Onboarding(): JSX.Element {
     if (step === 4) return data.availability !== null;
     if (step === 5) return countSelectedSlots(data.weekly_availability) > 0;
     return false;
+  };
+
+  // Saltar lleva al feed SIN marcar el onboarding como completado:
+  // en el próximo inicio de sesión se volverá a solicitar.
+  const skipOnboarding = (): void => {
+    navigate("/app/inicio", { replace: true });
   };
 
   const finishOnboarding = async (): Promise<void> => {
@@ -261,7 +267,18 @@ export default function Onboarding(): JSX.Element {
     <div className="relative min-h-screen overflow-hidden text-white">
       <OnboardingMeshBackground />
       <div className="relative z-10 mx-auto flex h-screen max-w-md min-h-0 flex-col">
-        <header className="z-30 shrink-0 bg-transparent px-4 pt-6 pb-3">
+        <div className="flex shrink-0 items-center justify-end px-4 pt-4 pb-1">
+          <button
+            type="button"
+            onClick={skipOnboarding}
+            className="group inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-xs font-medium text-white/45 transition-colors hover:text-white/80 focus-visible:text-white/80 focus-visible:outline-none"
+          >
+            Saltar
+            <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" aria-hidden />
+          </button>
+        </div>
+
+        <header className="z-30 shrink-0 bg-transparent px-4 pb-3 pt-1">
           <StepBar step={step} />
           {stepHeading()}
         </header>

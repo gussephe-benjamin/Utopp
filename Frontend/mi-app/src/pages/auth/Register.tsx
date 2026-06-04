@@ -441,7 +441,8 @@ export default function Register() {
             </div>
 
             <GoogleRegister
-              legalReady={legalReady && termsAccepted && privacyAccepted}
+              legalDocsReady={legalReady}
+              legalAccepted={termsAccepted && privacyAccepted}
             />
           </form>
 
