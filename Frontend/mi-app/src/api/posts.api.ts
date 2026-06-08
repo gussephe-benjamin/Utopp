@@ -73,6 +73,26 @@ export interface DeadlineUpdate {
   deadline_at: string
 }
 
+export interface AdminPostSummary {
+  id: number
+  user_id: number
+  creator_name: string | null
+  creator_email: string
+  created_at: string
+  title: string | null
+  description: string
+}
+
+export interface AdminPostsPageResponse {
+  items: AdminPostSummary[]
+  page: number
+  size: number
+  total: number
+  pages: number
+  has_next: boolean
+  has_prev: boolean
+}
+
 // ─── Creación ────────────────────────────────────────────
 
 /**
@@ -122,6 +142,16 @@ export async function createAnnouncement(payload: AnnouncementCreate) {
 }
 
 // ─── Lectura y actualización ─────────────────────────────
+
+/**
+ * GET /posts/
+ * Lista todas las publicaciones (admin/root) en formato resumido con paginación.
+ * Auth: Requerida (admin o root).
+ */
+export async function getAdminPosts(params?: { page?: number; size?: number }): Promise<AdminPostsPageResponse> {
+  const { data } = await api.get<AdminPostsPageResponse>("/posts/", { params })
+  return data
+}
 
 /**
  * GET /posts/{postId}

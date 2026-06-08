@@ -7,14 +7,15 @@ from sqlalchemy.orm import Session
 from app.database.session import get_db
 from app.models.user_profile_image import UserProfileImage
 from app.dependencies.auth import require_terms_accepted
-from app.dependencies.permissions import require_owner_or_admin, require_owner_or_admin_archived, require_post_owner
-from app.dependencies.pagination import PaginationParams
+from app.dependencies.permissions import require_owner_or_admin, require_owner_or_admin_archived, require_post_owner, require_admin_or_root
+from app.dependencies.pagination import PaginationParams, PageResponse
 from app.models.user import User
 from app.models.post import Post
 from app.schemas.post import (
     PostCreate, PostUpdate, PostOut,
     AcademicProjectCreate, SimplePostCreate, AnnouncementCreate,
     AcademicProjectDeadlineUpdate,
+    AdminPostSummaryOut,
 )
 from app.services import post_service
 
@@ -82,6 +83,31 @@ def create_announcement(
 ):
     post = post_service.create_announcement(db, user_id=current_user.id, data=data)
     return post_service.get_post(db, post.id)
+
+
+# ============================================================
+# GET /posts/
+# Lista todas las publicaciones del sistema (draft, published, archived)
+# en formato resumido. Solo admin o root.
+# Auth: Requerida (admin/root)
+# ============================================================
+@router.get("/", response_model=PageResponse[AdminPostSummaryOut])
+def list_all_posts_admin(
+    pagination: PaginationParams = Depends(),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin_or_root),
+):
+    items, total = post_service.list_all_posts_admin(
+        db,
+        page=pagination.page,
+        size=pagination.size,
+    )
+    return PageResponse.create(
+        items=items,
+        total=total,
+        page=pagination.page,
+        size=pagination.size,
+    )
 
 
 # ============================================================

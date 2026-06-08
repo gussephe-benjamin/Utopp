@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactDOM from "react-dom";
 import { ChevronLeft, ChevronRight, Minus, Plus, RotateCcw, X } from "lucide-react";
+import { buildCloudinaryUrl } from "../../../shared/lib/cloudinaryUrl";
 
 type ViewerImage = {
   url: string;
@@ -254,7 +255,7 @@ export function PostImageViewerModal({ images, initialIndex = 0, onClose }: Post
         onTouchEnd={handleTouchEnd}
       >
         <img
-          src={currentImage.url}
+          src={buildCloudinaryUrl(currentImage.url, "full")}
           alt={`Imagen ${index + 1}`}
           className={`max-h-full max-w-full select-none object-contain ${zoom > 1 ? "cursor-grab" : "cursor-zoom-in"} ${isDragging ? "cursor-grabbing" : ""}`}
           style={{

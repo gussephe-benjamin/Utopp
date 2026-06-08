@@ -2,6 +2,7 @@
 
 import { ProfileLink } from "../../profile/components/ProfileLink";
 import { TW_UTOPP_GRADIENT_BR } from "../../../shared/constants/brand";
+import { resolveAvatarUrl } from "../../../shared/lib/cloudinaryUrl";
 
 type UserAvatarProps = {
   userName?: string;
@@ -52,7 +53,8 @@ export function UserAvatar({
   profileImageUrl,
   currentUserId,
 }: UserAvatarProps) {
-  const avatarUrl = profileImageUrl ?? (userId ? localStorage.getItem(`avatar_${userId}`) : null);
+  const rawAvatarUrl = profileImageUrl ?? (userId ? localStorage.getItem(`avatar_${userId}`) : null);
+  const avatarUrl = resolveAvatarUrl(rawAvatarUrl);
   const initial = (userName ?? "U").charAt(0).toUpperCase();
 
   if (!userId) {

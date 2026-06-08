@@ -22,6 +22,7 @@ import { ProfilePostItem } from "../components/ProfilePostItem"
 import { BarChart3, FileText, Star, Users } from "lucide-react"
 import { INTERESTS } from "../../../constants/interests"
 import { TW_UTOPP_GRADIENT_R } from "../../../shared/constants/brand"
+import { resolveAvatarUrl } from "../../../shared/lib/cloudinaryUrl"
 
 interface OrganizationProfilePublicProps {
   user: ProfileUserData
@@ -120,7 +121,7 @@ export function OrganizationProfilePublic({
             <div className="relative h-28 w-28 rounded-full bg-white p-1 ring-4 ring-[#C026D3] shadow-lg md:h-32 md:w-32">
               <div className="h-full w-full overflow-hidden rounded-full bg-gray-50 flex items-center justify-center">
                 {avatarUrl ? (
-                  <img src={avatarUrl} alt="avatar" className="h-full w-full object-cover" />
+                  <img src={resolveAvatarUrl(avatarUrl) ?? avatarUrl} alt="avatar" className="h-full w-full object-cover" />
                 ) : (
                   <div className="text-4xl font-bold text-[#C026D3] select-none">
                     {avatarInitial}

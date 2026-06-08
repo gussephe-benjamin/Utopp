@@ -10,6 +10,7 @@ import { AuthRouteLayout } from "./features/auth/components/AuthRouteLayout"
 import TermsAcceptance from "./pages/TermsAcceptance"
 import TermsPublic from "./pages/TermsPublic"
 import PrivacyPublic from "./pages/PrivacyPublic"
+import AdminPostsPage from "./pages/AdminPostsPage"
 
 function App() {
   return (
@@ -46,6 +47,7 @@ function App() {
               </ProtectedRoute>
             }
           >
+            <Route path="admin/publicaciones" element={<AdminPostsPage />} />
             <Route path="*" element={null} />
           </Route>
 

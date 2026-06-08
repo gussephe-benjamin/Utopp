@@ -4,13 +4,14 @@ import { Home, Plus } from 'lucide-react'
 import PublicationWizard from '../components/PublicationWizard'
 import { getMe } from '../api/auth.api'
 import { getMyProfile, type UserProfileResponse } from '../api/users.api'
-import { useRole } from '../hooks/useRole'
+import { useRole, ROLE_ADMIN, ROLE_ROOT } from '../hooks/useRole'
 import Profile from '../pages/Profile'
 import { AppTopBar } from '../features/dashboard/components/AppTopBar'
 import { measureMenuAnchor, type MenuPopoverAnchor } from '../features/dashboard/popoverAnchor'
 import FeedModeResolver from '../features/feed/FeedModeResolver'
 import { AppLink } from '../shared/navigation/AppLink'
 import { TW_UTOPP_GRADIENT_BR } from '../shared/constants/brand'
+import { resolveAvatarUrl } from '../shared/lib/cloudinaryUrl'
 
 const FALLBACK_MENU_ANCHOR: MenuPopoverAnchor = { top: 64, right: 12, minWidth: 40 }
 
@@ -22,7 +23,7 @@ export default function DashboardLayout() {
   const navigate  = useNavigate()
   const location  = useLocation()
 
-  const { canCreate, allowedTypes } = useRole()
+  const { canCreate, allowedTypes, roleName } = useRole()
 
   useEffect(() => {
     getMe()
@@ -32,14 +33,11 @@ export default function DashboardLayout() {
       .catch(() => {})
   }, [navigate])
 
-  const [showWizard, setShowWizard]           = useState(false)
-  const [showOptionsModal] = useState(false)
+  const [showWizard, setShowWizard] = useState(false)
   const [showFeedFiltersSheet, setShowFeedFiltersSheet] = useState(false)
   const [feedCategoryFiltersActive, setFeedCategoryFiltersActive] = useState(false)
 
-  const accountMenuTriggerRef = useRef<HTMLAnchorElement>(null)
   const feedFiltersTriggerRef = useRef<HTMLButtonElement>(null)
-  const [, setAccountMenuAnchor] = useState<MenuPopoverAnchor | null>(null)
   const [filterPopoverAnchor, setFilterPopoverAnchor] = useState<MenuPopoverAnchor | null>(null)
 
   const onCategoryFiltersActiveChange = useCallback((active: boolean) => {
@@ -158,26 +156,10 @@ export default function DashboardLayout() {
     return () => mediaQuery.removeListener(handleBreakpointChange)
   }, [])
 
-  const syncAccountMenuAnchor = useCallback(() => {
-    const m = measureMenuAnchor(accountMenuTriggerRef.current)
-    if (m) setAccountMenuAnchor(m)
-  }, [])
-
   const syncFilterMenuAnchor = useCallback(() => {
     const m = measureMenuAnchor(feedFiltersTriggerRef.current)
     if (m) setFilterPopoverAnchor(m)
   }, [])
-
-  useLayoutEffect(() => {
-    if (!showOptionsModal) return
-    syncAccountMenuAnchor()
-    window.addEventListener('resize', syncAccountMenuAnchor)
-    window.addEventListener('scroll', syncAccountMenuAnchor, true)
-    return () => {
-      window.removeEventListener('resize', syncAccountMenuAnchor)
-      window.removeEventListener('scroll', syncAccountMenuAnchor, true)
-    }
-  }, [showOptionsModal, syncAccountMenuAnchor])
 
   useLayoutEffect(() => {
     if (!showFeedFiltersSheet) return
@@ -192,6 +174,7 @@ export default function DashboardLayout() {
 
   const displayName = userName || userEmail || 'Usuario'
   const initial     = displayName.charAt(0).toUpperCase()
+  const canAccessAdminPosts = roleName === ROLE_ADMIN || roleName === ROLE_ROOT
 
   return (
     <div className={`min-h-screen flex flex-col bg-gray-50 ${showWizard ? 'overflow-hidden' : ''}`}>
@@ -214,7 +197,7 @@ export default function DashboardLayout() {
         avatarInitial={initial}
         displayName={displayName}
         isProfileRoute={isProfileActive}
-        accountMenuTriggerRef={accountMenuTriggerRef}
+        canAccessAdminPosts={canAccessAdminPosts}
         feedFiltersTriggerRef={feedFiltersTriggerRef}
       />
 
@@ -287,7 +270,7 @@ export default function DashboardLayout() {
               >
                 {avatarUrl ? (
                   <img
-                    src={avatarUrl}
+                    src={resolveAvatarUrl(avatarUrl) ?? avatarUrl}
                     alt={displayName}
                     className="w-9 h-9 rounded-full object-cover border-2 border-white bg-white"
                   />

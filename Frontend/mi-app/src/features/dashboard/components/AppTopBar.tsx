@@ -1,11 +1,12 @@
 import type { RefObject } from "react";
-import { ListFilter, Plus } from "lucide-react";
+import { FileText, ListFilter, Plus } from "lucide-react";
 import { UtoppBrandMark } from "../../../shared/brand/UtoppBrandMark";
 import { AppLink } from "../../../shared/navigation/AppLink";
 import { EventSearchBar } from "../../feed/components/EventSearchBar";
 import {
   TW_UTOPP_GRADIENT_R,
 } from "../../../shared/constants/brand";
+import { resolveAvatarUrl } from "../../../shared/lib/cloudinaryUrl";
 
 // ─── Barra superior (dashboard): marca, crear, filtros (feed), avatar ───────
 
@@ -26,8 +27,8 @@ type AppTopBarProps = {
   displayName: string;
   /** Resalta avatar cuando la ruta es perfil */
   isProfileRoute: boolean;
-  /** Anclaje del avatar de perfil (popover estilo GitHub). */
-  accountMenuTriggerRef?: RefObject<HTMLAnchorElement | null>;
+  /** Enlace a publicaciones (admin/root). */
+  canAccessAdminPosts?: boolean;
   /** Anclaje del popover de filtros del feed. */
   feedFiltersTriggerRef?: RefObject<HTMLButtonElement | null>;
 };
@@ -42,7 +43,7 @@ export function AppTopBar({
   avatarInitial,
   displayName,
   isProfileRoute,
-  accountMenuTriggerRef,
+  canAccessAdminPosts = false,
   feedFiltersTriggerRef,
 }: AppTopBarProps) {
   return (
@@ -107,8 +108,18 @@ export function AppTopBar({
             </button>
           )}
 
+          {canAccessAdminPosts && (
+            <AppLink
+              to="/app/admin/publicaciones"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-gray-50 text-gray-600 transition-colors hover:bg-gray-100"
+              aria-label="Publicaciones (admin)"
+              title="Publicaciones (admin)"
+            >
+              <FileText className="h-5 w-5" strokeWidth={2} />
+            </AppLink>
+          )}
+
           <AppLink
-            ref={accountMenuTriggerRef}
             to="/app/perfil"
             className={`rounded-full p-[2px] shrink-0 transition-shadow bg-gradient-to-br from-blue-600 to-fuchsia-500 shadow-sm ${
               isProfileRoute
@@ -120,7 +131,7 @@ export function AppTopBar({
           >
             {avatarUrl ? (
               <img
-                src={avatarUrl}
+                src={resolveAvatarUrl(avatarUrl) ?? avatarUrl}
                 alt={displayName}
                 className="w-9 h-9 rounded-full object-cover border-2 border-white bg-white"
               />

@@ -30,6 +30,7 @@ import { formatShortDisplayName } from "../../feed/lib/display"
 import { EditProfileModal } from "../components/EditProfileModal"
 import { OrganizationsManagerModal } from "../components/OrganizationsManagerModal"
 import { INTERESTS } from "../../../constants/interests"
+import { resolveAvatarUrl, resolveOrgImageUrl } from "../../../shared/lib/cloudinaryUrl"
 
 interface StudentProfileSelfProps {
   user: ProfileUserData
@@ -162,7 +163,7 @@ export function StudentProfileSelf({
             <div className="relative h-28 w-28 rounded-full bg-white p-1 ring-4 ring-[#C026D3] shadow-lg md:h-32 md:w-32">
               <div className="h-full w-full overflow-hidden rounded-full bg-gray-50 flex items-center justify-center">
                 {avatarUrl ? (
-                  <img src={avatarUrl} alt="avatar" className="h-full w-full object-cover" />
+                  <img src={resolveAvatarUrl(avatarUrl) ?? avatarUrl} alt="avatar" className="h-full w-full object-cover" />
                 ) : (
                   <div className="text-4xl font-bold text-[#C026D3] select-none">
                     {avatarInitial}
@@ -343,7 +344,7 @@ export function StudentProfileSelf({
                     <div className="h-16 w-16 rounded-full bg-white p-0.5 border border-gray-100 shadow-sm transition-transform group-hover:scale-105 duration-200 flex items-center justify-center overflow-hidden">
                       {org.profile_image_url ? (
                         <img
-                          src={org.profile_image_url}
+                          src={resolveOrgImageUrl(org.profile_image_url) ?? org.profile_image_url}
                           alt={org.full_name ?? "org"}
                           className="h-full w-full object-cover rounded-full"
                         />

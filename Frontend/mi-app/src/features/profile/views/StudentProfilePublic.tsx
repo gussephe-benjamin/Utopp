@@ -6,6 +6,7 @@ import type { ProfileUserData } from "./types"
 import { TW_UTOPP_GRADIENT_R } from "../../../shared/constants/brand"
 import { formatShortDisplayName } from "../../feed/lib/display"
 import { ProfileMetricCard } from "../components/ProfileMetricCard"
+import { resolveAvatarUrl, resolveOrgImageUrl } from "../../../shared/lib/cloudinaryUrl"
 
 interface StudentProfilePublicProps {
   user: ProfileUserData
@@ -62,7 +63,7 @@ export function StudentProfilePublic({
               <div className="relative -mt-20 mb-4 md:-mt-24 md:mb-5 h-28 w-28 md:h-32 md:w-32 rounded-full bg-white p-1 ring-4 ring-[#C026D3] shadow-lg z-10">
             <div className="h-full w-full overflow-hidden rounded-full bg-gray-50 flex items-center justify-center">
               {avatarUrl ? (
-                <img src={avatarUrl} alt="avatar" className="h-full w-full object-cover" />
+                <img src={resolveAvatarUrl(avatarUrl) ?? avatarUrl} alt="avatar" className="h-full w-full object-cover" />
               ) : (
                 <div className="text-4xl font-bold text-[#C026D3] select-none">
                   {avatarInitial}
@@ -141,7 +142,7 @@ export function StudentProfilePublic({
                     <div className="h-20 w-20 rounded-full bg-white p-1 shadow-md transition-transform group-hover:scale-105 duration-200 flex items-center justify-center overflow-hidden">
                       {org.profile_image_url ? (
                         <img
-                          src={org.profile_image_url}
+                          src={resolveOrgImageUrl(org.profile_image_url) ?? org.profile_image_url}
                           alt={org.full_name ?? "org"}
                           className="h-full w-full object-cover rounded-full"
                         />

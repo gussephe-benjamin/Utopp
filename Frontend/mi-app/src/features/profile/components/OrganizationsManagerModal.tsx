@@ -3,6 +3,7 @@ import { X, Plus, Check, Search } from "lucide-react"
 import type { OrganizationSummary } from "../../../api/users.api"
 import { motion } from "framer-motion"
 import { ProfileLink } from "./ProfileLink"
+import { resolveOrgImageUrl } from "../../../shared/lib/cloudinaryUrl"
 
 interface OrganizationsManagerModalProps {
   followingOrganizations: OrganizationSummary[]
@@ -267,7 +268,7 @@ function OrgRow({
       <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-gray-100">
         {org.profile_image_url ? (
           <img
-            src={org.profile_image_url}
+            src={resolveOrgImageUrl(org.profile_image_url) ?? org.profile_image_url}
             alt={org.full_name ?? "org"}
             className="h-full w-full object-cover"
           />

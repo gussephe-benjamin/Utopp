@@ -12,6 +12,7 @@ from app.schemas.post import (
     PostCreate, PostUpdate,
     AcademicProjectCreate, SimplePostCreate, AnnouncementCreate,
     AcademicProjectDeadlineUpdate,
+    AdminPostSummaryOut,
 )
 from app.core.exceptions import NotFoundException, BadRequestException, ValidationException
 
@@ -338,3 +339,43 @@ def list_user_posts(
     ).all()
     
     return list(posts), total
+
+
+def list_all_posts_admin(
+    db: Session,
+    page: int = 1,
+    size: int = 20,
+) -> tuple[list[AdminPostSummaryOut], int]:
+    """Lista todas las publicaciones (cualquier status) en formato resumido para admin."""
+    total = db.scalar(select(func.count()).select_from(Post)) or 0
+    offset = (page - 1) * size
+
+    rows = db.execute(
+        select(
+            Post.id,
+            Post.user_id,
+            User.full_name,
+            User.email,
+            Post.created_at,
+            Post.title,
+            Post.description,
+        )
+        .join(User, Post.user_id == User.id)
+        .order_by(Post.created_at.desc())
+        .offset(offset)
+        .limit(size)
+    ).all()
+
+    items = [
+        AdminPostSummaryOut(
+            id=row.id,
+            user_id=row.user_id,
+            creator_name=row.full_name,
+            creator_email=row.email,
+            created_at=row.created_at,
+            title=row.title,
+            description=row.description,
+        )
+        for row in rows
+    ]
+    return items, total

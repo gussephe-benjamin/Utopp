@@ -1,7 +1,8 @@
-import { X, Settings, LogOut, ChevronRight } from 'lucide-react'
+import { X, Settings, LogOut, ChevronRight, FileText } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import type { MenuPopoverAnchor } from '../popoverAnchor'
 import { TW_UTOPP_GRADIENT_BR } from '../../../shared/constants/brand'
+import { resolveAvatarUrl } from '../../../shared/lib/cloudinaryUrl'
 
 type AccountOptionsSheetProps = {
   displayName: string
@@ -11,6 +12,9 @@ type AccountOptionsSheetProps = {
   anchor: MenuPopoverAnchor
   onClose: () => void
   onNavigateProfile: () => void
+  /** Muestra enlace al listado admin de publicaciones. */
+  canAccessAdminPosts?: boolean
+  onNavigateAdminPosts?: () => void
   /** Cierra sesión sin paso de confirmación. */
   onLogout: () => void
 }
@@ -23,6 +27,8 @@ export function AccountOptionsSheet({
   anchor,
   onClose,
   onNavigateProfile,
+  canAccessAdminPosts = false,
+  onNavigateAdminPosts,
   onLogout,
 }: AccountOptionsSheetProps) {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768)
@@ -86,7 +92,7 @@ export function AccountOptionsSheet({
           >
             <div className="flex items-center justify-start gap-2.5 min-w-0">
               {avatarUrl ? (
-                <img src={avatarUrl} alt="" className="w-8 h-8 rounded-lg object-cover shrink-0" aria-hidden />
+                <img src={resolveAvatarUrl(avatarUrl) ?? avatarUrl} alt="" className="w-8 h-8 rounded-lg object-cover shrink-0" aria-hidden />
               ) : (
                 <div className={`w-8 h-8 rounded-lg ${TW_UTOPP_GRADIENT_BR} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
                   {initial}
@@ -101,6 +107,16 @@ export function AccountOptionsSheet({
           </button>
 
           <div className="pl-2.5 pr-2 py-1">
+            {canAccessAdminPosts && onNavigateAdminPosts ? (
+              <button
+                type="button"
+                onClick={() => { onNavigateAdminPosts(); onClose() }}
+                className={menuRow}
+              >
+                <FileText className="w-4 h-4 text-gray-500 shrink-0" />
+                <span className="truncate">Publicaciones (admin)</span>
+              </button>
+            ) : null}
             <button
               type="button"
               title="Próximamente"

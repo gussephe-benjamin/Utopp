@@ -290,3 +290,14 @@ class PostListOut(BaseModel):
     
     class Config:
         from_attributes = True
+
+
+class AdminPostSummaryOut(BaseModel):
+    """Resumen mínimo de publicación para listado admin."""
+    id: int
+    user_id: int
+    creator_name: Optional[str] = None
+    creator_email: str
+    created_at: datetime
+    title: Optional[str] = None
+    description: str

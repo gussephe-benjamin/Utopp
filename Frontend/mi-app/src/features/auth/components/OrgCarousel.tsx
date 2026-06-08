@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { OrganizationSummary } from "../../../api/users.api";
 import { getOrgAvatarStyle } from "../../feed/lib/weeklyHighlightUtils";
+import { resolveOrgImageUrl } from "../../../shared/lib/cloudinaryUrl";
 
 type OrgCarouselProps = {
   organizations: OrganizationSummary[];
@@ -166,7 +167,7 @@ export function OrgCarousel({ organizations, loading }: OrgCarouselProps) {
         >
           {org.profile_image_url ? (
             <img
-              src={org.profile_image_url}
+              src={resolveOrgImageUrl(org.profile_image_url) ?? org.profile_image_url}
               alt=""
               aria-hidden
               className="h-11 w-11 shrink-0 rounded-full object-cover ring-2 ring-white/25"

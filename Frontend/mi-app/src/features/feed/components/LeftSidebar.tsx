@@ -2,6 +2,7 @@ import { UserCircle } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { INTERESTS } from "../../../constants/interests";
 import { AppLink } from "../../../shared/navigation/AppLink";
+import { resolveAvatarUrl } from "../../../shared/lib/cloudinaryUrl";
 
 /** Referencia estable: evita bucle infinito cuando `interests` no se pasa como prop. */
 const EMPTY_INTERESTS: string[] = []
@@ -80,7 +81,7 @@ export function LeftSidebar({
         <div className="h-24 bg-gradient-to-br from-blue-600 via-indigo-500 to-fuchsia-500 w-full relative">
            <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full border-4 border-white bg-gray-100 overflow-hidden shadow-sm">
              {avatarUrl ? (
-               <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
+               <img src={resolveAvatarUrl(avatarUrl) ?? avatarUrl} alt={displayName} className="w-full h-full object-cover" />
              ) : (
                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-violet-400 to-indigo-500">
                  <UserCircle className="w-10 h-10 text-white/80" />

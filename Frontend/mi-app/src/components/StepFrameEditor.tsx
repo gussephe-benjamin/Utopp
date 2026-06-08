@@ -6,6 +6,7 @@ import {
   aspectRatioValue,
   type PostAspectRatio,
 } from '../shared/lib/aspectRatio'
+import { buildCloudinaryUrl } from '../shared/lib/cloudinaryUrl'
 
 interface StepFrameEditorProps {
   images: WizardImage[]
@@ -214,7 +215,7 @@ function CropEditor({ img, aspectRatio, onUpdate }: CropEditorProps) {
         onTouchEnd={onTouchEnd}
       >
         <img
-          src={img.cloudinaryUrl!}
+          src={buildCloudinaryUrl(img.cloudinaryUrl!, "feed")}
           alt="Encuadre"
           className="w-full h-full object-cover pointer-events-none"
           draggable={false}

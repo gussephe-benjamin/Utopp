@@ -8,6 +8,8 @@ import { ProfileLink } from '../features/profile/components/ProfileLink'
 import { unsavePost } from '../api/saved-posts.api'
 import { POST_TYPE_LABELS, POST_TYPE_ICONS, SUBTYPE_LABELS } from '../types/post.types'
 import { TW_UTOPP_GRADIENT_BR, TW_UTOPP_GRADIENT_R } from '../shared/constants/brand'
+import { resolveAvatarUrl } from '../shared/lib/cloudinaryUrl'
+import { resolvePostImageUrl } from '../shared/lib/postImageUrl'
 
 interface PostImageOut {
   id: number
@@ -164,7 +166,7 @@ export default function PostDetailModal({ postId, onClose, onUnsaved }: PostDeta
     image.onerror = () => {
       if (!cancelled) setCurrentImageRatio(null)
     }
-    image.src = active.url
+    image.src = resolvePostImageUrl(active.url)
     return () => {
       cancelled = true
     }
@@ -249,7 +251,7 @@ export default function PostDetailModal({ postId, onClose, onUnsaved }: PostDeta
                 >
                   {post.user?.profile_image_url ? (
                     <img
-                      src={post.user.profile_image_url}
+                      src={resolveAvatarUrl(post.user.profile_image_url) ?? post.user.profile_image_url}
                       alt={userName}
                       className="w-9 h-9 rounded-full object-cover shrink-0 border border-gray-200"
                     />
@@ -290,7 +292,7 @@ export default function PostDetailModal({ postId, onClose, onUnsaved }: PostDeta
                     {sortedImages.map((img, i) => (
                       <img
                         key={i}
-                        src={img.url}
+                        src={resolvePostImageUrl(img.url)}
                         alt={`Imagen ${i + 1}`}
                         className="h-full object-cover"
                         style={{

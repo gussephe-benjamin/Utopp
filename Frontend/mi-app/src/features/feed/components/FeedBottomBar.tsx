@@ -15,6 +15,7 @@ import {
   TW_UTOPP_RING_PROFILE,
 } from "../../../shared/constants/brand";
 import { distributeSegmentSlots } from "../utils/distributeSegmentSlots";
+import { resolveAvatarUrl } from "../../../shared/lib/cloudinaryUrl";
 
 const PLUS_SIZE_PX = 40;
 const BAR_HORIZONTAL_PADDING_PX = 12;
@@ -193,7 +194,7 @@ export function FeedBottomBar({
         >
           {avatarUrl ? (
             <img
-              src={avatarUrl}
+              src={resolveAvatarUrl(avatarUrl) ?? avatarUrl}
               alt={displayName}
               className="w-9 h-9 rounded-full object-cover bg-gray-100"
             />

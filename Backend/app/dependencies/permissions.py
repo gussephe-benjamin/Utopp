@@ -12,6 +12,7 @@ from app.models.role import Role
 
 
 ADMIN_ROLE_NAME = "administrador"
+ROOT_ROLE_NAME = "root"
 
 
 def is_admin(user: User, db: Session) -> bool:
@@ -49,6 +50,20 @@ def require_admin(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Se requieren permisos de administrador"
+        )
+    return current_user
+
+
+def require_admin_or_root(
+    current_user: User = Depends(require_terms_accepted),
+    db: Session = Depends(get_db),
+) -> User:
+    """Requiere rol administrador o root."""
+    roles = get_user_roles(current_user, db)
+    if ADMIN_ROLE_NAME not in roles and ROOT_ROLE_NAME not in roles:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Se requieren permisos de administrador",
         )
     return current_user
 

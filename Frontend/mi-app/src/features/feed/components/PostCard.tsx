@@ -11,13 +11,15 @@ import {
   Star,
   X,
   Archive,
+  Trash2,
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { listImages, type PostImage } from "../../../api/post-images.api";
 import { listLinks } from "../../../api/post-links.api";
 import { savePost, unsavePost } from "../../../api/saved-posts.api";
-import { archivePost, unarchivePost } from "../../../api/posts.api";
+import { archivePost, deletePost, unarchivePost } from "../../../api/posts.api";
 import EditPostWizard from "../../../components/EditPostWizard";
+import { ConfirmModal } from "../../profile/components/ConfirmModal";
 import { POST_TYPE_LABELS, SUBTYPE_LABELS, type FeedPostOut } from "../../../types/post.types";
 import { getWordTruncatedText } from "../../../shared/lib/wordCount";
 import {
@@ -67,6 +69,8 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
   const touchDeltaXRef = useRef<number>(0);
   const didSwipeRef = useRef(false);
   const [archiving, setArchiving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const handleArchiveToggle = async () => {
     if (archiving) return;
@@ -89,6 +93,20 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
       console.error("Error archiving/unarchiving post:", e);
     } finally {
       setArchiving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (deleting) return;
+    setDeleting(true);
+    try {
+      await deletePost(post.id);
+      onDeleted?.(post.id);
+    } catch (e) {
+      console.error("Error deleting post:", e);
+    } finally {
+      setDeleting(false);
+      setConfirmDelete(false);
     }
   };
 
@@ -432,6 +450,17 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
 
   return (
     <>
+      <AnimatePresence>
+        {confirmDelete && (
+          <ConfirmModal
+            title="Eliminar publicación"
+            message="Esta acción es permanente. La publicación se eliminará por completo. ¿Estás seguro?"
+            onConfirm={handleDelete}
+            onCancel={() => setConfirmDelete(false)}
+            danger
+          />
+        )}
+      </AnimatePresence>
       {editingPost && (
         <EditPostWizard
           post={{
@@ -496,6 +525,21 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
                 <Archive className="h-3.5 w-3.5" />
               )}
               {post.status === "archived" ? "Desarchivar" : "Archivar"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirmDelete(true)}
+              disabled={deleting}
+              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-gray-600 transition-colors hover:bg-red-50 hover:text-red-500 active:scale-[0.98] disabled:opacity-60"
+              title="Eliminar publicación"
+              aria-label="Eliminar publicación"
+            >
+              {deleting ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Trash2 className="h-3.5 w-3.5" />
+              )}
+              Eliminar
             </button>
           </div>
         )}

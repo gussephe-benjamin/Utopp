@@ -13,6 +13,7 @@ import { formatDate, isExpired, timeRemaining } from '../shared/lib/date'
 import { getWordTruncatedText } from '../shared/lib/wordCount'
 import { PostImageViewerModal } from '../features/feed/components/PostImageViewerModal'
 import { UserAvatar } from '../features/feed/components/UserAvatar'
+import { buildCloudinaryUrl } from '../shared/lib/cloudinaryUrl'
 import { TYPE_GRADIENTS } from '../features/feed/constants/typeGradients'
 import { UTOPP_BRAND } from '../shared/constants/brand'
 import {
@@ -232,7 +233,7 @@ export default function Step5Preview({
                         style={{ width: `${100 / totalImages}%` }}
                       >
                         <img
-                          src={img.cloudinaryUrl!}
+                          src={buildCloudinaryUrl(img.cloudinaryUrl!, "feed")}
                           alt={`Imagen ${i + 1}`}
                           className="h-full w-full object-cover"
                           style={{

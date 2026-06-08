@@ -1,4 +1,5 @@
 import { Calendar, Target, Briefcase } from "lucide-react";
+import { resolveAvatarUrl } from "../../../shared/lib/cloudinaryUrl";
 
 type FeedQuickCreateProps = {
   avatarUrl?: string | null;
@@ -11,7 +12,7 @@ export function FeedQuickCreate({ avatarUrl, onOpenWizard }: FeedQuickCreateProp
       <div className="flex items-center gap-3 mb-4">
         <div className="w-11 h-11 rounded-full bg-gray-100 shrink-0 overflow-hidden border border-gray-50 shadow-sm">
           {avatarUrl ? (
-            <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+            <img src={resolveAvatarUrl(avatarUrl) ?? avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
           ) : (
             <img src="https://i.pravatar.cc/150?img=11" alt="Mock Avatar" className="w-full h-full object-cover" />
           )}

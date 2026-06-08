@@ -5,6 +5,7 @@ import { filterEventsByQuery } from "../features/feed/lib/eventSearch"
 import { formatDeadlineBadge } from "../features/feed/lib/weeklyHighlightUtils"
 import { ProfileLink } from "../features/profile/components/ProfileLink"
 import { TW_UTOPP_GRADIENT_R } from "../shared/constants/brand"
+import { resolveOrgImageUrl } from "../shared/lib/cloudinaryUrl"
 
 export default function ExplorePage() {
   const {
@@ -177,7 +178,7 @@ export default function ExplorePage() {
                     >
                       {org.profile_image_url ? (
                         <img
-                          src={org.profile_image_url}
+                          src={resolveOrgImageUrl(org.profile_image_url) ?? org.profile_image_url}
                           alt={org.full_name ?? "Organización"}
                           className="h-10 w-10 rounded-full border border-gray-100 object-cover shadow-sm"
                         />

@@ -4,6 +4,7 @@ import { ProfileLink } from "../../profile/components/ProfileLink"
 import type { OrganizationSummary } from "../../../api/users.api"
 import { getOrgAvatarStyle } from "../lib/weeklyHighlightUtils"
 import { WEEKLY_ORGS_TITLE } from "../constants/weeklyHighlights"
+import { resolveOrgImageUrl } from "../../../shared/lib/cloudinaryUrl"
 
 type WeeklyOrgsWidgetProps = {
   organizations: OrganizationSummary[]
@@ -73,7 +74,7 @@ export function WeeklyOrgsWidget({
                   >
                     {org.profile_image_url ? (
                       <img
-                        src={org.profile_image_url}
+                        src={resolveOrgImageUrl(org.profile_image_url) ?? org.profile_image_url}
                         alt={org.full_name ?? "Organización"}
                         className="h-9 w-9 rounded-full border border-gray-100 object-cover shadow-sm"
                       />
