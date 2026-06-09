@@ -1,5 +1,5 @@
 import type { RefObject } from "react";
-import { FileText, ListFilter, Plus } from "lucide-react";
+import { ListFilter, Plus, Shield } from "lucide-react";
 import { UtoppBrandMark } from "../../../shared/brand/UtoppBrandMark";
 import { AppLink } from "../../../shared/navigation/AppLink";
 import { EventSearchBar } from "../../feed/components/EventSearchBar";
@@ -27,8 +27,8 @@ type AppTopBarProps = {
   displayName: string;
   /** Resalta avatar cuando la ruta es perfil */
   isProfileRoute: boolean;
-  /** Enlace a publicaciones (admin/root). */
-  canAccessAdminPosts?: boolean;
+  /** Enlace al panel de administración (admin/root). */
+  canAccessAdmin?: boolean;
   /** Anclaje del popover de filtros del feed. */
   feedFiltersTriggerRef?: RefObject<HTMLButtonElement | null>;
 };
@@ -43,7 +43,7 @@ export function AppTopBar({
   avatarInitial,
   displayName,
   isProfileRoute,
-  canAccessAdminPosts = false,
+  canAccessAdmin = false,
   feedFiltersTriggerRef,
 }: AppTopBarProps) {
   return (
@@ -108,14 +108,14 @@ export function AppTopBar({
             </button>
           )}
 
-          {canAccessAdminPosts && (
+          {canAccessAdmin && (
             <AppLink
-              to="/app/admin/publicaciones"
+              to="/app/admin"
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-gray-50 text-gray-600 transition-colors hover:bg-gray-100"
-              aria-label="Publicaciones (admin)"
-              title="Publicaciones (admin)"
+              aria-label="Panel de administración"
+              title="Panel de administración"
             >
-              <FileText className="h-5 w-5" strokeWidth={2} />
+              <Shield className="h-5 w-5" strokeWidth={2} />
             </AppLink>
           )}
 

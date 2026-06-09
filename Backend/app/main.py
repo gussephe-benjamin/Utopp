@@ -31,6 +31,7 @@ from app.routers import (
     saved_posts,
     participants,
     roles,
+    admin,
 )
 
 
@@ -137,4 +138,5 @@ app.include_router(participants.router, tags=["participants"])
 # ADMINISTRACIÓN
 # ═══════════════════════════════════════════════════════════
 app.include_router(roles.router, prefix="/roles", tags=["roles"])
+app.include_router(admin.router, prefix="/admin", tags=["admin"])
 

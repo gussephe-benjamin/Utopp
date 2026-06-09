@@ -16,6 +16,13 @@ class TermsCurrentOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class LegalUpdateIn(BaseModel):
+    """Actualiza en sitio el contenido del documento legal activo."""
+
+    content: str = Field(..., min_length=1)
+    title: str | None = Field(default=None, max_length=255)
+
+
 class AcceptTermsIn(BaseModel):
     document_id: int = Field(..., ge=1)
 

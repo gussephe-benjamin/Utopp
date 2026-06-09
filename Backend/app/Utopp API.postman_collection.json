@@ -415,9 +415,65 @@
             "description": "Mismo `POST /legal/accept` con cuerpo mínimo legacy: solo `document_id` igual al id vigente de términos."
           },
           "response": []
+        },
+        {
+          "name": "Update terms (admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"content\": \"# Términos y condiciones\\n\\nContenido actualizado...\",\n    \"title\": \"Términos y condiciones\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/legal/terms",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "legal",
+                "terms"
+              ]
+            },
+            "description": "PUT /legal/terms — Actualiza **en sitio** el contenido de los Términos vigentes (mantiene el mismo `id`, no fuerza re-aceptación). Body: `content` (Markdown, requerido) y `title` (opcional). Requiere Bearer con rol **administrador o root**. Devuelve el documento actualizado."
+          },
+          "response": []
+        },
+        {
+          "name": "Update privacy (admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"content\": \"# Política de privacidad\\n\\nContenido actualizado...\",\n    \"title\": \"Política de datos y privacidad\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/legal/privacy",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "legal",
+                "privacy"
+              ]
+            },
+            "description": "PUT /legal/privacy — Actualiza **en sitio** el contenido de la Política de privacidad vigente (mantiene el mismo `id`). Body: `content` (Markdown, requerido) y `title` (opcional). Requiere Bearer con rol **administrador o root**. Devuelve el documento actualizado."
+          },
+          "response": []
         }
       ],
-      "description": "Documentos legales (Markdown servido desde BD, sincronizado desde `app/legal/*.md` al arranque). Ejecutar **Terms** y **Privacy** antes de **Register** o de **Accept** para rellenar `terms_document_id` y `privacy_document_id`."
+      "description": "Documentos legales (Markdown servido desde BD, sincronizado desde `app/legal/*.md` al arranque). Ejecutar **Terms** y **Privacy** antes de **Register** o de **Accept** para rellenar `terms_document_id` y `privacy_document_id`. La edición en sitio (`PUT /legal/terms` y `PUT /legal/privacy`) requiere rol administrador o root."
     },
     {
       "name": "Onboarding",
@@ -2334,7 +2390,187 @@
           "response": []
         }
       ],
-      "description": "Gestión de roles del sistema. Los roles se crean únicamente desde `/setup/ensure-default-roles`. Todos los endpoints requieren autenticación.\n\nPara asignar un rol se usa el **identifier numérico fijo** del rol en la URL (no el `id` interno):\n| identifier | Rol |\n|---|---|\n| 1 | `estudiante` |\n| 2 | `organización estudiantil` |\n| 3 | `oficina` |\n| 4 | `administrador` |\n| 5 | `root` |\n\nLas respuestas de roles en contexto de usuario incluyen `identifier`, `role_name` y `user_email`."
+      "description": "Gestión de roles del sistema. Los roles se crean únicamente desde `/setup/ensure-default-roles`.\n\n**Permisos:** las mutaciones (`POST /roles/`, `POST /roles/users/{id}/roles/{identifier}`, `DELETE /roles/users/{id}/roles/{identifier}`) requieren rol **administrador o root**. Las lecturas (`GET /roles/`, `GET /roles/me`, `GET /roles/by-email`, `GET /roles/users/{id}/roles`) solo requieren autenticación.\n\nPara asignar un rol se usa el **identifier numérico fijo** del rol en la URL (no el `id` interno):\n| identifier | Rol |\n|---|---|\n| 1 | `estudiante` |\n| 2 | `organización estudiantil` |\n| 3 | `oficina` |\n| 4 | `administrador` |\n| 5 | `root` |\n\nLas respuestas de roles en contexto de usuario incluyen `identifier`, `role_name` y `user_email`."
+    },
+    {
+      "name": "Administración",
+      "item": [
+        {
+          "name": "Admin Me — soy admin?",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "me"
+              ]
+            },
+            "description": "GET /admin/me — Devuelve la identidad y estado administrativo del usuario autenticado: `user_id`, `email`, `full_name`, `is_admin`, `is_root` y `roles`. Cualquier usuario autenticado puede llamarla (un no-admin recibe `is_admin=false`, no un 403). Requiere Bearer."
+          },
+          "response": []
+        },
+        {
+          "name": "List admins",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/admins",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "admins"
+              ]
+            },
+            "description": "GET /admin/admins — Lista los usuarios con rol **administrador** o **root**. Cada item incluye `id`, `email`, `full_name`, `roles`, `posts_count`, etc. Requiere Bearer con rol administrador o root (403 en caso contrario)."
+          },
+          "response": []
+        },
+        {
+          "name": "List users (paginado)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/users?role=all&q=&page=1&size=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "role",
+                  "value": "all",
+                  "description": "Filtra por rol: estudiante | organización estudiantil | oficina | all (o vacío = todos)."
+                },
+                {
+                  "key": "q",
+                  "value": "",
+                  "description": "Busca por nombre o correo."
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "GET /admin/users — Lista paginada de usuarios (`PageResponse`) con filtros `role` y `q`. Requiere Bearer con rol administrador o root."
+          },
+          "response": []
+        },
+        {
+          "name": "Get user detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/users/{{user_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "{{user_id}}"
+              ]
+            },
+            "description": "GET /admin/users/{user_id} — Detalle completo del usuario con sus roles. Requiere Bearer con rol administrador o root. 404 si no existe."
+          },
+          "response": []
+        },
+        {
+          "name": "Create user",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"nuevo@utec.edu.pe\",\n    \"password\": \"password123\",\n    \"full_name\": \"Nombre Apellido\",\n    \"role\": \"estudiante\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/users",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "users"
+              ]
+            },
+            "description": "POST /admin/users — Crea un usuario y le asigna el rol indicado (`role`: estudiante | organización estudiantil | oficina | administrador | root). Body: `email`, `password` (mín. 6), `full_name` (opcional), `role` (opcional, por defecto estudiante). Requiere Bearer con rol administrador o root. 409 si el correo ya existe."
+          },
+          "response": []
+        },
+        {
+          "name": "Update user",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"full_name\": \"Nombre Editado\",\n    \"career\": \"Ingeniería\",\n    \"cycle\": 5,\n    \"description\": \"Descripción\",\n    \"contacts\": { \"instagram\": \"@cuenta\" },\n    \"interests\": [\"tech\"],\n    \"availability\": 10\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/users/{{user_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "{{user_id}}"
+              ]
+            },
+            "description": "PATCH /admin/users/{user_id} — Actualiza campos editables del usuario (todos opcionales): `email`, `full_name`, `career`, `cycle`, `description`, `contacts`, `interests`, `availability`. Requiere Bearer con rol administrador o root."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete user",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/users/{{user_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "{{user_id}}"
+              ]
+            },
+            "description": "DELETE /admin/users/{user_id} — Elimina al usuario y sus datos asociados (posts, follows, roles, imágenes, guardados, participaciones). No puedes eliminar tu propia cuenta (400). Requiere Bearer con rol administrador o root."
+          },
+          "response": []
+        }
+      ],
+      "description": "Panel de administración: identificación del admin (`GET /admin/me`, `GET /admin/admins`) y CRUD de usuarios (`/admin/users`). Salvo `GET /admin/me` (cualquier usuario autenticado), todos requieren rol **administrador o root**."
     },
     {
       "name": "Setup",

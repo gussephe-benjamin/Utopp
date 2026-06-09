@@ -49,3 +49,27 @@ export async function acceptLegal(params: {
 export async function acceptTerms(documentId: number): Promise<AcceptLegalResponse> {
   return acceptLegal({ documentId })
 }
+
+// ─── Edición (admin/root) ────────────────────────────────
+
+/**
+ * PUT /legal/terms
+ * Actualiza en sitio el contenido de los Términos vigentes. Auth: admin/root.
+ */
+export async function updateTerms(params: { content: string; title?: string | null }): Promise<TermsCurrent> {
+  const body: Record<string, string> = { content: params.content }
+  if (params.title != null) body.title = params.title
+  const { data } = await api.put<TermsCurrent>("/legal/terms", body)
+  return data
+}
+
+/**
+ * PUT /legal/privacy
+ * Actualiza en sitio el contenido de la Política de privacidad vigente. Auth: admin/root.
+ */
+export async function updatePrivacy(params: { content: string; title?: string | null }): Promise<TermsCurrent> {
+  const body: Record<string, string> = { content: params.content }
+  if (params.title != null) body.title = params.title
+  const { data } = await api.put<TermsCurrent>("/legal/privacy", body)
+  return data
+}

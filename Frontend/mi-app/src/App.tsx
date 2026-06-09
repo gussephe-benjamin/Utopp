@@ -10,6 +10,13 @@ import { AuthRouteLayout } from "./features/auth/components/AuthRouteLayout"
 import TermsAcceptance from "./pages/TermsAcceptance"
 import TermsPublic from "./pages/TermsPublic"
 import PrivacyPublic from "./pages/PrivacyPublic"
+import { AdminGuard } from "./features/admin/AdminGuard"
+import AdminLayout from "./features/admin/components/AdminLayout"
+import AdminOverviewPage from "./pages/admin/AdminOverviewPage"
+import AdminStudentsPage from "./pages/admin/AdminStudentsPage"
+import AdminOrganizationsPage from "./pages/admin/AdminOrganizationsPage"
+import AdminRolesPage from "./pages/admin/AdminRolesPage"
+import AdminTermsPage from "./pages/admin/AdminTermsPage"
 import AdminPostsPage from "./pages/AdminPostsPage"
 
 function App() {
@@ -47,7 +54,21 @@ function App() {
               </ProtectedRoute>
             }
           >
-            <Route path="admin/publicaciones" element={<AdminPostsPage />} />
+            <Route
+              path="admin"
+              element={
+                <AdminGuard>
+                  <AdminLayout />
+                </AdminGuard>
+              }
+            >
+              <Route index element={<AdminOverviewPage />} />
+              <Route path="alumnos" element={<AdminStudentsPage />} />
+              <Route path="organizaciones" element={<AdminOrganizationsPage />} />
+              <Route path="publicaciones" element={<AdminPostsPage />} />
+              <Route path="roles" element={<AdminRolesPage />} />
+              <Route path="terminos" element={<AdminTermsPage />} />
+            </Route>
             <Route path="*" element={null} />
           </Route>
 

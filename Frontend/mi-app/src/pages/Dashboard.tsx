@@ -1,6 +1,6 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { Home, Plus } from 'lucide-react'
+import { Home, Plus, Shield } from 'lucide-react'
 import PublicationWizard from '../components/PublicationWizard'
 import { getMe } from '../api/auth.api'
 import { getMyProfile, type UserProfileResponse } from '../api/users.api'
@@ -117,6 +117,7 @@ export default function DashboardLayout() {
 
   const isFeedActive    = location.pathname === '/app/inicio'
   const isProfileActive = location.pathname.startsWith('/app/perfil')
+  const isAdminActive   = location.pathname.startsWith('/app/admin')
   const profileViewIdMatch = location.pathname.match(/^\/app\/perfil\/(\d+)$/)
   const profileViewId = profileViewIdMatch ? Number(profileViewIdMatch[1]) : undefined
 
@@ -174,7 +175,7 @@ export default function DashboardLayout() {
 
   const displayName = userName || userEmail || 'Usuario'
   const initial     = displayName.charAt(0).toUpperCase()
-  const canAccessAdminPosts = roleName === ROLE_ADMIN || roleName === ROLE_ROOT
+  const canAccessAdmin = roleName === ROLE_ADMIN || roleName === ROLE_ROOT
 
   return (
     <div className={`min-h-screen flex flex-col bg-gray-50 ${showWizard ? 'overflow-hidden' : ''}`}>
@@ -197,7 +198,7 @@ export default function DashboardLayout() {
         avatarInitial={initial}
         displayName={displayName}
         isProfileRoute={isProfileActive}
-        canAccessAdminPosts={canAccessAdminPosts}
+        canAccessAdmin={canAccessAdmin}
         feedFiltersTriggerRef={feedFiltersTriggerRef}
       />
 
@@ -226,7 +227,7 @@ export default function DashboardLayout() {
 
       {/* Barra de Navegación Inferior (Móvil) */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/95 backdrop-blur-md border-t border-gray-100/80 shadow-[0_-4px_20px_rgba(0,0,0,0.03)] z-50 px-4">
-        <div className="grid h-full grid-cols-3 items-center max-w-[320px] mx-auto justify-items-center">
+        <div className={`grid h-full items-center mx-auto justify-items-center ${canAccessAdmin ? 'grid-cols-4 max-w-[420px]' : 'grid-cols-3 max-w-[320px]'}`}>
           <AppLink
             to="/app/inicio"
             onClick={(event) => {
@@ -282,6 +283,18 @@ export default function DashboardLayout() {
               </div>
             </div>
           </AppLink>
+
+          {canAccessAdmin && (
+            <AppLink
+              to="/app/admin"
+              className="flex flex-col items-center justify-center w-12 h-12 active:scale-95 transition-transform"
+              aria-label="Panel de administración"
+            >
+              <div className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${isAdminActive ? 'bg-[#f3efff] text-[#5f38ff] shadow-sm' : 'bg-transparent text-gray-400'}`}>
+                <Shield className="w-5.5 h-5.5 stroke-[2]" />
+              </div>
+            </AppLink>
+          )}
         </div>
       </div>
 

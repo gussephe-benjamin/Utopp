@@ -162,6 +162,54 @@ def needs_privacy_consent(db: Session, user_id: int) -> bool:
     return not user_accepted_active_document(db, user_id, doc)
 
 
+def update_active_legal_document_in_place(
+    db: Session,
+    slug: str,
+    *,
+    content: str,
+    title: str | None = None,
+) -> LegalDocument:
+    """
+    Actualiza en sitio el documento legal activo de un slug (terms/privacy).
+
+    Mantiene el mismo ``id`` (no invalida aceptaciones previas ni fuerza
+    re-consentimiento). Refresca ``content``, ``content_sha256``, opcionalmente
+    ``title``, y actualiza ``published_at``/``effective_at`` a la hora UTC actual.
+
+    Si no existe documento activo para el slug, crea uno nuevo.
+    """
+    now = datetime.now(timezone.utc)
+    h = _hash_content(content)
+    active = get_active_legal_document(db, slug)
+
+    if active is None:
+        doc = LegalDocument(
+            slug=slug,
+            version=_LIVE_VERSION,
+            title=title or _slug_title(slug),
+            content=content,
+            content_sha256=h,
+            is_active=True,
+            published_at=now,
+            effective_at=now,
+        )
+        db.add(doc)
+        db.commit()
+        db.refresh(doc)
+        return doc
+
+    active.content = content
+    active.content_sha256 = h
+    if title is not None:
+        active.title = title
+    active.version = _LIVE_VERSION
+    active.published_at = now
+    active.effective_at = now
+    db.commit()
+    db.refresh(active)
+    return active
+
+
 def publish_terms_from_markdown(
     db: Session,
     *,

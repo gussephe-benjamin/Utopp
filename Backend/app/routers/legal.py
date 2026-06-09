@@ -5,8 +5,15 @@ from sqlalchemy.orm import Session
 
 from app.database.session import get_db
 from app.dependencies.auth import get_current_user
+from app.dependencies.permissions import require_admin_or_root
 from app.models.user import User
-from app.schemas.legal import AcceptLegalIn, AcceptLegalOut, AcceptedPartOut, TermsCurrentOut
+from app.schemas.legal import (
+    AcceptLegalIn,
+    AcceptLegalOut,
+    AcceptedPartOut,
+    LegalUpdateIn,
+    TermsCurrentOut,
+)
 from app.services import legal_service
 
 router = APIRouter()
@@ -41,6 +48,36 @@ def get_current_privacy(db: Session = Depends(get_db)):
             detail="No hay política de privacidad publicada",
         )
     return doc
+
+
+@router.put("/terms", response_model=TermsCurrentOut)
+def update_current_terms(
+    body: LegalUpdateIn,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_admin_or_root),
+):
+    """Actualiza en sitio el contenido de los Términos vigentes (admin/root)."""
+    return legal_service.update_active_legal_document_in_place(
+        db,
+        legal_service.TERMS_SLUG,
+        content=body.content,
+        title=body.title,
+    )
+
+
+@router.put("/privacy", response_model=TermsCurrentOut)
+def update_current_privacy(
+    body: LegalUpdateIn,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_admin_or_root),
+):
+    """Actualiza en sitio el contenido de la Política de privacidad vigente (admin/root)."""
+    return legal_service.update_active_legal_document_in_place(
+        db,
+        legal_service.PRIVACY_SLUG,
+        content=body.content,
+        title=body.title,
+    )
 
 
 @router.post("/accept", response_model=AcceptLegalOut)

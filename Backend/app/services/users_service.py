@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import select, func
+from sqlalchemy import select, func, delete, or_
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
@@ -97,6 +97,180 @@ def get_students(db: Session) -> list[User]:
     student_ids = users_with_student_role.union(users_without_role)
     stmt = select(User).where(User.id.in_(student_ids)).order_by(User.id.asc())
     return list(db.scalars(stmt).all())
+
+
+# ============================================================
+# Administración de usuarios (dashboard admin)
+# ============================================================
+def _admin_users_base_query(role_name: str | None, q: str | None):
+    """Construye un SELECT de ids de usuario aplicando filtros de rol y búsqueda."""
+    stmt = select(User.id)
+
+    if role_name:
+        if role_name == role_service.STUDENT_ROLE_NAME:
+            # Estudiantes explícitos + usuarios legacy sin ningún rol
+            with_role = (
+                select(User.id)
+                .join(UserRole, UserRole.user_id == User.id)
+                .join(Role, Role.id == UserRole.role_id)
+                .where(Role.name == role_service.STUDENT_ROLE_NAME)
+            )
+            without_role = (
+                select(User.id)
+                .outerjoin(UserRole, UserRole.user_id == User.id)
+                .where(UserRole.user_id.is_(None))
+            )
+            allowed_ids = with_role.union(without_role).subquery()
+            stmt = stmt.where(User.id.in_(select(allowed_ids)))
+        else:
+            role_ids = (
+                select(User.id)
+                .join(UserRole, UserRole.user_id == User.id)
+                .join(Role, Role.id == UserRole.role_id)
+                .where(Role.name == role_name)
+            )
+            stmt = stmt.where(User.id.in_(role_ids))
+
+    if q:
+        like = f"%{q.strip().lower()}%"
+        stmt = stmt.where(
+            or_(
+                func.lower(User.full_name).like(like),
+                func.lower(User.email).like(like),
+            )
+        )
+
+    return stmt
+
+
+def admin_count_users(db: Session, role_name: str | None = None, q: str | None = None) -> int:
+    """Cuenta usuarios que cumplen los filtros del panel admin."""
+    base = _admin_users_base_query(role_name, q).subquery()
+    return db.scalar(select(func.count()).select_from(base)) or 0
+
+
+def admin_list_users(
+    db: Session,
+    *,
+    role_name: str | None = None,
+    q: str | None = None,
+    offset: int = 0,
+    limit: int = 20,
+) -> list[User]:
+    """Lista paginada de usuarios para el panel admin."""
+    ids_subq = _admin_users_base_query(role_name, q).subquery()
+    stmt = (
+        select(User)
+        .where(User.id.in_(select(ids_subq)))
+        .order_by(User.id.desc())
+        .offset(offset)
+        .limit(limit)
+    )
+    return list(db.scalars(stmt).all())
+
+
+def list_admin_users(db: Session) -> list[User]:
+    """Retorna los usuarios con rol administrador o root."""
+    admin_ids = (
+        select(User.id)
+        .join(UserRole, UserRole.user_id == User.id)
+        .join(Role, Role.id == UserRole.role_id)
+        .where(Role.name.in_([role_service.ADMIN_ROLE_NAME, role_service.ROOT_ROLE_NAME]))
+    )
+    stmt = select(User).where(User.id.in_(admin_ids)).order_by(User.id.asc())
+    return list(db.scalars(stmt).all())
+
+
+def admin_create_user(
+    db: Session,
+    *,
+    email: str,
+    password: str,
+    full_name: str | None = None,
+    role_name: str | None = None,
+) -> User:
+    """Crea un usuario desde el panel admin y le asigna el rol indicado.
+
+    ``create_user`` ya asigna el rol estudiante por defecto; si se pide otro
+    rol, se reemplaza por el indicado (exclusividad de rol).
+    """
+    existing = get_user_by_email(db, email)
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Ya existe un usuario con ese correo",
+        )
+
+    user = create_user(db, email=email, password=password, full_name=full_name)
+
+    if role_name and role_name != role_service.STUDENT_ROLE_NAME:
+        role = role_service.get_role_by_name(db, role_name)
+        if not role:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"No existe el rol '{role_name}'",
+            )
+        role_service.replace_user_role(db, user.id, role)
+        db.refresh(user)
+
+    return user
+
+
+def admin_update_user(db: Session, user: User, data: dict) -> User:
+    """Actualiza campos editables de un usuario desde el panel admin."""
+    if "email" in data and data["email"]:
+        new_email = data["email"]
+        if new_email.lower() != (user.email or "").lower():
+            clash = get_user_by_email(db, new_email)
+            if clash and clash.id != user.id:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="Ya existe un usuario con ese correo",
+                )
+
+    for field, value in data.items():
+        setattr(user, field, value)
+
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+def admin_delete_user(db: Session, user: User) -> None:
+    """Elimina un usuario y todas sus filas dependientes en orden seguro."""
+    from app.models.post import Post
+    from app.models.post_image import PostImage
+    from app.models.post_link import PostLink
+    from app.models.event_participant import PostParticipant
+    from app.models.saved_post import SavedPost
+    from app.models.user_profile_image import UserProfileImage
+    from app.models.follow import Follow
+    from app.models.legal import TermsAcceptance
+
+    user_id = user.id
+
+    post_ids = list(db.scalars(select(Post.id).where(Post.user_id == user_id)).all())
+
+    if post_ids:
+        db.execute(delete(PostImage).where(PostImage.post_id.in_(post_ids)))
+        db.execute(delete(PostLink).where(PostLink.post_id.in_(post_ids)))
+        db.execute(delete(PostParticipant).where(PostParticipant.post_id.in_(post_ids)))
+        db.execute(delete(SavedPost).where(SavedPost.post_id.in_(post_ids)))
+        db.execute(delete(Post).where(Post.id.in_(post_ids)))
+
+    db.execute(delete(SavedPost).where(SavedPost.user_id == user_id))
+    db.execute(delete(PostParticipant).where(PostParticipant.user_id == user_id))
+    db.execute(delete(UserProfileImage).where(UserProfileImage.user_id == user_id))
+    db.execute(
+        delete(Follow).where(
+            or_(Follow.follower_id == user_id, Follow.following_id == user_id)
+        )
+    )
+    db.execute(delete(TermsAcceptance).where(TermsAcceptance.user_id == user_id))
+    db.execute(delete(UserRole).where(UserRole.user_id == user_id))
+
+    db.delete(user)
+    db.commit()
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")

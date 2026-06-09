@@ -16,16 +16,19 @@ ROOT_ROLE_NAME = "root"
 
 
 def is_admin(user: User, db: Session) -> bool:
-    """Verifica si el usuario tiene rol de admin."""
-    admin_role = db.query(Role).filter(Role.name == ADMIN_ROLE_NAME).first()
-    if not admin_role:
+    """Verifica si el usuario tiene rol de admin o root."""
+    privileged_roles = db.query(Role).filter(
+        Role.name.in_([ADMIN_ROLE_NAME, ROOT_ROLE_NAME])
+    ).all()
+    if not privileged_roles:
         return False
-    
+
+    role_ids = [r.id for r in privileged_roles]
     user_role = db.query(UserRole).filter(
         UserRole.user_id == user.id,
-        UserRole.role_id == admin_role.id
+        UserRole.role_id.in_(role_ids),
     ).first()
-    
+
     return user_role is not None
 
 

@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.database.session import get_db
 from app.dependencies.auth import require_terms_accepted
+from app.dependencies.permissions import require_admin_or_root
 from app.models.user import User
 from app.schemas.role import RoleCreate, RoleOut, RoleWithUserOut, UserRoleOut
 from app.services import role_service
@@ -87,13 +88,13 @@ def list_roles(
 # POST /roles
 # Crea un rol nuevo y le asigna un identifier válido.
 # Auth: Requerida
-# Permisos: Cualquier usuario autenticado
+# Permisos: Administrador o root
 # ============================================================
 @router.post("/", response_model=RoleOut, status_code=status.HTTP_201_CREATED)
 def create_role(
     data: RoleCreate,
     db: Session = Depends(get_db),
-    _: User = Depends(require_terms_accepted),
+    _: User = Depends(require_admin_or_root),
 ):
     return role_service.create_role(db, data)
 
@@ -102,7 +103,7 @@ def create_role(
 # POST /roles/users/{user_id}/roles/{role_identifier}
 # Asigna un rol existente a un usuario usando el identifier numérico del rol.
 # Auth: Requerida
-# Permisos: Cualquier usuario autenticado
+# Permisos: Administrador o root
 # ============================================================
 @router.post(
     "/users/{user_id}/roles/{role_identifier}",
@@ -113,7 +114,7 @@ def assign_role_to_user(
     user_id: int,
     role_identifier: int,
     db: Session = Depends(get_db),
-    _: User = Depends(require_terms_accepted),
+    _: User = Depends(require_admin_or_root),
 ):
     user = get_user_by_id(db, user_id)
     if not user:
@@ -139,14 +140,14 @@ def assign_role_to_user(
 # DELETE /roles/users/{user_id}/roles/{role_identifier}
 # Quita un rol asignado a un usuario usando el identifier numérico del rol.
 # Auth: Requerida
-# Permisos: Cualquier usuario autenticado
+# Permisos: Administrador o root
 # ============================================================
 @router.delete("/users/{user_id}/roles/{role_identifier}", status_code=status.HTTP_204_NO_CONTENT)
 def remove_role_from_user(
     user_id: int,
     role_identifier: int,
     db: Session = Depends(get_db),
-    _: User = Depends(require_terms_accepted),
+    _: User = Depends(require_admin_or_root),
 ):
     user = get_user_by_id(db, user_id)
     if not user:

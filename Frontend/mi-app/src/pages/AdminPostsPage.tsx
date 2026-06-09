@@ -1,6 +1,8 @@
-import { ChevronLeft, ChevronRight } from "lucide-react"
-import { AppLink } from "../shared/navigation/AppLink"
+import { useState } from "react"
+import { ChevronLeft, ChevronRight, Trash2 } from "lucide-react"
 import { useAdminPosts } from "../features/admin/hooks/useAdminPosts"
+import { deletePost, type AdminPostSummary } from "../api/posts.api"
+import { ConfirmModal } from "../features/profile/components/ConfirmModal"
 
 function formatDate(iso: string): string {
   return new Intl.DateTimeFormat("es-PE", {
@@ -18,23 +20,32 @@ function truncate(text: string, max = 120): string {
 }
 
 export default function AdminPostsPage() {
-  const { items, total, page, hasNext, hasPrev, loading, error, nextPage, prevPage } = useAdminPosts()
+  const { items, total, page, hasNext, hasPrev, loading, error, nextPage, prevPage, loadPage } =
+    useAdminPosts()
+
+  const [toDelete, setToDelete] = useState<AdminPostSummary | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+
+  async function confirmDelete() {
+    if (!toDelete) return
+    setDeleteError(null)
+    try {
+      await deletePost(toDelete.id)
+      setToDelete(null)
+      void loadPage(page)
+    } catch (err) {
+      const maybeAxios = err as { response?: { data?: { detail?: string } }; message?: string }
+      setDeleteError(maybeAxios.response?.data?.detail ?? maybeAxios.message ?? "No se pudo eliminar.")
+    }
+  }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6 md:py-8">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Publicaciones del sistema</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Publicaciones totales: <span className="font-semibold text-gray-800">{total}</span>
-          </p>
-        </div>
-        <AppLink
-          to="/app/inicio"
-          className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-        >
-          Volver al inicio
-        </AppLink>
+    <div>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Publicaciones del sistema</h1>
+        <p className="mt-1 text-sm text-gray-500">
+          Publicaciones totales: <span className="font-semibold text-gray-800">{total}</span>
+        </p>
       </div>
 
       {loading ? (
@@ -59,6 +70,7 @@ export default function AdminPostsPage() {
                   <th className="px-4 py-3 font-semibold">Fecha</th>
                   <th className="px-4 py-3 font-semibold">Título</th>
                   <th className="px-4 py-3 font-semibold">Descripción</th>
+                  <th className="px-4 py-3 text-right font-semibold">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -72,6 +84,21 @@ export default function AdminPostsPage() {
                     <td className="px-4 py-3 whitespace-nowrap text-gray-600">{formatDate(post.created_at)}</td>
                     <td className="px-4 py-3 text-gray-900">{post.title?.trim() || "—"}</td>
                     <td className="px-4 py-3 text-gray-600">{truncate(post.description)}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDeleteError(null)
+                            setToDelete(post)
+                          }}
+                          className="rounded-lg p-2 text-gray-500 hover:bg-red-50 hover:text-red-600"
+                          title="Eliminar publicación"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -105,6 +132,20 @@ export default function AdminPostsPage() {
           </div>
         </div>
       ) : null}
+
+      {toDelete && (
+        <ConfirmModal
+          danger
+          title="Eliminar publicación"
+          message={
+            deleteError
+              ? deleteError
+              : `¿Seguro que deseas eliminar la publicación #${toDelete.id}? Esta acción no se puede deshacer.`
+          }
+          onCancel={() => setToDelete(null)}
+          onConfirm={confirmDelete}
+        />
+      )}
     </div>
   )
 }
