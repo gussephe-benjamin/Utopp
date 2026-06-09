@@ -14,8 +14,22 @@ const ROTATION_MS = 3500;
 const EXIT_MS = 220;
 const ENTER_MS = 300;
 const BUFFER_MS = 50;
-const MAX_DOTS = 6;
+const MAX_DOTS = 5;
 const TRANSITION_MS = EXIT_MS + ENTER_MS + BUFFER_MS;
+
+/** Índices de org visibles como puntos (máx. MAX_DOTS), centrados en el slide actual. */
+function getDotOrgIndices(orgCount: number, currentIndex: number): number[] {
+  if (orgCount <= 1) return [];
+  const dotCount = Math.min(orgCount, MAX_DOTS);
+  const windowStart =
+    orgCount <= MAX_DOTS
+      ? 0
+      : Math.min(
+          Math.max(currentIndex - Math.floor(MAX_DOTS / 2), 0),
+          orgCount - MAX_DOTS,
+        );
+  return Array.from({ length: dotCount }, (_, i) => windowStart + i);
+}
 
 function getAnimClass(state: AnimState): string {
   switch (state) {
@@ -151,7 +165,7 @@ export function OrgCarousel({ organizations, loading }: OrgCarouselProps) {
       ? `${org.followers_count} ${org.followers_count === 1 ? "seguidor" : "seguidores"}`
       : `${org.posts_count ?? 0} ${org.posts_count === 1 ? "publicación" : "publicaciones"}`;
 
-  const visibleDots = orgs.slice(0, Math.min(orgs.length, MAX_DOTS));
+  const visibleDotIndices = getDotOrgIndices(orgs.length, safeIndex);
   const showDots = orgs.length > 1;
 
   return (
@@ -188,15 +202,15 @@ export function OrgCarousel({ organizations, loading }: OrgCarouselProps) {
 
           {showDots && (
             <div className="ml-auto flex shrink-0 items-center gap-1" role="tablist">
-              {visibleDots.map((item, index) => (
+              {visibleDotIndices.map((orgIndex) => (
                 <button
-                  key={item.id}
+                  key={orgs[orgIndex].id}
                   type="button"
-                  onClick={() => goToIndex(index)}
-                  aria-label={`Ver organización ${index + 1}`}
-                  aria-current={index === safeIndex ? "true" : undefined}
+                  onClick={() => goToIndex(orgIndex)}
+                  aria-label={`Ver organización ${orgIndex + 1}`}
+                  aria-current={orgIndex === safeIndex ? "true" : undefined}
                   className={`block h-1.5 rounded-full transition-all duration-300 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 ${
-                    index === safeIndex
+                    orgIndex === safeIndex
                       ? "w-3 bg-white/90"
                       : "w-1.5 bg-white/30 hover:bg-white/50"
                   }`}
