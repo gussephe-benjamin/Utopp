@@ -159,9 +159,8 @@ export default function RegisterModal({ open, onClose }: RegisterModalProps) {
 
           {/* Registro con Google (acepta ambos documentos a la vez) */}
           <GoogleRegister
-            termsAccepted={accepted}
-            privacyAccepted={accepted}
-            legalReady={legalReady}
+            legalDocsReady={legalReady}
+            legalAccepted={accepted}
           />
 
           <p className="text-center mt-6 text-gray-500 text-sm">
