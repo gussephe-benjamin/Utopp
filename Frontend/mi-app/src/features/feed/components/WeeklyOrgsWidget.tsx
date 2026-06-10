@@ -1,10 +1,15 @@
-import { Trophy } from "lucide-react"
+import { useState } from "react"
+import { Sparkles, Trophy } from "lucide-react"
 import { TW_UTOPP_GRADIENT_R } from "../../../shared/constants/brand"
 import { ProfileLink } from "../../profile/components/ProfileLink"
 import type { OrganizationSummary } from "../../../api/users.api"
 import { getOrgAvatarStyle } from "../lib/weeklyHighlightUtils"
 import { WEEKLY_ORGS_TITLE } from "../constants/weeklyHighlights"
 import { resolveOrgImageUrl } from "../../../shared/lib/cloudinaryUrl"
+import { OrgsOrbitalModal } from "./OrgsOrbitalModal"
+
+/** Cantidad de orgs visibles en el panel antes de "Ver más". */
+const MAX_VISIBLE_ORGS = 6
 
 type WeeklyOrgsWidgetProps = {
   organizations: OrganizationSummary[]
@@ -36,6 +41,10 @@ export function WeeklyOrgsWidget({
   onFollowToggle,
   compact = false,
 }: WeeklyOrgsWidgetProps) {
+  const [orbitalOpen, setOrbitalOpen] = useState(false)
+  const visibleOrgs = organizations.slice(0, MAX_VISIBLE_ORGS)
+  const hasMore = organizations.length > MAX_VISIBLE_ORGS
+
   return (
     <div className={compact ? "h-full" : "rounded-xl border border-gray-100 bg-white p-4 shadow-sm"}>
       <div className={`flex items-center gap-2 ${compact ? "mb-3 px-1" : "mb-3.5"}`}>
@@ -56,7 +65,7 @@ export function WeeklyOrgsWidget({
         <p className="py-2 text-center text-xs text-gray-400">No hay organizaciones disponibles</p>
       ) : (
         <div className={`flex flex-col gap-3.5 ${compact ? "max-h-[220px] overflow-y-auto no-scrollbar" : ""}`}>
-          {organizations.map((org) => {
+          {visibleOrgs.map((org) => {
             const initial = (org.full_name ?? "O").charAt(0).toUpperCase()
             const isFollowing = followedIds.has(org.id)
             const postText =
@@ -117,8 +126,30 @@ export function WeeklyOrgsWidget({
               </div>
             )
           })}
+
+          {hasMore && (
+            <button
+              type="button"
+              onClick={() => setOrbitalOpen(true)}
+              className="group mt-1 flex items-center justify-center gap-1.5 rounded-full border border-violet-100 bg-violet-50/60 px-3 py-2 text-[11px] font-bold text-violet-600 transition-all hover:bg-violet-100 active:scale-95"
+            >
+              <Sparkles className="h-3.5 w-3.5 transition-transform group-hover:scale-110" />
+              Ver todas ({organizations.length})
+            </button>
+          )}
         </div>
       )}
+
+      <OrgsOrbitalModal
+        open={orbitalOpen}
+        onClose={() => setOrbitalOpen(false)}
+        organizations={organizations}
+        followedIds={followedIds}
+        isStudent={isStudent}
+        currentUserId={currentUserId}
+        actionLoadingId={actionLoadingId}
+        onFollowToggle={onFollowToggle}
+      />
     </div>
   )
 }

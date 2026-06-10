@@ -10,4 +10,43 @@
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
+
+  /* Fuente display llamativa (saludos, titulares de bienvenida). */
+  .font-display {
+    font-family: "Sora", ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: -0.02em;
+  }
+
+  /* ─── Marquesina vertical infinita (panel de login: últimos eventos) ─── */
+  @keyframes utopp-marquee-y {
+    0%   { transform: translateY(0); }
+    100% { transform: translateY(-50%); }
+  }
+  .utopp-marquee-y {
+    animation: utopp-marquee-y 30s linear infinite;
+    will-change: transform;
+  }
+  .utopp-marquee-y:hover {
+    animation-play-state: paused;
+  }
+  /* Difumina los bordes superior/inferior del contenedor del marquee */
+  .utopp-marquee-mask {
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 12%, #000 88%, transparent 100%);
+            mask-image: linear-gradient(to bottom, transparent 0%, #000 12%, #000 88%, transparent 100%);
+  }
+
+  /* ─── Saludo (emoji 👋) en el header del formulario ─── */
+  @keyframes utopp-wave {
+    0%, 60%, 100% { transform: rotate(0deg); }
+    10%           { transform: rotate(14deg); }
+    20%           { transform: rotate(-8deg); }
+    30%           { transform: rotate(14deg); }
+    40%           { transform: rotate(-4deg); }
+    50%           { transform: rotate(10deg); }
+  }
+  .utopp-wave {
+    display: inline-block;
+    transform-origin: 70% 70%;
+    animation: utopp-wave 2.4s ease-in-out infinite;
+  }
 }
