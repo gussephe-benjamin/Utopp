@@ -18,7 +18,7 @@ import {
 import { AUTH_LOGIN } from "../../features/auth/constants/authCopy";
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, token } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -33,6 +33,18 @@ export default function Login() {
       setLoginEmail(registeredEmail);
     }
   }, [registeredEmail]);
+
+  useEffect(() => {
+    if (token) {
+      const params = new URLSearchParams(window.location.search);
+      const redirectUrl = params.get("redirect");
+      if (redirectUrl) {
+        window.location.href = `${redirectUrl}?sso_token=${token}`;
+      } else {
+        void redirectAfterAuthSession(navigate, { replace: true });
+      }
+    }
+  }, [token, navigate]);
 
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState(false);
