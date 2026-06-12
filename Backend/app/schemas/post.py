@@ -152,18 +152,20 @@ class SimplePostCreate(BaseModel):
 class AnnouncementCreate(BaseModel):
     """Schema para crear un anuncio."""
     post_type: Literal[PostType.announcement] = PostType.announcement
-    subtype: SubPostType
+    subtype: Optional[SubPostType] = None
     title: str = Field(..., min_length=1, max_length=200)
     description: str = Field(..., min_length=1)
-    deadline_at: datetime
+    deadline_at: Optional[datetime] = None
     tags: Optional[List[str]] = None
     specific_fields: Optional[Dict[str, Any]] = Field(default_factory=dict)
 
     @field_validator("subtype", mode="after")
     @classmethod
     def validate_subtype(cls, v):
+        if v is None:
+            return v
         valid = VALID_SUBTYPES.get(PostType.announcement, [])
-        if v not in valid:
+        if valid and v not in valid:
             raise ValueError(
                 f"Subtipo '{v.value}' no es válido para announcement. "
                 f"Subtipos válidos: {[s.value for s in valid]}"

@@ -129,13 +129,23 @@ export default function PublicationWizard({ isOpen, onClose, allowedTypes }: Pub
   // Flujo de pasos:
   //   Sin imágenes: 1→2→3→4→5(Preview)
   //   Con imágenes: 1→2→3→4→5(FrameEditor)→6(Preview)
-  const TOTAL_STEPS   = hasImages ? 6 : 5
-  const PREVIEW_STEP  = TOTAL_STEPS
+  //   Anuncios omiten el paso 2 (subtipo)
+  const skipsSubtypeStep = formData.post_type === 'announcement'
+  const baseWizardSteps = hasImages ? 6 : 5
+  const TOTAL_STEPS = baseWizardSteps - (skipsSubtypeStep ? 1 : 0)
+  const PREVIEW_STEP = TOTAL_STEPS
+
+  const wizardStepFromDisplay = (displayStep: number): number => {
+    if (!skipsSubtypeStep) return displayStep
+    return displayStep >= 2 ? displayStep + 1 : displayStep
+  }
+
   const descriptionWordCount = countWords(formData.description)
   const descriptionWordCountValid = isPostDescriptionWordCountValid(formData.description)
 
   const canAdvance = (): boolean => {
-    switch (currentStep) {
+    const step = wizardStepFromDisplay(currentStep)
+    switch (step) {
       case 1: return formData.post_type !== ''
       case 2: return formData.subtype !== ''
       case 3: return true // Los links son opcionales
@@ -144,9 +154,6 @@ export default function PublicationWizard({ isOpen, onClose, allowedTypes }: Pub
           formData.title.trim().length > 0 &&
           formData.description.trim().length > 0 &&
           descriptionWordCountValid &&
-          // Los announcements requieren deadline obligatorio
-          (formData.post_type !== 'announcement' || formData.deadline_at !== '') &&
-          // No permitir avanzar si hay imágenes aún subiendo
           !formData.images.some(img => img.status === 'uploading')
         )
       case 5: return true // Frame editor siempre puede avanzar
@@ -193,7 +200,8 @@ export default function PublicationWizard({ isOpen, onClose, allowedTypes }: Pub
    * draft → imágenes → links → publish
    */
   const handlePublish = async () => {
-    if (!formData.post_type || !formData.subtype) return
+    if (!formData.post_type) return
+    if (formData.post_type !== 'announcement' && !formData.subtype) return
     if (!descriptionWordCountValid) {
       setPublishError(
         `La descripción debe tener como máximo ${POST_DESCRIPTION_MAX_WORDS} palabras. Actualmente tiene ${descriptionWordCount}.`,
@@ -211,7 +219,7 @@ export default function PublicationWizard({ isOpen, onClose, allowedTypes }: Pub
         title: formData.title,
         description: formData.description,
         post_type: formData.post_type,
-        subtype: formData.subtype,
+        ...(formData.subtype ? { subtype: formData.subtype } : {}),
         deadline_at: formData.deadline_at ? new Date(formData.deadline_at).toISOString() : undefined,
         is_pinned: isPinned,
         tags: formData.tags.length > 0 ? formData.tags : undefined,
@@ -276,7 +284,7 @@ export default function PublicationWizard({ isOpen, onClose, allowedTypes }: Pub
 
   // Renderiza el contenido del paso actual
   const renderStep = () => {
-    switch (currentStep) {
+    switch (wizardStepFromDisplay(currentStep)) {
       case 1:
         return (
           <Step1TypeSelection
@@ -308,7 +316,7 @@ export default function PublicationWizard({ isOpen, onClose, allowedTypes }: Pub
             deadline_at={formData.deadline_at}
             images={formData.images}
             tags={formData.tags}
-            requiresDeadline={formData.post_type === 'announcement'}
+            requiresDeadline={false}
             onChange={data => dispatch({ type: 'SET_GENERAL_INFO', payload: data })}
             onImagesChange={images => dispatch({ type: 'SET_IMAGES', payload: images })}
             onTagsChange={tags => dispatch({ type: 'SET_TAGS', payload: tags })}
@@ -401,7 +409,7 @@ export default function PublicationWizard({ isOpen, onClose, allowedTypes }: Pub
               {publishError}
             </div>
           )}
-          {currentStep === 4 && !descriptionWordCountValid ? (
+          {wizardStepFromDisplay(currentStep) === 4 && !descriptionWordCountValid ? (
             <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
               La descripción debe tener como máximo {POST_DESCRIPTION_MAX_WORDS} palabras.
             </div>

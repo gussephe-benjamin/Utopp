@@ -15,6 +15,7 @@ import {
   Dumbbell,
   Building,
   Trophy,
+  Medal,
   Microscope,
   FileText,
   AlertTriangle,
@@ -49,9 +50,11 @@ export type SubPostType =
   | '4+1'
   // Eventos
   | 'conferencia'
+  | 'congresos_talleres'
   | 'arte'
   | 'emprendimiento'
-  | 'hackathon'
+  | 'competencias'
+  | 'hackathon' // legacy
   | 'voluntariado'
   | 'deporte'
   | 'visita_academica'
@@ -92,9 +95,9 @@ export type TimeStatus = 'no_deadline' | 'in_time' | 'out_of_time'
 /** Mapa de subtipos válidos para cada tipo de post. */
 export const VALID_SUBTYPES: Record<PostType, SubPostType[]> = {
   international_opportunity: ['intercambio', 'pasantia', 'investigacion', '4+1'],
-  event: ['conferencia', 'arte', 'emprendimiento', 'hackathon', 'voluntariado', 'deporte', 'visita_academica', 'empleo'],
+  event: ['conferencia', 'congresos_talleres', 'arte', 'emprendimiento', 'competencias', 'voluntariado', 'deporte', 'visita_academica', 'empleo'],
   academic_project: ['competencia', 'proyecto_investigacion'],
-  announcement: ['comunicado', 'urgente'],
+  announcement: [],
   simple_post: ['informativo', 'pregunta', 'debate'],
 }
 
@@ -129,9 +132,11 @@ export const SUBTYPE_LABELS: Record<SubPostType, string> = {
   pasantia: 'Pasantía',
   investigacion: 'Investigación',
   '4+1': '4+1',
-  conferencia: 'Conferencia',
+  conferencia: 'Conferencias',
+  congresos_talleres: 'Congresos y Talleres',
   arte: 'Arte',
   emprendimiento: 'Emprendimiento',
+  competencias: 'Competencias',
   hackathon: 'Hackathon',
   voluntariado: 'Voluntariado',
   deporte: 'Deporte',
@@ -152,8 +157,10 @@ export const SUBTYPE_ICONS: Record<SubPostType, LucideIcon> = {
   investigacion: Microscope,
   '4+1': Award,
   conferencia: Presentation,
+  congresos_talleres: Award,
   arte: Palette,
   emprendimiento: Rocket,
+  competencias: Medal,
   hackathon: Code,
   voluntariado: Heart,
   deporte: Dumbbell,
@@ -174,14 +181,16 @@ export const SUBTYPE_DESCRIPTIONS: Record<SubPostType, string> = {
   pasantia: 'Oportunidades de prácticas profesionales en el extranjero',
   investigacion: 'Proyectos de investigación colaborativa internacional',
   '4+1': 'Programas de doble titulación con universidades asociadas',
-  conferencia: 'Charlas, ponencias y congresos académicos',
-  arte: 'Eventos culturales, exposiciones y presentaciones artísticas',
-  emprendimiento: 'Talleres, hackathons y competencias de emprendimiento',
+  conferencia: 'Charlas, ponencias y exposiciones académicas',
+  congresos_talleres: 'Eventos con actividades prácticas o certificadas',
+  arte: 'Eventos culturales, exposiciones o presentaciones artísticas',
+  emprendimiento: 'Talleres, Hackatons o competencias de emprendimiento',
+  competencias: 'Concursos, retos o pruebas en diferentes campos',
   hackathon: 'Maratones de programación y desarrollo de soluciones',
-  voluntariado: 'Actividades de servicio social y comunitario',
-  deporte: 'Torneos, competencias y eventos deportivos',
-  visita_academica: 'Visitas guiadas a instituciones y empresas',
-  empleo: 'Ferias de empleo y sesiones de reclutamiento',
+  voluntariado: 'Actividades de servicio social o comunitario',
+  deporte: 'Torneos, competencias o eventos deportivos',
+  visita_academica: 'Visitas guiadas a instituciones o empresas',
+  empleo: 'Ferias de empleo, reclutamiento o de inserción laboral',
   competencia: 'Concursos académicos y competencias interuniversitarias',
   proyecto_investigacion: 'Proyectos de investigación y desarrollo científico',
   comunicado: 'Información general y comunicados institucionales',

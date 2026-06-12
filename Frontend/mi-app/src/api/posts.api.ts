@@ -5,7 +5,7 @@
  *   POST   /posts/                      — Crea un post genérico en estado draft
  *   POST   /posts/academic-projects     — Crea un proyecto académico
  *   POST   /posts/simple-posts          — Crea una publicación simple (sin título)
- *   POST   /posts/announcements         — Crea un anuncio (deadline requerido)
+ *   POST   /posts/announcements         — Crea un anuncio (subtipo y deadline opcionales)
  *   GET    /posts/{post_id}             — Obtiene un post con relaciones
  *   PATCH  /posts/{post_id}             — Actualiza campos de un post
  *   POST   /posts/{post_id}/publish     — Publica un post (draft → published)
@@ -25,7 +25,7 @@ export interface PostCreate {
   title: string
   description: string
   post_type: string
-  subtype: string
+  subtype?: string
   tags?: string[]
   specific_fields?: Record<string, unknown>
   deadline_at?: string
@@ -50,11 +50,11 @@ export interface SimplePostCreate {
 }
 
 export interface AnnouncementCreate {
-  subtype: string
+  subtype?: string
   title: string
   description: string
   tags?: string[]
-  deadline_at: string
+  deadline_at?: string
   specific_fields?: Record<string, unknown>
 }
 
@@ -98,7 +98,7 @@ export interface AdminPostsPageResponse {
 /**
  * POST /posts/
  * Crea un post genérico en estado draft. Requiere title, description,
- * post_type y subtype. Opcionales: tags, specific_fields, deadline_at.
+ * post_type; subtype requerido salvo anuncios. Opcionales: tags, specific_fields, deadline_at.
  * time_status se calcula automáticamente.
  * Auth: Requerida.
  */

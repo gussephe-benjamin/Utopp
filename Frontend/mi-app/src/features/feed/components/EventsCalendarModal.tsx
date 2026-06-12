@@ -38,6 +38,7 @@ const CATEGORY_ORDER: CategoryKey[] = [
 
 const SUBTYPE_CATEGORY: Partial<Record<SubPostType, CategoryKey>> = {
   competencia: "competitions",
+  competencias: "competitions",
   hackathon: "competitions",
   emprendimiento: "entrepreneurship",
   arte: "cultural",
@@ -45,6 +46,7 @@ const SUBTYPE_CATEGORY: Partial<Record<SubPostType, CategoryKey>> = {
   voluntariado: "cultural",
   urgente: "cultural",
   conferencia: "academic",
+  congresos_talleres: "academic",
   investigacion: "academic",
   proyecto_investigacion: "academic",
   visita_academica: "academic",

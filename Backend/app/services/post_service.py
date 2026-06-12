@@ -237,7 +237,7 @@ def create_simple_post(db: Session, user_id: int, data: SimplePostCreate) -> Pos
 
 
 def create_announcement(db: Session, user_id: int, data: AnnouncementCreate) -> Post:
-    """Crea un anuncio con deadline requerido."""
+    """Crea un anuncio. Subtipo y deadline son opcionales."""
     post = Post(
         user_id=user_id,
         title=data.title,

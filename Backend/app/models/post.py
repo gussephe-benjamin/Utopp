@@ -22,9 +22,11 @@ class SubPostType(str, enum.Enum):
     
     # Eventos
     conferencia = "conferencia"
+    congresos_talleres = "congresos_talleres"
     arte = "arte"
     emprendimiento = "emprendimiento"
-    hackathon = "hackathon"
+    competencias = "competencias"
+    hackathon = "hackathon"  # legacy: migrado a emprendimiento
     voluntariado = "voluntariado"
     deporte = "deporte"
     visita_academica = "visita_academica"
@@ -54,10 +56,11 @@ VALID_SUBTYPES = {
 
     PostType.event: [
         SubPostType.conferencia,
+        SubPostType.congresos_talleres,
         SubPostType.arte,
         SubPostType.emprendimiento,
+        SubPostType.competencias,
         SubPostType.voluntariado,
-        SubPostType.hackathon,
         SubPostType.deporte,
         SubPostType.visita_academica,
         SubPostType.empleo,
@@ -66,10 +69,7 @@ VALID_SUBTYPES = {
         SubPostType.competencia,
         SubPostType.proyecto_investigacion,
     ],
-    PostType.announcement: [
-        SubPostType.comunicado,
-        SubPostType.urgente,
-    ],
+    PostType.announcement: [],
     PostType.simple_post: [
         SubPostType.informativo,
         SubPostType.pregunta,

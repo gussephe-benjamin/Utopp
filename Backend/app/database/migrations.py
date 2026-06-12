@@ -434,3 +434,37 @@ def run_migrations(engine: Engine) -> None:
         """))
 
         conn.commit()
+
+        # 18. Nuevos subtipos de evento y migración hackathon → emprendimiento
+        conn.execute(text("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM pg_enum
+                    WHERE enumlabel = 'congresos_talleres'
+                    AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'sub_post_type_enum')
+                ) THEN
+                    ALTER TYPE sub_post_type_enum ADD VALUE 'congresos_talleres';
+                END IF;
+            END$$;
+        """))
+        conn.execute(text("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM pg_enum
+                    WHERE enumlabel = 'competencias'
+                    AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'sub_post_type_enum')
+                ) THEN
+                    ALTER TYPE sub_post_type_enum ADD VALUE 'competencias';
+                END IF;
+            END$$;
+        """))
+        conn.commit()
+
+        conn.execute(text("""
+            UPDATE posts
+            SET subtype = 'emprendimiento'::sub_post_type_enum
+            WHERE subtype::text = 'hackathon';
+        """))
+        conn.commit()

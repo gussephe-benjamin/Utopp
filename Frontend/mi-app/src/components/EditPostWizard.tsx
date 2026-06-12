@@ -374,7 +374,7 @@ export default function EditPostWizard({ post, onClose, onSaved }: EditPostWizar
             deadline_at={deadlineAt}
             images={images}
             tags={tags}
-            requiresDeadline={post?.post_type === 'announcement'}
+            requiresDeadline={false}
             onChange={d => {
               setTitle(d.title)
               setDescription(d.description)

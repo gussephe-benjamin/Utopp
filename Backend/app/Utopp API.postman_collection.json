@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "22f00328-432a-40fe-889c-39c0c30030d5",
     "name": "Utopp API",
-    "description": "# Utopp API\n\nAPI REST del backend de Utopp, plataforma de publicaciones académicas para la comunidad académica. Construida con FastAPI + SQLAlchemy + PostgreSQL.\n\n## Arquitectura\nCapas: Routers (endpoints HTTP) → Services (lógica de negocio) → Models (SQLAlchemy/PostgreSQL) → Schemas (Pydantic). Autenticación: JWT Bearer Token obtenido en `/auth/login` o `/google/login`.\n\n## Tablas y relaciones\n\n**`users`** — Usuarios registrados. Campos: `id`, `email`, `full_name`, `career`, `cycle`, `interests` (JSONB), `availability`, `onboarding_completed`.\n\n**`posts`** — Publicaciones. FK: `user_id → users`. Campos clave: `title` (nullable), `description`, `post_type` (enum), `subtype` (enum), `status` (draft/published/archived), `time_status` (no_deadline/in_time/out_of_time), `deadline_at`, `tags` (JSONB), `specific_fields` (JSONB).\n\nTipos de post: `international_opportunity`, `event`, `academic_project`, `announcement`, `simple_post`.\nSubtipos por tipo: international_opportunity → [intercambio, pasantia, investigacion, 4+1] | event → [conferencia, arte, emprendimiento, hackathon, voluntariado, deporte, visita_academica, empleo] | academic_project → [competencia, proyecto_investigacion] | announcement → [comunicado, urgente] | simple_post → [informativo, pregunta, debate].\n\n**`post_images`** — Imágenes de posts. FK: `post_id → posts`. Campos: `cloudinary_id`, `url`, `position`.\n\n**`post_links`** — Links de posts. FK: `post_id → posts`. Campos: `label`, `url`, `type`, `display_type`, `position`.\n\n**`follows`** — Seguimiento entre usuarios. FKs: `follower_id → users`, `following_id → users`. Clave compuesta única.\n\n**`saved_posts`** — Posts guardados como favoritos. FKs: `user_id → users`, `post_id → posts`. Clave compuesta única.\n\n**`event_participants`** — Participación en eventos/proyectos. FKs: `user_id → users`, `post_id → posts`. Campo: `status` (interested/going/attended).\n\n**`roles`** — Roles del sistema (ej: admin). Campos: `id`, `name`, `description`.\n\n**`user_roles`** — Asignación de roles. FKs: `user_id → users`, `role_id → roles`.\n\n## Flujo recomendado\n1. **Legal:** `GET /legal/terms/current` y `GET /legal/privacy/current` (los tests de la carpeta Legal guardan `terms_document_id` y `privacy_document_id`).\n2. `POST /auth/register` o `POST /google/register` — incluir esos ids en el body.\n3. `POST /auth/login` — Obtener token (`{{token}}`)\n4. Si falta consentimiento: `POST /legal/accept` con ids vigentes.\n5. `POST /onboarding/update` — Completar perfil\n6. Crear post (endpoints especializados o `POST /posts/`)\n7. `POST /posts/{{post_id}}/publish` — Publicar\n8. `GET /feed` — Ver en el feed",
+    "description": "# Utopp API\n\nAPI REST del backend de Utopp, plataforma de publicaciones académicas para la comunidad académica. Construida con FastAPI + SQLAlchemy + PostgreSQL.\n\n## Arquitectura\nCapas: Routers (endpoints HTTP) → Services (lógica de negocio) → Models (SQLAlchemy/PostgreSQL) → Schemas (Pydantic). Autenticación: JWT Bearer Token obtenido en `/auth/login` o `/google/login`.\n\n## Tablas y relaciones\n\n**`users`** — Usuarios registrados. Campos: `id`, `email`, `full_name`, `career`, `cycle`, `interests` (JSONB), `availability`, `onboarding_completed`.\n\n**`posts`** — Publicaciones. FK: `user_id → users`. Campos clave: `title` (nullable), `description`, `post_type` (enum), `subtype` (enum), `status` (draft/published/archived), `time_status` (no_deadline/in_time/out_of_time), `deadline_at`, `tags` (JSONB), `specific_fields` (JSONB).\n\nTipos de post: `international_opportunity`, `event`, `academic_project`, `announcement`, `simple_post`.\nSubtipos por tipo: international_opportunity → [intercambio, pasantia, investigacion, 4+1] | event → [conferencia, congresos_talleres, arte, emprendimiento, competencias, voluntariado, deporte, visita_academica, empleo] | academic_project → [competencia, proyecto_investigacion] | announcement → (sin subtipo; opcional en legacy) | simple_post → [informativo, pregunta, debate].\n\n**`post_images`** — Imágenes de posts. FK: `post_id → posts`. Campos: `cloudinary_id`, `url`, `position`.\n\n**`post_links`** — Links de posts. FK: `post_id → posts`. Campos: `label`, `url`, `type`, `display_type`, `position`.\n\n**`follows`** — Seguimiento entre usuarios. FKs: `follower_id → users`, `following_id → users`. Clave compuesta única.\n\n**`saved_posts`** — Posts guardados como favoritos. FKs: `user_id → users`, `post_id → posts`. Clave compuesta única.\n\n**`event_participants`** — Participación en eventos/proyectos. FKs: `user_id → users`, `post_id → posts`. Campo: `status` (interested/going/attended).\n\n**`roles`** — Roles del sistema (ej: admin). Campos: `id`, `name`, `description`.\n\n**`user_roles`** — Asignación de roles. FKs: `user_id → users`, `role_id → roles`.\n\n## Flujo recomendado\n1. **Legal:** `GET /legal/terms/current` y `GET /legal/privacy/current` (los tests de la carpeta Legal guardan `terms_document_id` y `privacy_document_id`).\n2. `POST /auth/register` o `POST /google/register` — incluir esos ids en el body.\n3. `POST /auth/login` — Obtener token (`{{token}}`)\n4. Si falta consentimiento: `POST /legal/accept` con ids vigentes.\n5. `POST /onboarding/update` — Completar perfil\n6. Crear post (endpoints especializados o `POST /posts/`)\n7. `POST /posts/{{post_id}}/publish` — Publicar\n8. `GET /feed` — Ver en el feed",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "45592436",
     "_collection_link": "https://go.postman.co/collection/45592436-22f00328-432a-40fe-889c-39c0c30030d5?source=collection_link"
@@ -1094,7 +1094,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"title\": \"Hackathon Utopp 2025\",\n    \"description\": \"Evento de programación competitiva de 48 horas\",\n    \"post_type\": \"event\",\n    \"subtype\": \"hackathon\",\n    \"tags\": [\"programación\", \"competencia\", \"tech\"],\n    \"specific_fields\": {\n        \"location\": \"Campus principal\",\n        \"max_participants\": 100\n    },\n    \"deadline_at\": \"2025-12-31T23:59:59\"\n}"
+              "raw": "{\n    \"title\": \"Hackathon Utopp 2025\",\n    \"description\": \"Evento de programación competitiva de 48 horas\",\n    \"post_type\": \"event\",\n    \"subtype\": \"emprendimiento\",\n    \"tags\": [\"programación\", \"competencia\", \"tech\"],\n    \"specific_fields\": {\n        \"location\": \"Campus principal\",\n        \"max_participants\": 100\n    },\n    \"deadline_at\": \"2025-12-31T23:59:59\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/posts/",
@@ -1150,7 +1150,7 @@
                 "announcements"
               ]
             },
-            "description": "POST /posts/announcements — Crea un anuncio. `deadline_at` es obligatorio (indica hasta cuándo es relevante). `title` y `description` requeridos. Subtipos válidos: `comunicado`, `urgente`. `specific_fields` opcional (ej: `{\"max_absences\": 3}`). `time_status` se calcula automáticamente. Requiere autenticación."
+            "description": "POST /posts/announcements — Crea un anuncio. `title` y `description` requeridos. `subtype` y `deadline_at` son opcionales. `specific_fields` opcional (ej: `{\"max_absences\": 3}`). `time_status` se calcula automáticamente. Requiere autenticación."
           },
           "response": []
         },
@@ -1956,7 +1956,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/feed?subtype=hackathon&page=1&size=10",
+              "raw": "{{base_url}}/feed?subtype=emprendimiento&page=1&size=10",
               "host": [
                 "{{base_url}}"
               ],
@@ -1966,7 +1966,7 @@
               "query": [
                 {
                   "key": "subtype",
-                  "value": "hackathon"
+                  "value": "emprendimiento"
                 },
                 {
                   "key": "page",
@@ -1978,7 +1978,7 @@
                 }
               ]
             },
-            "description": "GET /feed?subtype=hackathon — Feed filtrado por subtipo."
+            "description": "GET /feed?subtype=emprendimiento — Feed filtrado por subtipo."
           },
           "response": []
         },
