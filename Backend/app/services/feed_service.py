@@ -8,6 +8,8 @@ from sqlalchemy.orm import Session, selectinload
 from app.models.post import Post, PostStatus, PostType, SubPostType, TimeStatus as TSEnum
 from app.models.saved_post import SavedPost
 from app.models.event_participant import PostParticipant
+from app.models.post_reaction import PostReaction
+from app.models.post_comment import PostComment
 from app.models.user import User
 from app.models.user_profile_image import UserProfileImage
 from app.schemas.feed import FeedPostOut, FeedResponse
@@ -133,6 +135,35 @@ def build_feed(
             ).all()
             participation_map = {p.post_id: p.status.value for p in participations}
     
+    # Batch-fetch reaction/comment counts y reacciones del usuario actual
+    post_ids = [p.id for p in posts]
+    reaction_count_map: dict[int, int] = {}
+    comment_count_map: dict[int, int] = {}
+    user_reacted_ids: set[int] = set()
+    if post_ids:
+        reaction_rows = db.execute(
+            select(PostReaction.post_id, func.count())
+            .where(PostReaction.post_id.in_(post_ids))
+            .group_by(PostReaction.post_id)
+        ).all()
+        reaction_count_map = {row[0]: row[1] for row in reaction_rows}
+
+        comment_rows = db.execute(
+            select(PostComment.post_id, func.count())
+            .where(PostComment.post_id.in_(post_ids))
+            .group_by(PostComment.post_id)
+        ).all()
+        comment_count_map = {row[0]: row[1] for row in comment_rows}
+
+        if current_user:
+            reacted = db.scalars(
+                select(PostReaction.post_id).where(
+                    PostReaction.user_id == current_user.id,
+                    PostReaction.post_id.in_(post_ids),
+                )
+            ).all()
+            user_reacted_ids = set(reacted)
+
     # Batch-fetch active profile images for all post authors
     author_ids = list({p.user_id for p in posts})
     profile_image_map: dict[int, str] = {}
@@ -185,6 +216,9 @@ def build_feed(
                 aspect_ratio=getattr(post, "aspect_ratio", None) or "4:5",
                 is_saved=post.id in saved_post_ids,
                 participation_status=participation_map.get(post.id),
+                reaction_count=reaction_count_map.get(post.id, 0),
+                user_reacted=post.id in user_reacted_ids,
+                comment_count=comment_count_map.get(post.id, 0),
             )
         )
     

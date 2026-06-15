@@ -7,9 +7,9 @@ from app.database.session import get_db
 from app.dependencies.auth import get_current_user
 from app.dependencies.permissions import require_owner_or_admin
 from app.models.user import User
-from app.models.post import Post
+from app.models.post import Post, PostType
 from app.schemas.link import LinkCreate, LinkUpdate, LinkOut, LinkReorderRequest
-from app.services import link_service
+from app.services import link_service, role_service
 
 router = APIRouter()
 
@@ -20,6 +20,7 @@ router = APIRouter()
 # Cada link tiene label, url, type y display_type.
 # Auth: Requerida
 # Permisos: Solo el dueño del post o un admin
+# Restricción: las publicaciones simples de estudiantes no admiten links.
 # ============================================================
 @router.post("/posts/{post_id}/links", response_model=LinkOut, status_code=status.HTTP_201_CREATED)
 def create_link(
@@ -27,6 +28,13 @@ def create_link(
     post: Post = Depends(require_owner_or_admin),
     db: Session = Depends(get_db),
 ):
+    if post.post_type == PostType.simple_post:
+        owner_roles = {r.name for r in role_service.get_user_roles(db, post.user_id)}
+        if role_service.STUDENT_ROLE_NAME in owner_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Las publicaciones simples de estudiantes no admiten enlaces",
+            )
     return link_service.create_link(db, post_id=post.id, data=data)
 
 

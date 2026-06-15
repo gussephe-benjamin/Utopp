@@ -53,8 +53,7 @@ def get_current_user_endpoint(
 # ============================================================
 # POST /onboarding/update
 # Completa el proceso de onboarding del usuario autenticado.
-# Guarda career, interests, availability y cycle.
-# Solo se puede ejecutar una vez por usuario.
+# Guarda career y cycle. Solo se puede ejecutar una vez por usuario.
 # Auth: Requerida
 # ============================================================
 @router.post("/update")
@@ -63,25 +62,13 @@ def complete_onboarding(
     user: User = Depends(require_terms_accepted),
     db: Session = Depends(get_db)
 ):
-    
-    print("DATA RECIBIDA:", data)
-    print("USER:", user.id)
-    
     if user.is_onboarding_completed:
         raise HTTPException(status_code=403, detail="Onboarding already completed")
 
     user.career = data.career
-    user.interests = data.interests
-    user.availability = data.availability
     user.cycle = data.cycle
-    user.weekly_availability = data.weekly_availability
     user.is_onboarding_completed = True
 
-    print(user.career)
-    print(user.interests)
-    print(user.cycle)
-    print(user.availability)
-    
     db.commit()
     db.refresh(user)
 

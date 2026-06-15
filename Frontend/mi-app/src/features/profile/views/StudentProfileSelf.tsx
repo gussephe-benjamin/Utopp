@@ -1,4 +1,4 @@
-import { type ChangeEvent, useMemo, useRef, useState } from "react"
+import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { ProfileLink } from "../components/ProfileLink"
 import { AnimatePresence, motion } from "framer-motion"
@@ -17,6 +17,10 @@ import {
   Trophy,
   Bookmark,
   LogOut,
+  Sparkles,
+  FileText,
+  Archive,
+  Plus,
 } from "lucide-react"
 import { useAuth } from "../../../auth/useAuth"
 import { AVAILABILITY_OPTIONS, CAREER_OPTIONS } from "../constants/profileOptions"
@@ -27,18 +31,25 @@ import { ProfileMetricCard } from "../components/ProfileMetricCard"
 import { ProfilePostItem } from "../components/ProfilePostItem"
 import { TW_UTOPP_GRADIENT_R } from "../../../shared/constants/brand"
 import { formatShortDisplayName } from "../../feed/lib/display"
-import { EditProfileModal } from "../components/EditProfileModal"
+import {
+  ProfileSettingsModal,
+  type ProfileSettingsPayload,
+} from "../components/ProfileSettingsModal"
 import { OrganizationsManagerModal } from "../components/OrganizationsManagerModal"
 import { INTERESTS } from "../../../constants/interests"
 import { resolveAvatarUrl, resolveOrgImageUrl } from "../../../shared/lib/cloudinaryUrl"
+import { isProfileSettingsIncomplete } from "../lib/profileSettingsComplete"
 
 interface StudentProfileSelfProps {
   user: ProfileUserData
   avatarUrl: string | null
+  posts: FeedPostOut[]
   eventSavedPosts: FeedPostOut[]
   followingOrganizations: OrganizationSummary[]
   allOrganizations: OrganizationSummary[]
-  onSaveProfile: (payload: { cycle: number; availability: number; interests: string[] }) => Promise<void>
+  onSaveProfile: (payload: ProfileSettingsPayload) => Promise<void>
+  openSettingsOnMount?: boolean
+  onSettingsOpened?: () => void
   onFollowOrganization: (orgId: number) => Promise<void>
   onUnfollowOrganization: (orgId: number) => Promise<void>
   onCloseOrganizationsManager?: (unfollowedIds?: Set<number>) => void
@@ -52,15 +63,21 @@ interface StudentProfileSelfProps {
   onDismissOrgError: () => void
   onSavedPostEdited: (post: FeedPostOut) => void
   onSavedPostUnsaved: (postId: number) => void
+  onPostEdited: (post: FeedPostOut) => void
+  onPostDeleted: (postId: number) => void
+  onOpenCreate?: () => void
 }
 
 export function StudentProfileSelf({
   user,
   avatarUrl,
+  posts,
   eventSavedPosts,
   followingOrganizations,
   allOrganizations,
   onSaveProfile,
+  openSettingsOnMount = false,
+  onSettingsOpened,
   onFollowOrganization,
   onUnfollowOrganization,
   onCloseOrganizationsManager,
@@ -74,12 +91,16 @@ export function StudentProfileSelf({
   onDismissOrgError,
   onSavedPostEdited,
   onSavedPostUnsaved,
+  onPostEdited,
+  onPostDeleted,
+  onOpenCreate,
 }: StudentProfileSelfProps) {
   const navigate = useNavigate()
   const { logout } = useAuth()
   const [emailCopied, setEmailCopied] = useState(false)
   const [editing, setEditing] = useState(false)
   const [managingOrgs, setManagingOrgs] = useState(false)
+  const [activeTab, setActiveTab] = useState<"posts" | "saved" | "archived">("posts")
   const avatarInputRef = useRef<HTMLInputElement>(null)
 
   const careerLabel = useMemo(
@@ -101,7 +122,7 @@ export function StudentProfileSelf({
     setTimeout(() => setEmailCopied(false), 2000)
   }
 
-  const handleSubmitEdit = async (payload: { cycle: number; availability: number; interests: string[] }) => {
+  const handleSubmitEdit = async (payload: ProfileSettingsPayload) => {
     await onSaveProfile(payload)
     setEditing(false)
   }
@@ -120,14 +141,42 @@ export function StudentProfileSelf({
 
   const avatarInitial = (user.full_name ?? "U").charAt(0).toUpperCase()
 
+  const settingsIncomplete = useMemo(
+    () =>
+      isProfileSettingsIncomplete({
+        interests: user.interests,
+        availability: user.availability,
+        weekly_availability: user.weekly_availability,
+      }),
+    [user.interests, user.availability, user.weekly_availability],
+  )
+
+  const filteredPosts = useMemo(() => {
+    if (activeTab === "posts") {
+      return posts.filter((p) => p.status === "published" || !p.status)
+    }
+    if (activeTab === "archived") {
+      return posts.filter((p) => p.status === "archived")
+    }
+    return eventSavedPosts
+  }, [posts, eventSavedPosts, activeTab])
+
+  useEffect(() => {
+    if (openSettingsOnMount) {
+      setEditing(true)
+      onSettingsOpened?.()
+    }
+  }, [openSettingsOnMount, onSettingsOpened])
+
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-6 md:px-6">
       <AnimatePresence>
         {editing && (
-          <EditProfileModal
+          <ProfileSettingsModal
             initialCycle={user.cycle ?? 1}
             initialAvailability={user.availability ?? 0}
             initialInterests={user.interests ?? []}
+            initialWeeklyAvailability={user.weekly_availability}
             saving={profileSaving}
             onClose={() => setEditing(false)}
             onSubmit={handleSubmitEdit}
@@ -153,6 +202,24 @@ export function StudentProfileSelf({
           />
         )}
       </AnimatePresence>
+
+      {settingsIncomplete && (
+        <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-violet-200 bg-violet-50/80 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-2.5">
+            <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-violet-600" />
+            <p className="text-sm font-medium text-violet-900">
+              Completa tu configuración para personalizar recomendaciones de eventos.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="shrink-0 rounded-full bg-violet-600 px-4 py-2 text-xs font-semibold text-white hover:bg-violet-700 transition-colors"
+          >
+            Configurar perfil
+          </button>
+        </div>
+      )}
 
       {/* ─── Cabecera con banner y avatar ─────────────────────────────── */}
       <section className="rounded-[22px] border border-violet-100 bg-white shadow-[0_4px_20px_rgba(0,0,0,0.015)] overflow-hidden">
@@ -391,34 +458,79 @@ export function StudentProfileSelf({
           </article>
         </div>
 
-        {/* Columna Derecha (Eventos Guardados) */}
+        {/* Columna Derecha (Publicaciones y guardados) */}
         <div className="space-y-4">
-          <div className="border-b border-gray-150 pb-2">
-            <nav className="flex gap-4">
+          <div className="flex flex-col gap-3 border-b border-gray-150 pb-2 sm:flex-row sm:items-center sm:justify-between">
+            <nav className="flex flex-wrap gap-4">
+              <TabButton
+                id="posts"
+                active={activeTab === "posts"}
+                onClick={() => setActiveTab("posts")}
+                label="Mis publicaciones"
+                icon={<FileText className="h-4 w-4" />}
+              />
               <TabButton
                 id="saved"
-                active={true}
-                onClick={() => {}}
-                label="Eventos Guardados"
+                active={activeTab === "saved"}
+                onClick={() => setActiveTab("saved")}
+                label="Eventos guardados"
                 icon={<Bookmark className="h-4 w-4" />}
               />
+              <TabButton
+                id="archived"
+                active={activeTab === "archived"}
+                onClick={() => setActiveTab("archived")}
+                label="Archivados"
+                icon={<Archive className="h-4 w-4" />}
+              />
             </nav>
+            {onOpenCreate && (
+              <button
+                type="button"
+                onClick={onOpenCreate}
+                className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 px-4 py-2 text-xs font-bold text-white shadow-md transition-all hover:from-purple-700 hover:to-blue-700 active:scale-95"
+              >
+                <Plus className="h-4 w-4" />
+                Nueva publicación
+              </button>
+            )}
           </div>
 
           <div className="space-y-4">
-            {eventSavedPosts.length === 0 ? (
+            {filteredPosts.length === 0 ? (
               <div className="rounded-[22px] border border-dashed border-gray-200 bg-white p-8 text-center text-sm text-gray-500">
-                No tienes eventos guardados por ahora. Los eventos que guardes desde el feed aparecerán aquí.
+                {activeTab === "posts" && (
+                  <>
+                    Aún no has publicado nada.
+                    {onOpenCreate ? (
+                      <>
+                        {" "}
+                        <button
+                          type="button"
+                          onClick={onOpenCreate}
+                          className="font-semibold text-violet-600 hover:text-violet-700 underline underline-offset-2"
+                        >
+                          Crea tu primera publicación
+                        </button>
+                        .
+                      </>
+                    ) : (
+                      " Crea una publicación desde el feed."
+                    )}
+                  </>
+                )}
+                {activeTab === "saved" && "No tienes eventos guardados por ahora. Los eventos que guardes desde el feed aparecerán aquí."}
+                {activeTab === "archived" && "No tienes publicaciones archivadas."}
               </div>
             ) : (
               <div className="flex flex-col gap-4">
-                {eventSavedPosts.map((post) => (
+                {filteredPosts.map((post) => (
                   <ProfilePostItem
                     key={post.id}
                     post={post}
                     currentUserId={user.id}
-                    onEdited={onSavedPostEdited}
-                    onDeleted={onSavedPostUnsaved}
+                    onEdited={activeTab === "saved" ? onSavedPostEdited : onPostEdited}
+                    onDeleted={activeTab === "saved" ? onSavedPostUnsaved : onPostDeleted}
                   />
                 ))}
               </div>

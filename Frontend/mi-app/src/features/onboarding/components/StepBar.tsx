@@ -1,6 +1,6 @@
 import { Check } from "lucide-react";
 
-const steps = [1, 2, 3, 4, 5];
+const steps = [1, 2];
 
 /** Solid fill so the track line does not show through inactive step dots */
 const INACTIVE_DOT_BG = "bg-[#220C49]";
@@ -8,10 +8,8 @@ const INACTIVE_DOT_BG = "bg-[#220C49]";
 export default function StepBar({ step }: { step: number }) {
   return (
     <div className="relative mx-auto mb-2 max-w-md">
-      {/* Línea base continua */}
       <div className="absolute top-1/2 left-0 right-0 z-0 h-1 -translate-y-1/2 rounded-full bg-white/15" />
 
-      {/* Línea completada */}
       <div
         className="absolute top-1/2 z-0 h-1 -translate-y-1/2 rounded-full bg-gradient-to-r from-violet-400 to-fuchsia-400 transition-all duration-300"
         style={{
@@ -20,7 +18,6 @@ export default function StepBar({ step }: { step: number }) {
         }}
       />
 
-      {/* Círculos */}
       <div className="relative z-10 flex items-center justify-between">
         {steps.map((s) => {
           const isActive = s === step;

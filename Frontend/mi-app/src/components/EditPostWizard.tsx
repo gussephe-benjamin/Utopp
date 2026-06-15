@@ -171,14 +171,25 @@ export default function EditPostWizard({ post, onClose, onSaved }: EditPostWizar
   // ── Step logic ───────────────────────────────────────────────
   const readyImages = images.filter(img => img.status === 'done' && img.cloudinaryUrl)
   const hasImages   = readyImages.length > 0
-  const TOTAL_STEPS = hasImages ? 4 : 3    // Links, Info, [Frame,] Preview
+  const isSimplePost = post?.post_type === 'simple_post'
+  const skipsLinksStep = isSimplePost
+
+  const contentInternalSteps = skipsLinksStep ? [2] : [1, 2]
+  const tailInternalSteps = hasImages ? [3, 4] : [3]
+  const displaySteps = [...contentInternalSteps, ...tailInternalSteps]
+  const TOTAL_STEPS = displaySteps.length
   const PREVIEW_STEP = TOTAL_STEPS
+
+  const wizardStepFromDisplay = (displayStep: number): number =>
+    displaySteps[displayStep - 1] ?? displayStep
+
   const descriptionWordCount = countWords(description)
   const descriptionWordCountValid = isPostDescriptionWordCountValid(description)
 
   const canAdvance = (): boolean => {
-    if (currentStep === 1) return true
-    if (currentStep === 2) {
+    const step = wizardStepFromDisplay(currentStep)
+    if (step === 1) return true
+    if (step === 2) {
       return (
         description.trim().length > 0 &&
         descriptionWordCountValid &&
@@ -290,51 +301,53 @@ export default function EditPostWizard({ post, onClose, onSaved }: EditPostWizar
         await reorderImages(postId, reorderList).catch(console.error)
       }
 
-      // 3. Link diff
-      const normalizedLinks = normalizeWizardLinks(links)
-      const finalLinkTempIds = new Set(normalizedLinks.map(l => l.tempId))
-      const initLinkMap = new Map(initialLinks.current.map(l => [toTempId(l.id), l]))
+      // 3. Link diff (omitido en publicaciones simples de alumnos)
+      if (!isSimplePost) {
+        const normalizedLinks = normalizeWizardLinks(links)
+        const finalLinkTempIds = new Set(normalizedLinks.map(l => l.tempId))
+        const initLinkMap = new Map(initialLinks.current.map(l => [toTempId(l.id), l]))
 
-      // 3a. Deleted links
-      for (const initLink of initialLinks.current) {
-        if (!finalLinkTempIds.has(toTempId(initLink.id))) {
-          setSaveProgress('Eliminando links...')
-          await deleteLink(postId, initLink.id).catch(console.error)
+        // 3a. Deleted links
+        for (const initLink of initialLinks.current) {
+          if (!finalLinkTempIds.has(toTempId(initLink.id))) {
+            setSaveProgress('Eliminando links...')
+            await deleteLink(postId, initLink.id).catch(console.error)
+          }
         }
-      }
 
-      // 3b. New links
-      const newLinks = normalizedLinks.filter(l => parseBackendId(l.tempId) === null)
-      if (newLinks.length > 0) setSaveProgress(`Agregando links (${newLinks.length})...`)
-      for (const lnk of newLinks) {
-        await addLink(postId, {
-          label:        lnk.label,
-          url:          lnk.url,
-          type:         lnk.type,
-          display_type: lnk.display_type,
-          position:     normalizedLinks.indexOf(lnk),
-        } as LinkCreate)
-      }
-
-      // 3c. Updated existing links
-      for (const lnk of normalizedLinks) {
-        const bid = parseBackendId(lnk.tempId)
-        if (!bid) continue
-        const orig = initLinkMap.get(lnk.tempId)
-        if (!orig) continue
-        if (orig.label !== lnk.label || orig.url !== lnk.url || orig.display_type !== lnk.display_type) {
-          setSaveProgress('Actualizando links...')
-          await updateLink(postId, bid, { label: lnk.label, url: lnk.url, display_type: lnk.display_type }).catch(console.error)
+        // 3b. New links
+        const newLinks = normalizedLinks.filter(l => parseBackendId(l.tempId) === null)
+        if (newLinks.length > 0) setSaveProgress(`Agregando links (${newLinks.length})...`)
+        for (const lnk of newLinks) {
+          await addLink(postId, {
+            label:        lnk.label,
+            url:          lnk.url,
+            type:         lnk.type,
+            display_type: lnk.display_type,
+            position:     normalizedLinks.indexOf(lnk),
+          } as LinkCreate)
         }
-      }
 
-      // 3d. Reorder existing links
-      const reorderLinkList = normalizedLinks
-        .filter(l => parseBackendId(l.tempId) !== null)
-        .map((l, idx) => ({ link_id: parseBackendId(l.tempId)!, position: idx }))
-      if (reorderLinkList.length > 1) {
-        setSaveProgress('Reordenando links...')
-        await reorderLinks(postId, reorderLinkList).catch(console.error)
+        // 3c. Updated existing links
+        for (const lnk of normalizedLinks) {
+          const bid = parseBackendId(lnk.tempId)
+          if (!bid) continue
+          const orig = initLinkMap.get(lnk.tempId)
+          if (!orig) continue
+          if (orig.label !== lnk.label || orig.url !== lnk.url || orig.display_type !== lnk.display_type) {
+            setSaveProgress('Actualizando links...')
+            await updateLink(postId, bid, { label: lnk.label, url: lnk.url, display_type: lnk.display_type }).catch(console.error)
+          }
+        }
+
+        // 3d. Reorder existing links
+        const reorderLinkList = normalizedLinks
+          .filter(l => parseBackendId(l.tempId) !== null)
+          .map((l, idx) => ({ link_id: parseBackendId(l.tempId)!, position: idx }))
+        if (reorderLinkList.length > 1) {
+          setSaveProgress('Reordenando links...')
+          await reorderLinks(postId, reorderLinkList).catch(console.error)
+        }
       }
 
       onSaved({ ...post, ...updated, title: title.trim() || undefined, tags, deadline_at: updated.deadline_at })
@@ -358,7 +371,9 @@ export default function EditPostWizard({ post, onClose, onSaved }: EditPostWizar
       )
     }
 
-    switch (currentStep) {
+    const step = wizardStepFromDisplay(currentStep)
+
+    switch (step) {
       case 1:
         return (
           <Step3LinksForm
@@ -375,6 +390,8 @@ export default function EditPostWizard({ post, onClose, onSaved }: EditPostWizar
             images={images}
             tags={tags}
             requiresDeadline={false}
+            hideTitle={isSimplePost}
+            hideDeadline={isSimplePost}
             onChange={d => {
               setTitle(d.title)
               setDescription(d.description)
@@ -428,10 +445,11 @@ export default function EditPostWizard({ post, onClose, onSaved }: EditPostWizar
     }
   }
 
+  const internalStep = wizardStepFromDisplay(currentStep)
   const stepLabel = loading ? 'Cargando...' :
-    currentStep === 1 ? 'Links' :
-    currentStep === 2 ? 'Contenido' :
-    hasImages && currentStep === 3 ? 'Encuadre' : 'Vista previa'
+    internalStep === 1 ? 'Links' :
+    internalStep === 2 ? 'Contenido' :
+    hasImages && internalStep === 3 ? 'Encuadre' : 'Vista previa'
 
   return ReactDOM.createPortal(
     <AnimatePresence>
@@ -487,7 +505,7 @@ export default function EditPostWizard({ post, onClose, onSaved }: EditPostWizar
               {saveError}
             </div>
           )}
-          {currentStep === 2 && !descriptionWordCountValid ? (
+          {internalStep === 2 && !descriptionWordCountValid ? (
             <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
               La descripción debe tener como máximo {POST_DESCRIPTION_MAX_WORDS} palabras.
             </div>

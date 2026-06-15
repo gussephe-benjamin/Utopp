@@ -5,7 +5,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
+  Heart,
   Loader2,
+  MessageCircle,
   MoreVertical,
   Pencil,
   Star,
@@ -17,6 +19,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { listImages, type PostImage } from "../../../api/post-images.api";
 import { listLinks } from "../../../api/post-links.api";
 import { savePost, unsavePost } from "../../../api/saved-posts.api";
+import { toggleReaction } from "../../../api/reactions.api";
+import { PostCommentsSection } from "./PostCommentsSection";
 import { archivePost, deletePost, unarchivePost } from "../../../api/posts.api";
 import EditPostWizard from "../../../components/EditPostWizard";
 import { ConfirmModal } from "../../profile/components/ConfirmModal";
@@ -172,6 +176,12 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
   const [savingPost, setSavingPost] = useState(false);
   const [editingPost, setEditingPost] = useState(false);
 
+  const [reacted, setReacted] = useState(post.user_reacted ?? false);
+  const [reactionCount, setReactionCount] = useState(post.reaction_count ?? 0);
+  const [reacting, setReacting] = useState(false);
+  const [commentsOpen, setCommentsOpen] = useState(false);
+  const [commentCount, setCommentCount] = useState(post.comment_count ?? 0);
+
   const [participationMenuOpen, setParticipationMenuOpen] = useState(false);
   const participationRef = useRef<HTMLDivElement>(null);
 
@@ -250,6 +260,27 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
       console.error(e);
     } finally {
       setSavingPost(false);
+    }
+  };
+
+  const handleReactionToggle = async () => {
+    if (reacting) return;
+    setReacting(true);
+    // Actualización optimista
+    const prevReacted = reacted;
+    const prevCount = reactionCount;
+    setReacted(!prevReacted);
+    setReactionCount(prevCount + (prevReacted ? -1 : 1));
+    try {
+      const result = await toggleReaction(post.id);
+      setReacted(result.reacted);
+      setReactionCount(result.count);
+    } catch (e) {
+      console.error(e);
+      setReacted(prevReacted);
+      setReactionCount(prevCount);
+    } finally {
+      setReacting(false);
     }
   };
 
@@ -774,7 +805,37 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
         <div className="border-t border-gray-100/80 w-full" />
 
         <div className="flex items-center justify-between gap-4 rounded-b-[22px] bg-white px-4 py-3.5">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={handleReactionToggle}
+              className={`inline-flex h-8 items-center justify-center gap-1 rounded-full px-2 transition-colors ${
+                reacted ? "text-[#e0245e]" : "text-gray-400 hover:text-[#e0245e]"
+              } ${reacting ? "opacity-80" : ""} active:scale-95`}
+              title={reacted ? "Quitar me gusta" : "Me gusta"}
+              aria-label={reacted ? "Quitar me gusta" : "Me gusta"}
+            >
+              <Heart className="h-5 w-5" fill={reacted ? "currentColor" : "none"} />
+              {reactionCount > 0 && (
+                <span className="text-xs font-semibold tabular-nums">{reactionCount}</span>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setCommentsOpen(open => !open)}
+              className={`inline-flex h-8 items-center justify-center gap-1 rounded-full px-2 transition-colors ${
+                commentsOpen ? "text-[#9333EA]" : "text-gray-400 hover:text-[#9333EA]"
+              } active:scale-95`}
+              title="Comentarios"
+              aria-label="Comentarios"
+            >
+              <MessageCircle className="h-5 w-5" />
+              {commentCount > 0 && (
+                <span className="text-xs font-semibold tabular-nums">{commentCount}</span>
+              )}
+            </button>
+
             <button
               type="button"
               onClick={handleSaveToggle}
@@ -827,6 +888,15 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
             ) : null}
           </div>
         </div>
+        {commentsOpen ? (
+          <div className="border-t border-gray-100/80 px-4 py-3">
+            <PostCommentsSection
+              postId={post.id}
+              currentUserId={currentUserId}
+              onCountChange={setCommentCount}
+            />
+          </div>
+        ) : null}
         {extraLinksOpen ? (
           <div
             className="absolute inset-0 z-20 flex items-center justify-center bg-black/35 p-4"

@@ -1,31 +1,18 @@
-import { useState } from "react";
-import StepCareer from "./steps/StepCareer";
-import StepInterests from "./steps/StepInterests";
-import StepAvailability from "./steps/StepAvailability";
-import StepWeeklySchedule from "./steps/StepWeeklySchedule";
-import CycleStep from "./steps/StepCycle";
 import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import StepCareer from "./steps/StepCareer";
+import CycleStep from "./steps/StepCycle";
 import type { JSX } from "react";
 import { updateOnboarding } from "../../api/onboarding.api";
-import type { OnboardingData as OnboardingPayload } from "../../api/onboarding.api";
 import StepBar from "./components/StepBar";
 import { AxiosError } from "axios";
 import { Check, ChevronRight } from "lucide-react";
-import { useEffect } from "react";
 import { checkOnboardingCompleted } from "./functions/isCompleteVerificate";
-import {
-  countDaysWithSelection,
-  countSelectedSlots,
-  createEmptyWeeklyAvailability,
-  getInitiallySelectedDays,
-} from "./lib/weeklyAvailability";
 
-export type OnboardingData = Omit<OnboardingPayload, "cycle" | "availability"> & {
+export type OnboardingData = {
+  career: string;
   cycle: number | null;
-  availability: number | null;
 };
-
-const MIN_INTERESTS = 3;
 
 function OnboardingMeshBackground({ accentMagenta }: { accentMagenta?: boolean }) {
   return (
@@ -54,49 +41,30 @@ export default function Onboarding(): JSX.Element {
   const [data, setData] = useState<OnboardingData>({
     career: "",
     cycle: null,
-    interests: [],
-    availability: null,
-    weekly_availability: createEmptyWeeklyAvailability(),
   });
-  const [selectedWeekDays, setSelectedWeekDays] = useState(() =>
-    getInitiallySelectedDays(createEmptyWeeklyAvailability()),
-  );
 
   const next = () => setStep((s) => s + 1);
   const back = () => setStep((s) => s - 1);
   const showCareerInNext = step === 1 && data.career !== "";
 
-  const interestRemaining = Math.max(0, MIN_INTERESTS - data.interests.length);
-
   const canContinue = () => {
     if (step === 1) return data.career !== "";
     if (step === 2) return data.cycle !== null;
-    if (step === 3) return data.interests.length >= MIN_INTERESTS;
-    if (step === 4) return data.availability !== null;
-    if (step === 5) return countSelectedSlots(data.weekly_availability) > 0;
     return false;
   };
 
-  // Saltar lleva al feed SIN marcar el onboarding como completado:
-  // en el próximo inicio de sesión se volverá a solicitar.
   const skipOnboarding = (): void => {
     navigate("/app/inicio", { replace: true });
   };
 
   const finishOnboarding = async (): Promise<void> => {
     try {
-      if (data.cycle === null || data.availability === null) {
-        return;
-      }
+      if (data.cycle === null) return;
 
-      const payload: OnboardingPayload = {
-        ...data,
+      await updateOnboarding({
+        career: data.career,
         cycle: data.cycle,
-        availability: data.availability,
-        weekly_availability: data.weekly_availability,
-      };
-
-      await updateOnboarding(payload);
+      });
       setFlow("success");
     } catch (error) {
       console.error(error);
@@ -119,42 +87,10 @@ export default function Onboarding(): JSX.Element {
       );
     }
 
-    if (step === 3) {
-      const selectedCount = data.interests.length;
-      return (
-        <div className="text-center pt-3 px-4 animate-in fade-in duration-300">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/15 backdrop-blur-sm">
-            <span className="text-violet-50 font-medium text-sm">
-              {selectedCount}{" "}
-              {selectedCount === 1 ? "interés seleccionado" : "intereses seleccionados"}
-            </span>
-            {selectedCount >= MIN_INTERESTS && <span className="text-fuchsia-300 font-semibold">✓</span>}
-          </div>
-        </div>
-      );
-    }
-
-    if (step === 4) {
+    if (step === 2 && data.cycle !== null) {
       return (
         <p className="text-center text-xs text-violet-100/85 pt-3 px-4 animate-in fade-in duration-300">
-          Esto nos ayuda a recomendarte la cantidad ideal de eventos
-        </p>
-      );
-    }
-
-    if (step === 5) {
-      const selectedSlots = countSelectedSlots(data.weekly_availability);
-      const selectedDays = countDaysWithSelection(data.weekly_availability);
-      const markedDaysWithoutSlots =
-        selectedWeekDays.length > 0 && selectedSlots === 0;
-
-      return (
-        <p className="text-center text-xs text-violet-100/85 pt-3 px-4 animate-in fade-in duration-300">
-          {selectedSlots > 0
-            ? `${selectedDays} ${selectedDays === 1 ? "día" : "días"} · ${selectedSlots} ${selectedSlots === 1 ? "horario seleccionado" : "horarios seleccionados"}`
-            : markedDaysWithoutSlots
-              ? "Selecciona al menos un horario en los días marcados"
-              : "Marca tus días disponibles y elige al menos un horario"}
+          Ciclo <span className="font-semibold text-white">{data.cycle}</span>
         </p>
       );
     }
@@ -187,47 +123,6 @@ export default function Onboarding(): JSX.Element {
             </p>
           </div>
         );
-      case 3:
-        return (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 pt-1">
-            <h1 className="text-3xl font-bold text-white mb-2">
-              Elige{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-fuchsia-400">
-                {interestRemaining > 0 ? `${interestRemaining} o más` : "tus"}
-              </span>{" "}
-              intereses
-            </h1>
-            <h2 className="text-2xl font-bold text-violet-50 mb-3">favoritos</h2>
-            <p className="text-violet-100/80 text-base">Personalizaremos tu experiencia de eventos</p>
-          </div>
-        );
-      case 4:
-        return (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 pt-1">
-            <h1 className="text-3xl font-bold text-white mb-2">
-              ¿Cuántas horas{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-fuchsia-400">
-                libres
-              </span>{" "}
-              tienes?
-            </h1>
-            <p className="text-violet-100/80 text-base">A la semana, aproximadamente</p>
-          </div>
-        );
-      case 5:
-        return (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 pt-1">
-            <h1 className="text-3xl font-bold text-white mb-2">
-              Indica tus días y horarios{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-fuchsia-400">
-                disponibles
-              </span>
-            </h1>
-            <p className="text-violet-100/80 text-base">
-              Primero marca los días en los que puedes asistir y luego elige tus franjas horarias.
-            </p>
-          </div>
-        );
       default:
         return <></>;
     }
@@ -239,24 +134,27 @@ export default function Onboarding(): JSX.Element {
         <OnboardingMeshBackground accentMagenta />
         <div className="relative z-10 mx-auto flex min-h-screen max-w-md flex-col items-center justify-center px-6 pb-12 pt-8">
           <div className="relative mb-10">
-            <span className="absolute -left-8 top-2 text-lg text-amber-300/90">✦</span>
-            <span className="absolute -right-6 top-8 text-sm text-amber-200/80">✦</span>
-            <span className="absolute -left-4 bottom-0 text-xs text-amber-300/70">✦</span>
-            <span className="absolute -right-10 bottom-6 text-base text-yellow-300/85">✦</span>
             <div className="flex h-24 w-24 items-center justify-center rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/40 ring-4 ring-emerald-400/30">
               <Check className="h-12 w-12 stroke-[3] text-white" strokeLinecap="round" strokeLinejoin="round" />
             </div>
           </div>
           <h1 className="mb-3 text-center text-3xl font-bold text-white">¡Todo listo!</h1>
-          <p className="mb-12 max-w-sm text-center text-base text-violet-100/90">
-            Tu perfil ya está personalizado.
+          <p className="mb-8 max-w-sm text-center text-base text-violet-100/90">
+            Ya puedes explorar Utopp. Completa tu perfil cuando quieras para mejores recomendaciones.
           </p>
           <button
             type="button"
             onClick={() => navigate("/app/inicio", { replace: true })}
-            className="w-full max-w-sm rounded-full bg-white py-4 text-center text-base font-semibold text-[#2B0F56] shadow-lg transition-transform active:scale-[0.98] hover:brightness-105"
+            className="mb-3 w-full max-w-sm rounded-full bg-white py-4 text-center text-base font-semibold text-[#2B0F56] shadow-lg transition-transform active:scale-[0.98] hover:brightness-105"
           >
             Ir al inicio
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate("/app/perfil?settings=1", { replace: true })}
+            className="w-full max-w-sm rounded-full border border-white/25 bg-white/5 py-3.5 text-center text-sm font-semibold text-violet-50 transition-colors hover:bg-white/10"
+          >
+            Ir a configurar perfil
           </button>
         </div>
       </div>
@@ -287,16 +185,6 @@ export default function Onboarding(): JSX.Element {
           <div className="pb-4 transition-all duration-700 opacity-100">
             {step === 1 && <StepCareer data={data} setData={setData} />}
             {step === 2 && <CycleStep data={data} setData={setData} />}
-            {step === 3 && <StepInterests data={data} setData={setData} />}
-            {step === 4 && <StepAvailability data={data} setData={setData} />}
-            {step === 5 && (
-              <StepWeeklySchedule
-                data={data}
-                setData={setData}
-                selectedDays={selectedWeekDays}
-                setSelectedDays={setSelectedWeekDays}
-              />
-            )}
           </div>
         </main>
 
@@ -316,14 +204,14 @@ export default function Onboarding(): JSX.Element {
             <button
               type="button"
               disabled={!canContinue()}
-              onClick={step < 5 ? next : finishOnboarding}
+              onClick={step < 2 ? next : finishOnboarding}
               className={`flex flex-1 items-center justify-center rounded-2xl py-3 font-semibold transition-all duration-300 transform active:scale-[0.98] ${
                 canContinue()
                   ? "bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white shadow-lg shadow-violet-500/30 hover:brightness-105"
                   : "cursor-not-allowed bg-white/10 text-white/50"
               }`}
             >
-              {step < 5
+              {step < 2
                 ? showCareerInNext
                   ? <span className="text-center leading-tight">Siguiente</span>
                   : "Siguiente"

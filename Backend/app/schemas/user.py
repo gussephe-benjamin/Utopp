@@ -3,6 +3,8 @@ from typing import Optional, List, Dict, Any
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
+from app.schemas.weekly_availability import validate_weekly_availability
+
 ORG_DESCRIPTION_MAX_LENGTH = 2000
 ORG_CONTACTS_MAX_KEYS = 10
 
@@ -101,6 +103,7 @@ class UserOut(BaseModel):
     cycle: Optional[int] = None
     interests: Optional[List[str]] = None
     availability: Optional[int] = None
+    weekly_availability: Optional[Dict] = None
     description: Optional[str] = None
     contacts: Optional[Dict[str, str]] = None
     is_onboarding_completed: bool = False
@@ -143,9 +146,17 @@ class UserUpdate(BaseModel):
     career: Optional[str] = Field(None, max_length=100)
     cycle: Optional[int] = Field(None, ge=1, le=12)
     interests: Optional[List[str]] = None
-    availability: Optional[int] | None = None
+    availability: Optional[int] = None
+    weekly_availability: Optional[Dict] = None
     description: Optional[str] = Field(None, max_length=ORG_DESCRIPTION_MAX_LENGTH)
     contacts: Optional[Dict[str, str]] = None
+
+    @field_validator("weekly_availability")
+    @classmethod
+    def validate_weekly_availability_field(cls, value: Optional[Dict]) -> Optional[Dict]:
+        if value is None:
+            return None
+        return validate_weekly_availability(value)
 
     @field_validator("description")
     @classmethod

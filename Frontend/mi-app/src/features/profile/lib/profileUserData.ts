@@ -12,6 +12,7 @@ export function toProfileUserData(raw: UserProfileResponse): ProfileUserData {
     cycle: raw.cycle ?? undefined,
     availability: raw.availability ?? undefined,
     interests: raw.interests ?? undefined,
+    weekly_availability: raw.weekly_availability ?? undefined,
     followers_count: raw.followers_count,
     following_count: raw.following_count,
     posts_count: raw.posts_count,

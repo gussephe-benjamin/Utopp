@@ -6,6 +6,10 @@ export const AVAILABILITY_OPTIONS = [
   { id: 4, label: 'Máxima disponibilidad', emoji: '🌟', description: '15+ hrs/semana' },
 ] as const
 
+export const MAX_ACADEMIC_CYCLE = 12
+
+export const CYCLE_OPTIONS = Array.from({ length: MAX_ACADEMIC_CYCLE }, (_, index) => index + 1)
+
 export const CAREER_FACULTIES = [
   {
     label: 'Facultad de Negocios',

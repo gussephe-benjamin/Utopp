@@ -468,3 +468,41 @@ def run_migrations(engine: Engine) -> None:
             WHERE subtype::text = 'hackathon';
         """))
         conn.commit()
+
+        # 19. Reacciones (me gusta) y comentarios en publicaciones
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS post_reactions (
+                id BIGSERIAL PRIMARY KEY,
+                user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                post_id BIGINT NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                CONSTRAINT uq_post_reactions_user_post UNIQUE (user_id, post_id)
+            );
+        """))
+        conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS idx_post_reactions_post
+            ON post_reactions (post_id);
+        """))
+        conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS idx_post_reactions_user
+            ON post_reactions (user_id);
+        """))
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS post_comments (
+                id BIGSERIAL PRIMARY KEY,
+                user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                post_id BIGINT NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+                content TEXT NOT NULL,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMPTZ
+            );
+        """))
+        conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS idx_post_comments_post_created
+            ON post_comments (post_id, created_at);
+        """))
+        conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS idx_post_comments_user
+            ON post_comments (user_id);
+        """))
+        conn.commit()

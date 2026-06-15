@@ -232,7 +232,8 @@ Wrapper de transición entre páginas (motion wrapper).
 
 | Componente | Descripción |
 |---|---|
-| `PostCard` | Tarjeta principal del feed con carrusel, menú, estadísticas y acciones |
+| `PostCard` | Tarjeta principal del feed con carrusel, menú, acciones (me gusta, comentarios, guardar juntos) y enlaces |
+| `PostCommentsSection` | Lista de comentarios expandible con input para comentar y eliminar comentarios propios |
 | `FeedHorizontalFilters` | Fila de chips pill para filtrar por status, urgencia, y categorías |
 | `FeedFiltersPanel` | Panel lateral/flotante con filtros avanzados |
 | `FeedBottomBar` | Barra de navegación inferior (solo móvil, `sm:hidden`) |
@@ -256,7 +257,7 @@ Wrapper de transición entre páginas (motion wrapper).
 | Componente | Descripción |
 |---|---|
 | `ProfilePostListCard` | Tarjeta compacta para listas de posts en el perfil |
-| `EditProfileModal` | Modal para editar nombre, carrera, ciclo, avatar |
+| `ProfileSettingsModal` | Configuración del perfil estudiante: ciclo, intereses, horas libres y horarios semanales |
 | `OrganizationsManagerModal` | Modal para gestionar organizaciones del usuario |
 | `ConfirmModal` | Modal de confirmación genérico |
 
@@ -388,7 +389,7 @@ ring-1 ring-amber-100/30
 
 **Facultad de Ingeniería:** Bioingeniería, Ambiental, Civil, Energía, Electrónica, Industrial, Mecatrónica, Mecánica, Química
 
-### Disponibilidad (opciones de onboarding)
+### Disponibilidad (configuración de perfil)
 | ID | Label | Horas/semana |
 |---|---|---|
 | 0 | ☕ Poco tiempo | 1–3 hrs |

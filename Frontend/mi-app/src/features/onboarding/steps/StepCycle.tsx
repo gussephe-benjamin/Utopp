@@ -1,23 +1,23 @@
 import React from "react";
 import type { OnboardingData } from "../Onboarding";
+import { CYCLE_OPTIONS } from "../../profile/constants/profileOptions";
 
 interface StepCycleProps {
   data: Pick<OnboardingData, "career" | "cycle">;
   setData: React.Dispatch<React.SetStateAction<OnboardingData>>;
 }
 
-const cycles = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-
 export default function StepCycle({ data, setData }: StepCycleProps) {
   return (
     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-wrap gap-3">
-        {cycles.map((cycle) => {
+        {CYCLE_OPTIONS.map((cycle) => {
           const isSelected = data.cycle === cycle;
 
           return (
             <button
               key={cycle}
+              type="button"
               onClick={() =>
                 setData((prev) => ({
                   ...prev,

@@ -17,6 +17,7 @@
  */
 
 import api from "./axios"
+import type { WeeklyAvailabilityPayload } from "../features/onboarding/lib/weeklyAvailability"
 
 export interface OrganizationSummary {
   id: number
@@ -35,6 +36,7 @@ export interface UserProfileResponse {
   cycle?: number | null
   interests?: string[] | null
   availability?: number | null
+  weekly_availability?: WeeklyAvailabilityPayload | null
   description?: string | null
   contacts?: Record<string, string> | null
   followers_count?: number

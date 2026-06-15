@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
+import { useSearchParams } from "react-router-dom"
 import {
   followUser,
   getMyFollowingOrganizations,
   getMyProfile,
   getOrganizations,
   getUserFollowingOrganizations,
+  getUserPosts,
   getUserProfile,
   setProfileImage,
   unfollowUser,
@@ -15,11 +17,14 @@ import {
 import { uploadToCloudinary } from "../api/cloudinary"
 import { getMyRoles } from "../api/roles.api"
 import { getSavedPosts } from "../api/saved-posts.api"
+import PublicationWizard from "../components/PublicationWizard"
+import { useRole } from "../hooks/useRole"
 import { StudentProfileSelf } from "../features/profile/views/StudentProfileSelf"
 import { StudentProfilePublic } from "../features/profile/views/StudentProfilePublic"
 import { mapPostOutToFeedPost, type PostOutRaw } from "../features/profile/lib/postMapper"
 import { toProfileUserData } from "../features/profile/lib/profileUserData"
 import type { ProfileUserData } from "../features/profile/views/types"
+import type { ProfileSettingsPayload } from "../features/profile/components/ProfileSettingsModal"
 import type { FeedPostOut } from "../types/post.types"
 
 interface StudentProfilePageProps {
@@ -32,6 +37,11 @@ interface StudentProfilePageProps {
  * en función del `viewedUserId` recibido.
  */
 export default function StudentProfilePage({ viewedUserId }: StudentProfilePageProps) {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const openSettingsOnMount = searchParams.get("settings") === "1"
+  const openCreateOnMount = searchParams.get("create") === "1"
+  const { allowedTypes, canCreate } = useRole()
+  const [showCreateWizard, setShowCreateWizard] = useState(false)
   const [isOwnProfile, setIsOwnProfile] = useState<boolean | null>(viewedUserId == null ? true : null)
 
   const [user, setUser] = useState<ProfileUserData | null>(null)
@@ -39,6 +49,7 @@ export default function StudentProfilePage({ viewedUserId }: StudentProfilePageP
   const [followingOrganizations, setFollowingOrganizations] = useState<OrganizationSummary[]>([])
   const [allOrganizations, setAllOrganizations] = useState<OrganizationSummary[]>([])
   const [eventSavedPosts, setEventSavedPosts] = useState<FeedPostOut[]>([])
+  const [posts, setPosts] = useState<FeedPostOut[]>([])
   const [loading, setLoading] = useState(true)
   const [profileSaving, setProfileSaving] = useState(false)
   const [avatarSaving, setAvatarSaving] = useState(false)
@@ -53,6 +64,7 @@ export default function StudentProfilePage({ viewedUserId }: StudentProfilePageP
     setUser(null)
     setFollowingOrganizations([])
     setEventSavedPosts([])
+    setPosts([])
 
     ;(async () => {
       try {
@@ -62,17 +74,19 @@ export default function StudentProfilePage({ viewedUserId }: StudentProfilePageP
         if (mounted) setIsOwnProfile(viewingSelf)
 
         if (viewingSelf) {
-          const [savedRaw, followingOrgs, orgs, roles] = await Promise.all([
+          const [savedRaw, followingOrgs, orgs, roles, userPostsRaw] = await Promise.all([
             getSavedPosts().catch(() => [] as PostOutRaw[]),
             getMyFollowingOrganizations().catch(() => []),
             getOrganizations().catch(() => []),
             getMyRoles().catch(() => []),
+            getUserPosts(myProfile.id).catch(() => [] as PostOutRaw[]),
           ])
           if (!mounted) return
           setUser(toProfileUserData({ ...myProfile, role_name: roles[0]?.name ?? myProfile.role_name ?? "alumno" }))
           setAvatarUrl(myProfile.profile_image_url ?? null)
           setFollowingOrganizations(followingOrgs)
           setAllOrganizations(orgs)
+          setPosts(userPostsRaw.map((post: PostOutRaw) => mapPostOutToFeedPost(post)))
           const savedFeedPosts = (savedRaw as PostOutRaw[])
             .filter((post: PostOutRaw) => post.post_type === "event")
             .map((post: PostOutRaw) => mapPostOutToFeedPost(post, { is_saved: true }))
@@ -99,16 +113,51 @@ export default function StudentProfilePage({ viewedUserId }: StudentProfilePageP
     }
   }, [viewedUserId])
 
+  const refreshPosts = useCallback(async () => {
+    if (!user?.id) return
+    const userPostsRaw = await getUserPosts(user.id).catch(() => [] as PostOutRaw[])
+    setPosts(userPostsRaw.map((post: PostOutRaw) => mapPostOutToFeedPost(post)))
+  }, [user?.id])
+
+  useEffect(() => {
+    if (!user?.id || isOwnProfile !== true) return
+    const handlePublished = () => {
+      void refreshPosts()
+    }
+    window.addEventListener("postPublished", handlePublished)
+    return () => window.removeEventListener("postPublished", handlePublished)
+  }, [user?.id, isOwnProfile, refreshPosts])
+
+  useEffect(() => {
+    if (openCreateOnMount && canCreate) {
+      setShowCreateWizard(true)
+      const next = new URLSearchParams(searchParams)
+      next.delete("create")
+      setSearchParams(next, { replace: true })
+    }
+  }, [openCreateOnMount, canCreate, searchParams, setSearchParams])
+
   const handleSaveProfile = useCallback(
-    async (payload: { cycle: number; availability: number; interests: string[] }) => {
+    async (payload: ProfileSettingsPayload) => {
       setProfileSaving(true)
       try {
         const [updated] = await Promise.all([
-          updateMyProfile({ cycle: payload.cycle, availability: payload.availability }),
+          updateMyProfile({
+            cycle: payload.cycle,
+            availability: payload.availability,
+            weekly_availability: payload.weekly_availability,
+          }),
           updateInterests(payload.interests),
         ])
         setUser((prev) =>
-          prev ? { ...prev, ...updated, interests: payload.interests } as ProfileUserData : prev,
+          prev
+            ? {
+                ...prev,
+                ...updated,
+                interests: payload.interests,
+                weekly_availability: payload.weekly_availability,
+              } as ProfileUserData
+            : prev,
         )
       } finally {
         setProfileSaving(false)
@@ -116,6 +165,13 @@ export default function StudentProfilePage({ viewedUserId }: StudentProfilePageP
     },
     [],
   )
+
+  const handleSettingsOpened = useCallback(() => {
+    if (!openSettingsOnMount) return
+    const next = new URLSearchParams(searchParams)
+    next.delete("settings")
+    setSearchParams(next, { replace: true })
+  }, [openSettingsOnMount, searchParams, setSearchParams])
 
   const extractApiError = (error: unknown, fallback: string): string => {
     if (error && typeof error === "object") {
@@ -217,6 +273,14 @@ export default function StudentProfilePage({ viewedUserId }: StudentProfilePageP
     setEventSavedPosts((prev) => prev.filter((p) => p.id !== postId))
   }, [])
 
+  const handlePostEdited = useCallback((updated: FeedPostOut) => {
+    setPosts((prev) => prev.map((p) => (p.id === updated.id ? { ...p, ...updated } : p)))
+  }, [])
+
+  const handlePostDeleted = useCallback((postId: number) => {
+    setPosts((prev) => prev.filter((p) => p.id !== postId))
+  }, [])
+
   const sharedProps = useMemo(() => {
     return {
       user: user!,
@@ -240,10 +304,13 @@ export default function StudentProfilePage({ viewedUserId }: StudentProfilePageP
       return (
         <StudentProfileSelf
           {...sharedProps}
+          posts={posts}
           eventSavedPosts={eventSavedPosts}
           followingOrganizations={followingOrganizations}
           allOrganizations={allOrganizations}
           onSaveProfile={handleSaveProfile}
+          openSettingsOnMount={openSettingsOnMount}
+          onSettingsOpened={handleSettingsOpened}
           onFollowOrganization={handleFollowOrganization}
           onUnfollowOrganization={handleUnfollowOrganization}
           onCloseOrganizationsManager={handleCloseOrganizationsManager}
@@ -257,6 +324,9 @@ export default function StudentProfilePage({ viewedUserId }: StudentProfilePageP
           onDismissOrgError={handleDismissOrgError}
           onSavedPostEdited={handleSavedPostEdited}
           onSavedPostUnsaved={handleSavedPostUnsaved}
+          onPostEdited={handlePostEdited}
+          onPostDeleted={handlePostDeleted}
+          onOpenCreate={canCreate ? () => setShowCreateWizard(true) : undefined}
         />
       )
     }
@@ -274,9 +344,12 @@ export default function StudentProfilePage({ viewedUserId }: StudentProfilePageP
     isOwnProfile,
     avatarUrl,
     eventSavedPosts,
+    posts,
     followingOrganizations,
     allOrganizations,
     handleSaveProfile,
+    openSettingsOnMount,
+    handleSettingsOpened,
     handleFollowOrganization,
     handleUnfollowOrganization,
     handleCloseOrganizationsManager,
@@ -290,7 +363,21 @@ export default function StudentProfilePage({ viewedUserId }: StudentProfilePageP
     handleDismissOrgError,
     handleSavedPostEdited,
     handleSavedPostUnsaved,
+    handlePostEdited,
+    handlePostDeleted,
+    canCreate,
   ])
 
-  return content
+  return (
+    <>
+      {content}
+      {isOwnProfile && (
+        <PublicationWizard
+          isOpen={showCreateWizard}
+          onClose={() => setShowCreateWizard(false)}
+          allowedTypes={allowedTypes}
+        />
+      )}
+    </>
+  )
 }

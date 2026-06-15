@@ -540,7 +540,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"career\": \"Ingeniería de Software\",\n    \"interests\": [\"AI\", \"Web Dev\", \"Cloud\"],\n    \"availability\": 3,\n    \"cycle\": 5\n}"
+              "raw": "{\n    \"career\": \"Ciencia de la Computación\",\n    \"cycle\": 5\n}"
             },
             "url": {
               "raw": "{{base_url}}/onboarding/update",
@@ -554,7 +554,8 @@
             },
             "description": "POST /onboarding/update — Guarda los datos del onboarding: `career` (string), `interests` (array), `availability` (número o descripción), `cycle` (ciclo académico). Marca `onboarding_completed = true` en `users`. Requiere autenticación."
           },
-          "response": []
+          "response": [],
+          "description": "POST /onboarding/update — Guarda career y cycle. Marca onboarding_completed=true. Requiere autenticación."
         }
       ],
       "description": "Configuración inicial del perfil de usuario. El onboarding se completa una sola vez tras el registro. Hasta completarlo, `onboarding_completed` en `users` es `false`. Recopila: carrera, intereses, disponibilidad y ciclo académico."
@@ -2099,6 +2100,139 @@
         }
       ],
       "description": "Guardar y listar posts favoritos"
+    },
+    {
+      "name": "Reactions",
+      "item": [
+        {
+          "name": "Toggle Reaction",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/posts/{{post_id}}/reactions",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "{{post_id}}",
+                "reactions"
+              ]
+            },
+            "description": "POST /posts/{post_id}/reactions — Alterna la reacción (me gusta) del usuario en un post publicado. Devuelve { reacted, count }. Requiere autenticación."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Reaction Count",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/posts/{{post_id}}/reactions/count",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "{{post_id}}",
+                "reactions",
+                "count"
+              ]
+            },
+            "description": "GET /posts/{post_id}/reactions/count — Devuelve { count, user_reacted }. Auth opcional (user_reacted solo si autenticado)."
+          },
+          "response": []
+        }
+      ],
+      "description": "Reacciones (me gusta) en publicaciones"
+    },
+    {
+      "name": "Comments",
+      "item": [
+        {
+          "name": "List Comments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/posts/{{post_id}}/comments?page=1&size=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "{{post_id}}",
+                "comments"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "GET /posts/{post_id}/comments — Lista los comentarios (más antiguos primero), paginado. No requiere autenticación."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Comment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"content\": \"¡Excelente proyecto!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/posts/{{post_id}}/comments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "{{post_id}}",
+                "comments"
+              ]
+            },
+            "description": "POST /posts/{post_id}/comments — Crea un comentario en un post publicado. content máx. 500 caracteres. Requiere autenticación."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Comment",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/posts/{{post_id}}/comments/{{comment_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "{{post_id}}",
+                "comments",
+                "{{comment_id}}"
+              ]
+            },
+            "description": "DELETE /posts/{post_id}/comments/{comment_id} — Elimina un comentario. Solo el autor o un admin/root."
+          },
+          "response": []
+        }
+      ],
+      "description": "Comentarios en publicaciones"
     },
     {
       "name": "Participants",

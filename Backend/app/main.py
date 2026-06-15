@@ -30,6 +30,8 @@ from app.routers import (
     feed,
     saved_posts,
     participants,
+    post_reactions,
+    post_comments,
     roles,
     admin,
 )
@@ -127,6 +129,8 @@ app.include_router(posts.router, prefix="/posts", tags=["posts"])
 app.include_router(post_images.router, tags=["post-images"])
 app.include_router(post_links.router, tags=["post-links"])
 app.include_router(saved_posts.router, tags=["saved-posts"])
+app.include_router(post_reactions.router, tags=["post-reactions"])
+app.include_router(post_comments.router, tags=["post-comments"])
 
 # ═══════════════════════════════════════════════════════════
 # FEED Y PARTICIPACIÓN

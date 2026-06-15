@@ -11,6 +11,7 @@ export const ROLE_ROOT        = 'root'
 
 /** Tipos de publicación permitidos por rol. */
 export const ALLOWED_TYPES_BY_ROLE: Record<string, PostType[]> = {
+  [ROLE_ESTUDIANTE]:   ['simple_post'],
   [ROLE_ORGANIZACION]: ['event', 'announcement'],
   [ROLE_OFICINA]:      ['event', 'international_opportunity', 'announcement'],
   [ROLE_ADMIN]:        ['international_opportunity', 'event', 'academic_project', 'announcement', 'simple_post'],

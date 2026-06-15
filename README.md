@@ -442,11 +442,23 @@ Documentación interactiva completa disponible en **http://localhost:8000/docs**
 
 | Rol | Publicar | Prioridad máxima | Gestionar usuarios |
 |-----|:--------:|:----------------:|:------------------:|
-| `estudiante` | ✅ | ❌ | ❌ |
+| `estudiante` | ✅ solo publicación simple | ❌ | ❌ |
 | `organización estudiantil` | ✅ | ❌ | ❌ |
 | `oficina` | ✅ | ✅ prioridad 1 | ❌ |
 | `administrador` | ✅ | ✅ prioridad 2 | ✅ parcial |
 | `root` | ✅ | ✅ prioridad 3 | ✅ total |
+
+Los estudiantes solo pueden crear **publicaciones simples** (`simple_post`) para promocionar sus proyectos e ideas. Estas publicaciones no admiten enlaces externos (validado en el backend). El resto de roles conserva sus tipos de publicación habituales.
+
+### Interacción en publicaciones
+
+Cualquier usuario autenticado puede interactuar con las publicaciones del feed:
+
+- **Reaccionar** (me gusta): toggle por usuario, tabla `post_reactions`. Endpoints `POST /posts/{id}/reactions` y `GET /posts/{id}/reactions/count`.
+- **Comentar**: tabla `post_comments`. Endpoints `GET/POST /posts/{id}/comments` y `DELETE /posts/{id}/comments/{comment_id}` (autor o admin/root).
+- **Guardar**: tabla `saved_posts` (existente).
+
+En la tarjeta de publicación, los botones de me gusta, comentarios y guardar aparecen juntos en la barra inferior. El feed devuelve `reaction_count`, `user_reacted` y `comment_count`.
 
 ---
 

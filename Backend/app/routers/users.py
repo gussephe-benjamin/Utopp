@@ -357,11 +357,18 @@ def update_current_user(
     update_data = data.model_dump(exclude_unset=True)
 
     org_only_fields = {"description", "contacts"}
+    student_only_fields = {"weekly_availability"}
     if org_only_fields.intersection(update_data.keys()):
         if not _has_role(db, current_user.id, ORG_ROLE_NAME):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Solo las organizaciones pueden actualizar descripción y contactos",
+            )
+    if student_only_fields.intersection(update_data.keys()):
+        if not _has_role(db, current_user.id, STUDENT_ROLE_NAME):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Solo los estudiantes pueden actualizar la disponibilidad semanal detallada",
             )
 
     for field, value in update_data.items():

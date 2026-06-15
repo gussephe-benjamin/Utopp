@@ -16,6 +16,10 @@ interface Step4GeneralInfoProps {
   tags?: string[]
   /** Indica si el tipo de publicación requiere deadline obligatorio (ej: announcement) */
   requiresDeadline?: boolean
+  /** Oculta el campo de título (ej: publicaciones simples sin título) */
+  hideTitle?: boolean
+  /** Oculta el campo de fecha límite (ej: publicaciones simples) */
+  hideDeadline?: boolean
   onChange: (data: { title: string; description: string; deadline_at: string }) => void
   onImagesChange: (images: WizardImage[]) => void
   onTagsChange?: (tags: string[]) => void
@@ -28,6 +32,8 @@ export default function Step4GeneralInfo({
   images,
   tags = [],
   requiresDeadline = false,
+  hideTitle = false,
+  hideDeadline = false,
   onChange,
   onImagesChange,
   onTagsChange,
@@ -137,20 +143,22 @@ export default function Step4GeneralInfo({
     <div className="space-y-6">
 
       {/* Campo: Título */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Título <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
-          value={title}
-          onChange={e => onChange({ title: e.target.value, description, deadline_at })}
-          maxLength={200}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-          placeholder="Título de la publicación"
-        />
-        <div className="text-xs text-gray-400 mt-1 text-right">{title.length}/200</div>
-      </div>
+      {!hideTitle && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Título <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            value={title}
+            onChange={e => onChange({ title: e.target.value, description, deadline_at })}
+            maxLength={200}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            placeholder="Título de la publicación"
+          />
+          <div className="text-xs text-gray-400 mt-1 text-right">{title.length}/200</div>
+        </div>
+      )}
 
       {/* Campo: Descripción */}
       <div>
@@ -175,7 +183,7 @@ export default function Step4GeneralInfo({
       </div>
 
       {/* Campo: Fecha límite (opcional salvo announcement) */}
-      <div>
+      <div className={hideDeadline ? 'hidden' : ''}>
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Fecha límite {requiresDeadline && <span className="text-red-500">*</span>}
           {!requiresDeadline && <span className="text-gray-400 font-normal"> (opcional)</span>}

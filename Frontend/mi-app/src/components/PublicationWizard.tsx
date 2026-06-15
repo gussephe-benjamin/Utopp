@@ -17,7 +17,7 @@ import Step4GeneralInfo from './Step4_GeneralInfo'
 import StepFrameEditor from './StepFrameEditor'
 import Step5Preview from './Step5_Preview'
 import ModernStepper from './ModernStepper'
-import { createPost, publishPost } from '../api/posts.api'
+import { createPost, createSimplePost, publishPost } from '../api/posts.api'
 import { addImage } from '../api/post-images.api'
 import { addLink } from '../api/post-links.api'
 import {
@@ -83,6 +83,8 @@ interface PublicationWizardProps {
   allowedTypes?: PostType[]
 }
 
+const DEFAULT_SIMPLE_POST_SUBTYPE: SubPostType = 'informativo'
+
 /**
  * Wizard de 5 pasos para crear y publicar un post.
  *
@@ -121,24 +123,56 @@ export default function PublicationWizard({ isOpen, onClose, allowedTypes }: Pub
     }
   }, [isOpen])
 
+  const singleAllowedType =
+    allowedTypes && allowedTypes.length === 1 ? allowedTypes[0] : null
+  const skipsTypeStep = singleAllowedType !== null
+
+  // Al abrir, preconfigurar el único tipo permitido (p. ej. alumnos → simple_post)
+  useEffect(() => {
+    if (!isOpen) return
+    dispatch({ type: 'RESET' })
+    setCurrentStep(1)
+    setPublishError(null)
+    setPublishProgress(null)
+    setShowConfirmClose(false)
+    setIsPinned(false)
+
+    if (singleAllowedType) {
+      dispatch({ type: 'SET_POST_TYPE', payload: singleAllowedType })
+      if (singleAllowedType === 'simple_post') {
+        dispatch({ type: 'SET_SUBTYPE', payload: DEFAULT_SIMPLE_POST_SUBTYPE })
+      }
+    }
+  }, [isOpen, singleAllowedType])
+
   // Determina si el paso actual es válido para permitir avanzar
   // Imágenes listas (subidas a Cloudinary) que habilitan el paso de encuadre
   const readyImages = formData.images.filter(img => img.status === 'done' && img.cloudinaryUrl)
   const hasImages   = readyImages.length > 0
 
-  // Flujo de pasos:
-  //   Sin imágenes: 1→2→3→4→5(Preview)
-  //   Con imágenes: 1→2→3→4→5(FrameEditor)→6(Preview)
-  //   Anuncios omiten el paso 2 (subtipo)
-  const skipsSubtypeStep = formData.post_type === 'announcement'
-  const baseWizardSteps = hasImages ? 6 : 5
-  const TOTAL_STEPS = baseWizardSteps - (skipsSubtypeStep ? 1 : 0)
+  // Flujo de pasos (internos): 1=Tipo, 2=Subtipo, 3=Links, 4=Info,
+  // 5=FrameEditor (solo con imágenes), 6=Preview.
+  //   Anuncios omiten el paso 2 (subtipo).
+  //   Publicaciones simples (alumnos) omiten el paso 3 (enlaces).
+  //   Un solo tipo permitido omite pasos 1 (tipo) y 2 (subtipo).
+  const skipsSubtypeStep = formData.post_type === 'announcement' || skipsTypeStep
+  const skipsLinksStep = formData.post_type === 'simple_post'
+  const isSimplePost = formData.post_type === 'simple_post'
+
+  const contentInternalSteps = [1, 2, 3, 4].filter(
+    step =>
+      !(step === 1 && skipsTypeStep) &&
+      !(step === 2 && skipsSubtypeStep) &&
+      !(step === 3 && skipsLinksStep),
+  )
+  const tailInternalSteps = hasImages ? [5, 6] : [5]
+  const displaySteps = [...contentInternalSteps, ...tailInternalSteps]
+
+  const TOTAL_STEPS = displaySteps.length
   const PREVIEW_STEP = TOTAL_STEPS
 
-  const wizardStepFromDisplay = (displayStep: number): number => {
-    if (!skipsSubtypeStep) return displayStep
-    return displayStep >= 2 ? displayStep + 1 : displayStep
-  }
+  const wizardStepFromDisplay = (displayStep: number): number =>
+    displaySteps[displayStep - 1] ?? displayStep
 
   const descriptionWordCount = countWords(formData.description)
   const descriptionWordCountValid = isPostDescriptionWordCountValid(formData.description)
@@ -151,7 +185,8 @@ export default function PublicationWizard({ isOpen, onClose, allowedTypes }: Pub
       case 3: return true // Los links son opcionales
       case 4:
         return (
-          formData.title.trim().length > 0 &&
+          // Las publicaciones simples no requieren título
+          (isSimplePost || formData.title.trim().length > 0) &&
           formData.description.trim().length > 0 &&
           descriptionWordCountValid &&
           !formData.images.some(img => img.status === 'uploading')
@@ -171,12 +206,17 @@ export default function PublicationWizard({ isOpen, onClose, allowedTypes }: Pub
   }
 
   // Detecta si el usuario ingresó algo (para mostrar confirmación al cerrar)
-  const hasChanges = () =>
-    formData.post_type !== '' ||
-    formData.title.trim() !== '' ||
-    formData.description.trim() !== '' ||
-    formData.links.length > 0 ||
-    formData.images.length > 0
+  const hasChanges = () => {
+    const contentChanged =
+      formData.title.trim() !== '' ||
+      formData.description.trim() !== '' ||
+      formData.links.length > 0 ||
+      formData.images.length > 0 ||
+      formData.tags.length > 0
+
+    if (skipsTypeStep) return contentChanged
+    return formData.post_type !== '' || contentChanged
+  }
 
   const handleClose = () => {
     if (hasChanges()) {
@@ -201,7 +241,7 @@ export default function PublicationWizard({ isOpen, onClose, allowedTypes }: Pub
    */
   const handlePublish = async () => {
     if (!formData.post_type) return
-    if (formData.post_type !== 'announcement' && !formData.subtype) return
+    if (formData.post_type !== 'announcement' && !isSimplePost && !formData.subtype) return
     if (!descriptionWordCountValid) {
       setPublishError(
         `La descripción debe tener como máximo ${POST_DESCRIPTION_MAX_WORDS} palabras. Actualmente tiene ${descriptionWordCount}.`,
@@ -215,16 +255,23 @@ export default function PublicationWizard({ isOpen, onClose, allowedTypes }: Pub
     try {
       // 1. Crear el post en estado draft
       setPublishProgress('Creando publicación...')
-      const post = await createPost({
-        title: formData.title,
-        description: formData.description,
-        post_type: formData.post_type,
-        ...(formData.subtype ? { subtype: formData.subtype } : {}),
-        deadline_at: formData.deadline_at ? new Date(formData.deadline_at).toISOString() : undefined,
-        is_pinned: isPinned,
-        tags: formData.tags.length > 0 ? formData.tags : undefined,
-        aspect_ratio: normalizeAspectRatio(formData.aspect_ratio),
-      })
+      // Las publicaciones simples (alumnos) usan su endpoint dedicado: sin título.
+      const post = isSimplePost
+        ? await createSimplePost({
+            subtype: (formData.subtype || DEFAULT_SIMPLE_POST_SUBTYPE) as string,
+            description: formData.description,
+            tags: formData.tags.length > 0 ? formData.tags : undefined,
+          })
+        : await createPost({
+            title: formData.title,
+            description: formData.description,
+            post_type: formData.post_type,
+            ...(formData.subtype ? { subtype: formData.subtype } : {}),
+            deadline_at: formData.deadline_at ? new Date(formData.deadline_at).toISOString() : undefined,
+            is_pinned: isPinned,
+            tags: formData.tags.length > 0 ? formData.tags : undefined,
+            aspect_ratio: normalizeAspectRatio(formData.aspect_ratio),
+          })
 
       const postId: number = post.id
 
@@ -246,8 +293,8 @@ export default function PublicationWizard({ isOpen, onClose, allowedTypes }: Pub
         }
       }
 
-      // 3. Registrar enlaces
-      if (formData.links.length > 0) {
+      // 3. Registrar enlaces (las publicaciones simples no admiten enlaces)
+      if (!isSimplePost && formData.links.length > 0) {
         const linksToSave = normalizeWizardLinks(formData.links)
         setPublishProgress(`Guardando enlaces (${linksToSave.length})...`)
         for (const link of linksToSave) {
@@ -317,6 +364,8 @@ export default function PublicationWizard({ isOpen, onClose, allowedTypes }: Pub
             images={formData.images}
             tags={formData.tags}
             requiresDeadline={false}
+            hideTitle={isSimplePost}
+            hideDeadline={isSimplePost}
             onChange={data => dispatch({ type: 'SET_GENERAL_INFO', payload: data })}
             onImagesChange={images => dispatch({ type: 'SET_IMAGES', payload: images })}
             onTagsChange={tags => dispatch({ type: 'SET_TAGS', payload: tags })}
@@ -387,7 +436,9 @@ export default function PublicationWizard({ isOpen, onClose, allowedTypes }: Pub
         {/* Encabezado con título y stepper */}
         <div className={`pt-3 pb-1 px-6 border-b border-gray-100 ${showConfirmClose ? 'pointer-events-none select-none' : ''}`}>
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-gray-900">Crear Publicación</h2>
+            <h2 className="text-2xl font-bold text-gray-900">
+              {skipsTypeStep ? 'Nueva publicación' : 'Crear Publicación'}
+            </h2>
             <button
               onClick={handleClose}
               className="text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-lg"

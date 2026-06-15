@@ -1,5 +1,7 @@
 import type { OrganizationSummary } from "../../../api/users.api"
 
+import type { WeeklyAvailabilityPayload } from "../../onboarding/lib/weeklyAvailability"
+
 export type ProfileMode = "student-self" | "student-public" | "org-self" | "org-public"
 
 export interface ProfileUserData {
@@ -11,6 +13,7 @@ export interface ProfileUserData {
   cycle?: number
   availability?: number
   interests?: string[]
+  weekly_availability?: WeeklyAvailabilityPayload
   followers_count?: number
   following_count?: number
   posts_count?: number

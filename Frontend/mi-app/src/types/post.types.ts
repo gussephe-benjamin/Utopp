@@ -303,6 +303,12 @@ export interface FeedPostOut {
   is_saved: boolean
   participation_status?: string
   status?: string
+  /** Número de reacciones (me gusta) de la publicación. */
+  reaction_count?: number
+  /** Indica si el usuario actual reaccionó a la publicación. */
+  user_reacted?: boolean
+  /** Número de comentarios de la publicación. */
+  comment_count?: number
   /** Formato (aspect ratio) de las imágenes de la publicación. */
   aspect_ratio?: PostAspectRatio
 }
