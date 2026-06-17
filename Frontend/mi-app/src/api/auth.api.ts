@@ -1,70 +1,42 @@
-/**
- * API de Autenticación
- *
- * Endpoints del backend:
- *   POST /auth/login      — Login con email y contraseña
- *   POST /auth/register   — Registro con email, contraseña y nombre
- *   POST /auth/refresh    — Renueva el JWT del usuario autenticado
- *   GET  /auth/me         — Datos básicos del usuario autenticado
- *   POST /google/register — Registro con token de Google OAuth
- *   POST /google/login    — Login con token de Google OAuth
- *
- * Nota: El interceptor de axios.ts ya adjunta el header Authorization
- * automáticamente. No es necesario agregarlo manualmente.
- */
-
 import api from "./axios"
 
-export interface AuthMeResponse {
+export interface AuthMeUser {
   id: number
   email: string
+  full_name?: string | null
   onboarding_completed: boolean
-  /** True si falta aceptar términos o privacidad (compatibilidad con flujos existentes). */
   needs_terms?: boolean
   needs_terms_consent?: boolean
   needs_privacy_consent?: boolean
+  profile_image_url?: string | null
 }
 
-// ─── Auth clásica ────────────────────────────────────────
-
-/**
- * POST /auth/login
- * Autentica un usuario con email y contraseña.
- * Valida correo institucional autorizado. Devuelve { access_token }.
- * Auth: No requerida.
- */
-export async function login(email: string, password: string) {
-  const { data } = await api.post("/auth/login", { email, password })
-  return data
+export interface AuthMeResponse {
+  authenticated: boolean
+  user?: AuthMeUser
 }
 
 /**
- * POST /auth/register
- * Registra un nuevo usuario con email, contraseña y nombre.
- * Error 400 si el email ya existe. Valida correo institucional autorizado.
- * Auth: No requerida.
+ * GET /auth/me
+ * Estado de sesión basado en cookie HttpOnly. No requiere Authorization header.
  */
-export async function register(
-  email: string,
-  password: string,
-  fullName: string | undefined,
-  termsDocumentId: number,
-  privacyDocumentId: number
-) {
-  const { data } = await api.post("/auth/register", {
-    email,
-    password,
-    full_name: fullName || undefined,
-    terms_document_id: termsDocumentId,
-    privacy_document_id: privacyDocumentId,
-  })
+export async function fetchAuthMe(): Promise<AuthMeResponse> {
+  const { data } = await api.get<AuthMeResponse>("/auth/me")
   return data
+}
+
+/** Usuario autenticado actual; lanza si no hay sesión. */
+export async function getMe(): Promise<AuthMeUser> {
+  const data = await fetchAuthMe()
+  if (!data.authenticated || !data.user) {
+    throw new Error("No autenticado")
+  }
+  return data.user
 }
 
 /**
  * POST /auth/refresh
- * Genera un nuevo JWT para el usuario autenticado.
- * Auth: Requerida.
+ * Renueva la sesión (cookie HttpOnly).
  */
 export async function refreshToken() {
   const { data } = await api.post("/auth/refresh")
@@ -72,45 +44,48 @@ export async function refreshToken() {
 }
 
 /**
- * GET /auth/me
- * Devuelve { id, email, onboarding_completed } del usuario autenticado.
- * Auth: Requerida.
+ * POST /auth/logout
+ * Cierra sesión eliminando la cookie HttpOnly.
  */
-export async function getMe(): Promise<AuthMeResponse> {
-  const { data } = await api.get<AuthMeResponse>("/auth/me")
+export async function logoutSession() {
+  const { data } = await api.post("/auth/logout")
   return data
 }
 
-// ─── Google OAuth ────────────────────────────────────────
+export interface GoogleOAuthPendingResponse {
+  pending: boolean
+  email?: string
+  full_name?: string
+}
 
-/**
- * POST /google/register
- * Registra un usuario nuevo usando su token de Google.
- * Devuelve { access_token, token_type }.
- * Error 409 si el usuario ya existe.
- * Auth: No requerida (usa token de Google).
- */
-export async function googleRegister(
-  googleToken: string,
-  termsDocumentId: number,
-  privacyDocumentId: number
-) {
-  const { data } = await api.post("/google/register", {
-    token: googleToken,
-    terms_document_id: termsDocumentId,
-    privacy_document_id: privacyDocumentId,
+export async function fetchGoogleOAuthPending(pendingToken?: string | null) {
+  const { data } = await api.get<GoogleOAuthPendingResponse>("/auth/google/pending", {
+    params: pendingToken ? { pending_token: pendingToken } : undefined,
   })
   return data
 }
 
-/**
- * POST /google/login
- * Autentica un usuario existente con su token de Google.
- * Si no tiene google_id vinculado, lo asigna automáticamente.
- * Error 401 si el usuario no está registrado.
- * Auth: No requerida (usa token de Google).
- */
-export async function googleLogin(googleToken: string) {
-  const { data } = await api.post("/google/login", { token: googleToken })
+export async function completeGoogleOAuthRegister(payload: {
+  terms_document_id: number
+  privacy_document_id: number
+  pending_token?: string | null
+}) {
+  const { data } = await api.post("/auth/google/register", payload)
+  return data
+}
+
+export async function cancelGoogleOAuthPending() {
+  const { data } = await api.post("/auth/google/cancel-pending")
+  return data
+}
+
+/** URL absoluta para iniciar OAuth server-side con Google. */
+export function getGoogleOAuthLoginUrl(): string {
+  const base = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, "") ?? ""
+  return `${base}/auth/google/login`
+}
+
+export async function loginSession(payload: { email: string; password: string }) {
+  const { data } = await api.post("/auth/login", payload)
   return data
 }

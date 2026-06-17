@@ -56,28 +56,19 @@ def verify_google_id_token(token: str) -> dict:
         ) from exc
 
 
-def assert_utec_institutional_google_account(idinfo: dict) -> None:
-    """
-    Guard institucional: solo cuentas Google Workspace UTEC verificadas.
-
-    Requiere simultáneamente:
-    - hd == utec.edu.pe (Hosted Domain de Google Workspace)
-    - email_verified == True
-    - email termina en @utec.edu.pe
-    """
-    hosted_domain = idinfo.get("hd")
-    email_verified = idinfo.get("email_verified")
-    email = (idinfo.get("email") or "").lower()
-
-    if (
-        hosted_domain != UTEC_DOMAIN
-        or email_verified is not True
-        or not email.endswith(f"@{UTEC_DOMAIN}")
-    ):
+def assert_utec_email(email: str) -> None:
+    """Guard institucional: solo emails @utec.edu.pe."""
+    normalized = (email or "").strip().lower()
+    if not normalized.endswith(f"@{UTEC_DOMAIN}"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=UTEC_ACCESS_DENIED_MESSAGE,
         )
+
+
+def assert_utec_institutional_google_account(idinfo: dict) -> None:
+    """Guard institucional basado en email verificado del ID token."""
+    assert_utec_email(idinfo.get("email") or "")
 
 
 def authenticate_google_token(token: str) -> VerifiedGoogleIdentity:

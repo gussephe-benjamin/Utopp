@@ -15,7 +15,7 @@ import {
   TW_UTOPP_RING_PROFILE,
 } from "../../../shared/constants/brand";
 import { distributeSegmentSlots } from "../utils/distributeSegmentSlots";
-import { resolveAvatarUrl } from "../../../shared/lib/cloudinaryUrl";
+import { ProfileAvatar } from "../../profile/components/ProfileAvatar";
 
 const PLUS_SIZE_PX = 40;
 const BAR_HORIZONTAL_PADDING_PX = 12;
@@ -27,7 +27,7 @@ type FeedBottomBarProps = {
   onOpenCreate: () => void;
   canCreate: boolean;
   avatarUrl: string | null;
-  avatarInitial: string;
+  userId?: number | null;
   displayName: string;
   isProfileRoute: boolean;
   accountMenuTriggerRef?: RefObject<HTMLAnchorElement | null>;
@@ -61,7 +61,7 @@ export function FeedBottomBar({
   onOpenCreate,
   canCreate,
   avatarUrl,
-  avatarInitial,
+  userId,
   displayName,
   isProfileRoute,
   accountMenuTriggerRef,
@@ -192,19 +192,13 @@ export function FeedBottomBar({
           aria-label="Ir a mi perfil"
           title={displayName}
         >
-          {avatarUrl ? (
-            <img
-              src={resolveAvatarUrl(avatarUrl) ?? avatarUrl}
-              alt={displayName}
-              className="w-9 h-9 rounded-full object-cover bg-gray-100"
-            />
-          ) : (
-            <div
-              className={`w-9 h-9 rounded-full ${TW_UTOPP_GRADIENT_BR} flex items-center justify-center text-white text-sm font-bold`}
-            >
-              {avatarInitial}
-            </div>
-          )}
+          <ProfileAvatar
+            name={displayName}
+            userId={userId}
+            imageUrl={avatarUrl}
+            size="sm"
+            fallbackClassName={TW_UTOPP_GRADIENT_BR}
+          />
         </AppLink>
       </div>
     </nav>

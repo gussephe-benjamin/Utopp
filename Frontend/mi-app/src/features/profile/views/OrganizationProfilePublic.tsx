@@ -22,7 +22,7 @@ import { ProfilePostItem } from "../components/ProfilePostItem"
 import { BarChart3, FileText, Star, Users } from "lucide-react"
 import { INTERESTS } from "../../../constants/interests"
 import { TW_UTOPP_GRADIENT_R } from "../../../shared/constants/brand"
-import { resolveAvatarUrl } from "../../../shared/lib/cloudinaryUrl"
+import { ProfileAvatar } from "../components/ProfileAvatar"
 
 interface OrganizationProfilePublicProps {
   user: ProfileUserData
@@ -81,7 +81,6 @@ export function OrganizationProfilePublic({
     setTimeout(() => setEmailCopied(false), 2000)
   }
 
-  const avatarInitial = (user.full_name ?? "O").charAt(0).toUpperCase()
   const publishedPosts = posts.filter((p) => p.status === "published" || !p.status)
 
   const [searchParams] = useSearchParams()
@@ -119,14 +118,14 @@ export function OrganizationProfilePublic({
           {/* Avatar con borde de color de marca fucsia y badge "FP" */}
           <div className="absolute -bottom-14 left-1/2 -translate-x-1/2 md:left-10 md:translate-x-0">
             <div className="relative h-28 w-28 rounded-full bg-white p-1 ring-4 ring-[#C026D3] shadow-lg md:h-32 md:w-32">
-              <div className="h-full w-full overflow-hidden rounded-full bg-gray-50 flex items-center justify-center">
-                {avatarUrl ? (
-                  <img src={resolveAvatarUrl(avatarUrl) ?? avatarUrl} alt="avatar" className="h-full w-full object-cover" />
-                ) : (
-                  <div className="text-4xl font-bold text-[#C026D3] select-none">
-                    {avatarInitial}
-                  </div>
-                )}
+              <div className="h-full w-full overflow-hidden rounded-full bg-gray-50">
+                <ProfileAvatar
+                  name={user.full_name}
+                  userId={user.id}
+                  imageUrl={avatarUrl}
+                  size="lg"
+                  fallbackClassName="bg-gradient-to-br from-fuchsia-500 to-violet-600"
+                />
               </div>
             </div>
           </div>

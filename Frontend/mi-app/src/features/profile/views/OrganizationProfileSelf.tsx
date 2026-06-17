@@ -33,7 +33,8 @@ import { ProfilePostItem } from "../components/ProfilePostItem"
 import { EditOrgProfileModal } from "../components/EditOrgProfileModal"
 import { INTERESTS } from "../../../constants/interests"
 import { TW_UTOPP_GRADIENT_R } from "../../../shared/constants/brand"
-import { resolveAvatarUrl } from "../../../shared/lib/cloudinaryUrl"
+import { ProfileAvatar } from "../components/ProfileAvatar"
+import { AvatarCropModal } from "../components/AvatarCropModal"
 
 interface OrganizationProfileSelfProps {
   user: ProfileUserData
@@ -100,6 +101,7 @@ export function OrganizationProfileSelf({
 }: OrganizationProfileSelfProps) {
   const navigate = useNavigate()
   const { logout } = useAuth()
+  const [cropFile, setCropFile] = useState<File | null>(null)
   const [emailCopied, setEmailCopied] = useState(false)
   const [editing, setEditing] = useState(false)
   const [activeTab, setActiveTab] = useState<TabType>("posts")
@@ -139,10 +141,9 @@ export function OrganizationProfileSelf({
     setTimeout(() => setEmailCopied(false), 2000)
   }
 
-  const handleAvatarFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
-    if (!file) return
-    await onChangeAvatar(file)
+    if (file) setCropFile(file)
     event.target.value = ""
   }
 
@@ -156,10 +157,14 @@ export function OrganizationProfileSelf({
     return savedPosts
   }, [posts, savedPosts, activeTab])
 
-  const avatarInitial = (user.full_name ?? "O").charAt(0).toUpperCase()
-
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-6 md:px-6">
+      <AvatarCropModal
+        file={cropFile}
+        saving={avatarSaving}
+        onClose={() => setCropFile(null)}
+        onConfirm={onChangeAvatar}
+      />
       <AnimatePresence>
         {editing && (
           <EditOrgProfileModal
@@ -184,14 +189,14 @@ export function OrganizationProfileSelf({
           {/* Avatar con borde de color de marca fucsia y badge "FP" */}
           <div className="absolute -bottom-14 left-1/2 -translate-x-1/2 md:left-10 md:translate-x-0">
             <div className="relative h-28 w-28 rounded-full bg-white p-1 ring-4 ring-[#C026D3] shadow-lg md:h-32 md:w-32">
-              <div className="h-full w-full overflow-hidden rounded-full bg-gray-50 flex items-center justify-center">
-                {avatarUrl ? (
-                  <img src={resolveAvatarUrl(avatarUrl) ?? avatarUrl} alt="avatar" className="h-full w-full object-cover" />
-                ) : (
-                  <div className="text-4xl font-bold text-[#C026D3] select-none">
-                    {avatarInitial}
-                  </div>
-                )}
+              <div className="h-full w-full overflow-hidden rounded-full bg-gray-50">
+                <ProfileAvatar
+                  name={user.full_name}
+                  userId={user.id}
+                  imageUrl={avatarUrl}
+                  size="lg"
+                  fallbackClassName="bg-gradient-to-br from-fuchsia-500 to-violet-600"
+                />
               </div>
 
               {/* Botón cambiar foto de perfil */}
@@ -258,8 +263,7 @@ export function OrganizationProfileSelf({
               <button
                 type="button"
                 onClick={() => {
-                  logout()
-                  navigate("/login")
+                  void logout().then(() => navigate("/login"))
                 }}
                 className="inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-white px-3.5 py-1.5 text-xs font-bold text-red-600 shadow-sm hover:bg-red-50 transition-all active:scale-95"
               >

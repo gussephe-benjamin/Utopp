@@ -229,6 +229,13 @@ class TokenOut(BaseModel):
     token_type: str = "bearer"
 
 
+class GoogleOAuthRegisterIn(BaseModel):
+    """Completa registro Google tras aceptar términos (perfil en cookie o token)."""
+    terms_document_id: int = Field(..., ge=1)
+    privacy_document_id: int = Field(..., ge=1)
+    pending_token: str | None = Field(default=None, min_length=10)
+
+
 class GoogleRegisterIn(BaseModel):
     """Registro con Google: token y snapshot de documentos legales vigentes."""
     model_config = {"extra": "ignore"}

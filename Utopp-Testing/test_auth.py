@@ -2,6 +2,11 @@ import uuid
 
 import pytest
 import httpx
+
+pytestmark = pytest.mark.skip(
+    reason="POST /auth/login and /auth/register were removed; see test_auth_unified.py"
+)
+
 from config import API_BASE_URL
 from auth_helpers import register_then_login_access_token, with_legal_ids
 

@@ -26,10 +26,8 @@ export const AUTH_LOGIN = {
 export const AUTH_REGISTER = {
   title: "Únete a la comunidad",
   subtitle: "Comienza en segundos con tu cuenta de Google",
-  legalCheckboxPrefix: "He leído y acepto los",
-  termsLabel: "Términos y condiciones",
-  legalCheckboxMiddle: "y la",
-  privacyLabel: "Política de Privacidad",
+  legalCheckboxCombined:
+    "He leído y acepto los Términos y condiciones y la Política de Privacidad",
   legalNudgeTitle: "Un último paso para unirte",
   legalNudgeBody:
     "Confirma que aceptas nuestros términos para formar parte de la comunidad Utopp.",
@@ -37,6 +35,13 @@ export const AUTH_REGISTER = {
   footerAction: "Inicia sesión",
   legalLoadError:
     "No se pudieron cargar los textos legales. Recarga la página o intenta más tarde.",
+  readTerms: "Leer términos",
+  readPrivacy: "Leer privacidad",
+  acceptLegalInModal: "He leído y acepto",
+  modalClose: "Cerrar",
+  scrollToAcceptHint: "Desplázate hasta el final del documento para poder aceptar.",
+  legalAcceptRequired:
+    "Debes aceptar los términos y la política de privacidad para crear tu cuenta.",
 } as const;
 
 export const AUTH_GOOGLE = {
@@ -45,6 +50,16 @@ export const AUTH_GOOGLE = {
   connectingWithGoogle: "Conectando con Google...",
   validatingLoginWithGoogle: "Validando inicio de sesión con Google...",
   registeringWithGoogle: "Creando cuenta con Google...",
+} as const;
+
+export const AUTH_ENTRY = {
+  title: "¡Hola!",
+  subtitle: "Inicia sesión para continuar",
+  continueWithGoogle: "Continuar con Google",
+  dividerLabel: "o con tu correo institucional",
+  createAccount: "Crear cuenta",
+  creatingAccount: "Creando cuenta...",
+  credentialsRequired: "Ingresa tu correo y contraseña.",
 } as const;
 
 export const AUTH_UTEC = {

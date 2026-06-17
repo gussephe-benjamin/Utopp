@@ -11,7 +11,7 @@ import { measureMenuAnchor, type MenuPopoverAnchor } from '../features/dashboard
 import FeedModeResolver from '../features/feed/FeedModeResolver'
 import { AppLink } from '../shared/navigation/AppLink'
 import { TW_UTOPP_GRADIENT_BR } from '../shared/constants/brand'
-import { resolveAvatarUrl } from '../shared/lib/cloudinaryUrl'
+import { ProfileAvatar } from '../features/profile/components/ProfileAvatar'
 
 const FALLBACK_MENU_ANCHOR: MenuPopoverAnchor = { top: 64, right: 12, minWidth: 40 }
 
@@ -174,7 +174,6 @@ export default function DashboardLayout() {
   }, [showFeedFiltersSheet, syncFilterMenuAnchor])
 
   const displayName = userName || userEmail || 'Usuario'
-  const initial     = displayName.charAt(0).toUpperCase()
   const canAccessAdmin = roleName === ROLE_ADMIN || roleName === ROLE_ROOT
 
   return (
@@ -195,7 +194,7 @@ export default function DashboardLayout() {
         onOpenCreate={() => setShowWizard(true)}
         canCreate={canCreate}
         avatarUrl={avatarUrl}
-        avatarInitial={initial}
+        userId={currentUserId}
         displayName={displayName}
         isProfileRoute={isProfileActive}
         canAccessAdmin={canAccessAdmin}
@@ -269,17 +268,15 @@ export default function DashboardLayout() {
                   isProfileActive ? 'ring-2 ring-violet-200' : ''
                 }`}
               >
-                {avatarUrl ? (
-                  <img
-                    src={resolveAvatarUrl(avatarUrl) ?? avatarUrl}
-                    alt={displayName}
-                    className="w-9 h-9 rounded-full object-cover border-2 border-white bg-white"
+                <div className="rounded-full border-2 border-white bg-white p-0.5">
+                  <ProfileAvatar
+                    name={displayName}
+                    userId={currentUserId}
+                    imageUrl={avatarUrl}
+                    size="sm"
+                    fallbackClassName={TW_UTOPP_GRADIENT_BR}
                   />
-                ) : (
-                  <div className="w-9 h-9 rounded-full border-2 border-white flex items-center justify-center bg-violet-100 text-violet-700 font-bold text-sm">
-                    {initial}
-                  </div>
-                )}
+                </div>
               </div>
             </div>
           </AppLink>

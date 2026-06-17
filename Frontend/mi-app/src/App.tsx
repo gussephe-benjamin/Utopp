@@ -2,10 +2,9 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import { AuthProvider } from "./auth/AuthContext"
 import ProtectedRoute from "./auth/ProtectedRoute"
 import AppRoute from "./auth/AppRoute"
-import Login from "./pages/auth/Login"
+import AuthEntry from "./pages/auth/AuthEntry"
 import DashboardLayout from "./pages/Dashboard"
 import Onboarding from "./features/onboarding/Onboarding"
-import RegisterOG from "./pages/auth/RegisterOG"
 import { AuthRouteLayout } from "./features/auth/components/AuthRouteLayout"
 import TermsAcceptance from "./pages/TermsAcceptance"
 import TermsPublic from "./pages/TermsPublic"
@@ -24,13 +23,11 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          {/* Ruta por defecto - redirige según estado de autenticación y onboarding */}
           <Route path="/" element={<AppRoute />} />
 
-          {/* Auth: layout compartido para transición fluida login ↔ register */}
           <Route element={<AuthRouteLayout />}>
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<RegisterOG />} />
+            <Route path="/login" element={<AuthEntry />} />
+            <Route path="/register" element={<Navigate to="/login" replace />} />
           </Route>
 
           <Route path="/terms" element={<TermsPublic />} />
@@ -45,7 +42,6 @@ function App() {
             }
           />
 
-          {/* Rutas del dashboard con navegación compartida */}
           <Route
             path="/app"
             element={
@@ -72,7 +68,6 @@ function App() {
             <Route path="*" element={null} />
           </Route>
 
-          {/* Ruta direccionamiento al onboarding */}
           <Route
             path="/onboarding"
             element={
@@ -82,9 +77,7 @@ function App() {
             }
           />
 
-          {/* Ruta comodín para capturar cualquier ruta inexistente y redirigir a la raíz */}
           <Route path="*" element={<Navigate to="/" replace />} />
-
         </Routes>
       </BrowserRouter>
     </AuthProvider>
@@ -92,4 +85,3 @@ function App() {
 }
 
 export default App
-

@@ -1,37 +1,23 @@
 import axios from "axios"
-import { getToken, setToken, clearToken } from "../auth/tokenStorage"
 
-const baseURL = import.meta.env.VITE_API_URL 
+const baseURL = import.meta.env.VITE_API_URL
 
 const api = axios.create({
-  baseURL: baseURL,
-  headers: {
-    "Content-Type": "application/json",
-  },
-  paramsSerializer: (params) => {
-    const parts: string[] = []
-    for (const [key, value] of Object.entries(params)) {
-      if (value === undefined || value === null) continue
-      if (Array.isArray(value)) {
-        value.forEach(v => parts.push(`${key}=${encodeURIComponent(v)}`))
-      } else {
-        parts.push(`${key}=${encodeURIComponent(String(value))}`)
-      }
-    }
-    return parts.join('&')
-  },
+  baseURL,
+  headers: { "Content-Type": "application/json" },
+  withCredentials: true,
 })
 
-// Interceptor → adjunta el token automáticamente
-api.interceptors.request.use((config) => {
-  const token = getToken()
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
-  return config
-})
+let logoutHandler: (() => Promise<void>) | null = null
 
-// Interceptor → maneja errores de autenticación (con guard anti-loop)
+export function registerAuthLogoutHandler(handler: () => Promise<void>) {
+  logoutHandler = handler
+}
+
+export default api
+
+api.defaults.withCredentials = true
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -49,29 +35,29 @@ api.interceptors.response.use(
         return Promise.reject(error)
       }
     }
+
+    const isAuthMe = originalRequest?.url?.includes("/auth/me")
+    const isLogout = originalRequest?.url?.includes("/auth/logout")
+    const isOnLogin = window.location.pathname === "/login"
+
     if (error.response?.status === 401 && !originalRequest._retried) {
-      const isAuthRequest = originalRequest.url?.includes("/auth/login") || originalRequest.url?.includes("/google/login")
-      if (isAuthRequest || window.location.pathname === "/login") {
+      if (isAuthMe || isLogout || isOnLogin) {
         return Promise.reject(error)
       }
+
       originalRequest._retried = true
       try {
-        const refreshResponse = await axios.post(`${baseURL}/auth/refresh`, {}, {
-          headers: {
-            Authorization: `Bearer ${getToken()}`
-          }
-        })
-        const newToken = refreshResponse.data.access_token
-        setToken(newToken)
-        originalRequest.headers.Authorization = `Bearer ${newToken}`
-        return axios.request(originalRequest)
+        await api.post("/auth/refresh")
+        return api.request(originalRequest)
       } catch {
-        clearToken()
-        window.location.href = "/login"
+        if (logoutHandler) {
+          await logoutHandler()
+        }
+        if (!isOnLogin) {
+          window.location.href = "/login"
+        }
       }
     }
     return Promise.reject(error)
-  }
+  },
 )
-
-export default api

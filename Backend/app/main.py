@@ -18,7 +18,6 @@ _slow_request_ms = int(os.getenv("SLOW_REQUEST_MS", "1000"))
 from app.routers import (
     health,
     auth,
-    googleAuth,
     legal,
     setup,
     onboardings,
@@ -66,7 +65,8 @@ app.add_middleware(
         "http://localhost:5173",
         "http://127.0.0.1:3000",
         "http://127.0.0.1:5173",
-        "https://www.utopp.app"
+        "https://www.utopp.app",
+        "https://utopp.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -111,7 +111,6 @@ def root_check():
 # ═══════════════════════════════════════════════════════════
 app.include_router(health.router)
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
-app.include_router(googleAuth.router, prefix="/google", tags=["google-auth"])
 app.include_router(legal.router, prefix="/legal", tags=["legal"])
 app.include_router(setup.router, prefix="/setup", tags=["setup"])
 

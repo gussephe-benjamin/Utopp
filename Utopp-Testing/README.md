@@ -243,7 +243,8 @@ vus_max........................: 50     min=50   max=50
 
 El script de load testing prueba los siguientes endpoints (todos requieren autenticación):
 
-- `POST /auth/login` - Login para obtener token de autenticación
+- `GET /auth/google/login` - Inicia OAuth con Google (sesión vía cookie HttpOnly tras callback)
+- `GET /auth/me` - Estado de sesión del usuario
 - `GET /feed` - Obtener feed principal
 - `GET /users/me` - Obtener perfil del usuario actual
 - `GET /users/all-users` - Listar todos los usuarios

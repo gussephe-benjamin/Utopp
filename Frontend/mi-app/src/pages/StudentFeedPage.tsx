@@ -85,6 +85,7 @@ export default function StudentFeedPage({
         <LeftSidebar
           userName={userName}
           avatarUrl={avatarUrl}
+          userId={currentUserId}
           career={userCareer}
           cycle={userCycle}
           postsCount={userPostsCount}

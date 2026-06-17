@@ -9,7 +9,7 @@ import {
   type OrganizationSummary,
 } from "../../../api/users.api"
 import { getMyRoles } from "../../../api/roles.api"
-import { getToken } from "../../../auth/tokenStorage"
+import { useAuth } from "../../../auth/useAuth"
 import type { FeedPostOut } from "../../../types/post.types"
 
 function sortOrganizations(orgs: OrganizationSummary[]): OrganizationSummary[] {
@@ -31,6 +31,7 @@ function sortByDeadline(posts: FeedPostOut[]): FeedPostOut[] {
 }
 
 export function useWeeklyFeedHighlights() {
+  const { status } = useAuth()
   const [organizations, setOrganizations] = useState<OrganizationSummary[]>([])
   const [deadlinePosts, setDeadlinePosts] = useState<FeedPostOut[]>([])
   const [followedIds, setFollowedIds] = useState<Set<number>>(new Set())
@@ -64,7 +65,7 @@ export function useWeeklyFeedHighlights() {
           }
         }
 
-        const token = getToken()
+        const token = status === "authenticated"
         if (token && mounted) {
           const [followed, roles, myProfile] = await Promise.all([
             getMyFollowingOrganizations().catch(() => []),
@@ -89,7 +90,7 @@ export function useWeeklyFeedHighlights() {
     return () => {
       mounted = false
     }
-  }, [])
+  }, [status])
 
   const handleFollowToggle = useCallback(
     async (orgId: number) => {

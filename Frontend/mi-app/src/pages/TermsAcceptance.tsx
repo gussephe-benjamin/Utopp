@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom"
 import { getCurrentPrivacy, getCurrentTerms, acceptLegal, type TermsCurrent } from "../api/legal.api"
 import { getMe } from "../api/auth.api"
 import { redirectAfterAuthSession } from "../auth/postAuthRedirect"
+import { useAuth } from "../auth/useAuth"
 import { parseAuthApiError } from "../shared/lib/apiErrors"
 import LegalMarkdownBody from "../components/legal/LegalMarkdownBody"
 
@@ -30,6 +31,7 @@ function useScrollToEnd() {
  */
 export default function TermsAcceptance() {
   const navigate = useNavigate()
+  const { refreshSession } = useAuth()
   const [termsDoc, setTermsDoc] = useState<TermsCurrent | null>(null)
   const [privacyDoc, setPrivacyDoc] = useState<TermsCurrent | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -55,7 +57,7 @@ export default function TermsAcceptance() {
         const nt = me.needs_terms_consent ?? overall
         const np = me.needs_privacy_consent ?? overall
         if (!overall) {
-          await redirectAfterAuthSession(navigate)
+          redirectAfterAuthSession(navigate, me)
           return
         }
         setNeedTerms(nt)
@@ -116,7 +118,9 @@ export default function TermsAcceptance() {
         termsDocumentId: needTerms ? termsDoc.id : undefined,
         privacyDocumentId: needPrivacy ? privacyDoc.id : undefined,
       })
-      await redirectAfterAuthSession(navigate)
+      await refreshSession()
+      const me = await getMe()
+      redirectAfterAuthSession(navigate, me)
     } catch (e) {
       setSubmitError(parseAuthApiError(e))
     } finally {

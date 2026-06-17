@@ -4,9 +4,10 @@ import { UtoppBrandMark } from "../../../shared/brand/UtoppBrandMark";
 import { AppLink } from "../../../shared/navigation/AppLink";
 import { EventSearchBar } from "../../feed/components/EventSearchBar";
 import {
+  TW_UTOPP_GRADIENT_BR,
   TW_UTOPP_GRADIENT_R,
 } from "../../../shared/constants/brand";
-import { resolveAvatarUrl } from "../../../shared/lib/cloudinaryUrl";
+import { ProfileAvatar } from "../../profile/components/ProfileAvatar";
 
 // ─── Barra superior (dashboard): marca, crear, filtros (feed), avatar ───────
 
@@ -22,8 +23,7 @@ type AppTopBarProps = {
   canCreate: boolean;
   /** URL foto perfil (API o localStorage); si no hay, se muestra inicial */
   avatarUrl: string | null;
-  /** Primera letra del nombre (fallback avatar) */
-  avatarInitial: string;
+  userId?: number | null;
   displayName: string;
   /** Resalta avatar cuando la ruta es perfil */
   isProfileRoute: boolean;
@@ -40,7 +40,7 @@ export function AppTopBar({
   onOpenCreate,
   canCreate,
   avatarUrl,
-  avatarInitial,
+  userId,
   displayName,
   isProfileRoute,
   canAccessAdmin = false,
@@ -129,17 +129,16 @@ export function AppTopBar({
             aria-label="Ir a mi perfil"
             title={displayName}
           >
-            {avatarUrl ? (
-              <img
-                src={resolveAvatarUrl(avatarUrl) ?? avatarUrl}
-                alt={displayName}
-                className="w-9 h-9 rounded-full object-cover border-2 border-white bg-white"
+            <div className="rounded-full border-2 border-white bg-white p-0.5">
+              <ProfileAvatar
+                name={displayName}
+                userId={userId}
+                imageUrl={avatarUrl}
+                size="sm"
+                fallbackClassName={TW_UTOPP_GRADIENT_BR}
+                imageClassName="border-0"
               />
-            ) : (
-              <div className="w-9 h-9 rounded-full border-2 border-white flex items-center justify-center bg-violet-100 text-violet-700 font-bold text-sm">
-                {avatarInitial}
-              </div>
-            )}
+            </div>
           </AppLink>
         </div>
       </div>

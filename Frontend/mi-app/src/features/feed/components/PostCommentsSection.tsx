@@ -7,10 +7,8 @@ import {
   type CommentOut,
 } from "../../../api/comments.api"
 import { timeAgo } from "../../../shared/lib/date"
-import { resolveAvatarUrl } from "../../../shared/lib/cloudinaryUrl"
+import { ProfileAvatar } from "../../profile/components/ProfileAvatar"
 import { TW_UTOPP_GRADIENT_BR } from "../../../shared/constants/brand"
-
-const COMMENT_MAX_LENGTH = 500
 
 type PostCommentsSectionProps = {
   postId: number
@@ -18,18 +16,19 @@ type PostCommentsSectionProps = {
   onCountChange?: (count: number) => void
 }
 
-function CommentAvatar({ name, url }: { name?: string | null; url?: string | null }) {
-  const avatarUrl = resolveAvatarUrl(url ?? null)
-  const initial = (name ?? "U").charAt(0).toUpperCase()
-  if (avatarUrl) {
-    return <img src={avatarUrl} alt={name ?? "Usuario"} className="h-8 w-8 rounded-full object-cover" />
-  }
+function CommentAvatar({ name, url, userId }: { name?: string | null; url?: string | null; userId?: number }) {
   return (
-    <div className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold text-white ${TW_UTOPP_GRADIENT_BR}`}>
-      {initial}
-    </div>
+    <ProfileAvatar
+      name={name}
+      userId={userId}
+      imageUrl={url}
+      size="xs"
+      fallbackClassName={TW_UTOPP_GRADIENT_BR}
+    />
   )
 }
+
+const COMMENT_MAX_LENGTH = 500
 
 export function PostCommentsSection({ postId, currentUserId, onCountChange }: PostCommentsSectionProps) {
   const [comments, setComments] = useState<CommentOut[]>([])
@@ -106,7 +105,11 @@ export function PostCommentsSection({ postId, currentUserId, onCountChange }: Po
           ) : (
             comments.map(comment => (
               <div key={comment.id} className="flex items-start gap-2.5">
-                <CommentAvatar name={comment.user_name} url={comment.user_profile_image_url} />
+                <CommentAvatar
+                  name={comment.user_name}
+                  url={comment.user_profile_image_url}
+                  userId={comment.user_id}
+                />
                 <div className="flex-1 rounded-2xl bg-gray-50 px-3 py-2">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs font-semibold text-gray-800">

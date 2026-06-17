@@ -1,8 +1,8 @@
 // ─── Avatar feed: Cloudinary / localStorage / iniciales con gradiente ─────
 
 import { ProfileLink } from "../../profile/components/ProfileLink";
+import { ProfileAvatar } from "../../profile/components/ProfileAvatar";
 import { TW_UTOPP_GRADIENT_BR } from "../../../shared/constants/brand";
-import { resolveAvatarUrl } from "../../../shared/lib/cloudinaryUrl";
 
 type UserAvatarProps = {
   userName?: string;
@@ -15,36 +15,6 @@ type UserAvatarProps = {
 const avatarRingClass =
   "shrink-0 focus:outline-none relative p-[2px] rounded-full hover:scale-105 active:scale-95 transition-all duration-300 shadow-sm";
 
-function AvatarContent({
-  userName,
-  gradient,
-  avatarUrl,
-  initial,
-}: {
-  userName?: string;
-  gradient: string;
-  avatarUrl: string | null;
-  initial: string;
-}) {
-  return (
-    <div className="rounded-full bg-white p-[1.5px] flex items-center justify-center">
-      {avatarUrl ? (
-        <img
-          src={avatarUrl}
-          alt={userName ?? "Usuario"}
-          className="w-8 h-8 rounded-full object-cover"
-        />
-      ) : (
-        <div
-          className={`w-8 h-8 ${gradient} rounded-full flex items-center justify-center text-white font-bold text-sm`}
-        >
-          {initial}
-        </div>
-      )}
-    </div>
-  );
-}
-
 /** Avatar: foto en localStorage/Cloudinary o iniciales con gradiente */
 export function UserAvatar({
   userName,
@@ -54,13 +24,23 @@ export function UserAvatar({
   currentUserId,
 }: UserAvatarProps) {
   const rawAvatarUrl = profileImageUrl ?? (userId ? localStorage.getItem(`avatar_${userId}`) : null);
-  const avatarUrl = resolveAvatarUrl(rawAvatarUrl);
-  const initial = (userName ?? "U").charAt(0).toUpperCase();
+
+  const avatarNode = (
+    <div className="rounded-full bg-white p-[1.5px] flex items-center justify-center">
+      <ProfileAvatar
+        name={userName}
+        userId={userId}
+        imageUrl={rawAvatarUrl}
+        size="xs"
+        fallbackClassName={gradient || TW_UTOPP_GRADIENT_BR}
+      />
+    </div>
+  );
 
   if (!userId) {
     return (
       <div className={`${avatarRingClass} ${TW_UTOPP_GRADIENT_BR}`}>
-        <AvatarContent userName={userName} gradient={gradient} avatarUrl={avatarUrl} initial={initial} />
+        {avatarNode}
       </div>
     );
   }
@@ -72,7 +52,7 @@ export function UserAvatar({
       className={`${avatarRingClass} ${TW_UTOPP_GRADIENT_BR}`}
       aria-label={`Ver perfil de ${userName ?? "usuario"}`}
     >
-      <AvatarContent userName={userName} gradient={gradient} avatarUrl={avatarUrl} initial={initial} />
+      {avatarNode}
     </ProfileLink>
   );
 }

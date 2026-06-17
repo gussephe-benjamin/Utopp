@@ -6,7 +6,8 @@ import type { ProfileUserData } from "./types"
 import { TW_UTOPP_GRADIENT_R } from "../../../shared/constants/brand"
 import { formatShortDisplayName } from "../../feed/lib/display"
 import { ProfileMetricCard } from "../components/ProfileMetricCard"
-import { resolveAvatarUrl, resolveOrgImageUrl } from "../../../shared/lib/cloudinaryUrl"
+import { ProfileAvatar } from "../components/ProfileAvatar"
+import { resolveOrgImageUrl } from "../../../shared/lib/cloudinaryUrl"
 
 interface StudentProfilePublicProps {
   user: ProfileUserData
@@ -44,7 +45,6 @@ export function StudentProfilePublic({
     [user.full_name],
   )
 
-  const avatarInitial = (user.full_name ?? "U").charAt(0).toUpperCase()
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-6 md:px-6 space-y-6">
@@ -61,15 +61,15 @@ export function StudentProfilePublic({
             <div className="flex flex-col items-center md:items-start text-center md:text-left relative px-2">
               {/* Avatar (overlapping the banner) */}
               <div className="relative -mt-20 mb-4 md:-mt-24 md:mb-5 h-28 w-28 md:h-32 md:w-32 rounded-full bg-white p-1 ring-4 ring-[#C026D3] shadow-lg z-10">
-            <div className="h-full w-full overflow-hidden rounded-full bg-gray-50 flex items-center justify-center">
-              {avatarUrl ? (
-                <img src={resolveAvatarUrl(avatarUrl) ?? avatarUrl} alt="avatar" className="h-full w-full object-cover" />
-              ) : (
-                <div className="text-4xl font-bold text-[#C026D3] select-none">
-                  {avatarInitial}
-                </div>
-              )}
-            </div>
+              <div className="h-full w-full overflow-hidden rounded-full bg-gray-50">
+                <ProfileAvatar
+                  name={user.full_name}
+                  userId={user.id}
+                  imageUrl={avatarUrl}
+                  size="lg"
+                  fallbackClassName="bg-gradient-to-br from-fuchsia-500 to-violet-600"
+                />
+              </div>
           </div>
 
           {/* Name & Details */}

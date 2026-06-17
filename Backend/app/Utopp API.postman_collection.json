@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "22f00328-432a-40fe-889c-39c0c30030d5",
     "name": "Utopp API",
-    "description": "# Utopp API\n\nAPI REST del backend de Utopp, plataforma de publicaciones académicas para la comunidad académica. Construida con FastAPI + SQLAlchemy + PostgreSQL.\n\n## Arquitectura\nCapas: Routers (endpoints HTTP) → Services (lógica de negocio) → Models (SQLAlchemy/PostgreSQL) → Schemas (Pydantic). Autenticación: JWT Bearer Token obtenido en `/auth/login` o `/google/login`.\n\n## Tablas y relaciones\n\n**`users`** — Usuarios registrados. Campos: `id`, `email`, `full_name`, `career`, `cycle`, `interests` (JSONB), `availability`, `onboarding_completed`.\n\n**`posts`** — Publicaciones. FK: `user_id → users`. Campos clave: `title` (nullable), `description`, `post_type` (enum), `subtype` (enum), `status` (draft/published/archived), `time_status` (no_deadline/in_time/out_of_time), `deadline_at`, `tags` (JSONB), `specific_fields` (JSONB).\n\nTipos de post: `international_opportunity`, `event`, `academic_project`, `announcement`, `simple_post`.\nSubtipos por tipo: international_opportunity → [intercambio, pasantia, investigacion, 4+1] | event → [conferencia, congresos_talleres, arte, emprendimiento, competencias, voluntariado, deporte, visita_academica, empleo] | academic_project → [competencia, proyecto_investigacion] | announcement → (sin subtipo; opcional en legacy) | simple_post → [informativo, pregunta, debate].\n\n**`post_images`** — Imágenes de posts. FK: `post_id → posts`. Campos: `cloudinary_id`, `url`, `position`.\n\n**`post_links`** — Links de posts. FK: `post_id → posts`. Campos: `label`, `url`, `type`, `display_type`, `position`.\n\n**`follows`** — Seguimiento entre usuarios. FKs: `follower_id → users`, `following_id → users`. Clave compuesta única.\n\n**`saved_posts`** — Posts guardados como favoritos. FKs: `user_id → users`, `post_id → posts`. Clave compuesta única.\n\n**`event_participants`** — Participación en eventos/proyectos. FKs: `user_id → users`, `post_id → posts`. Campo: `status` (interested/going/attended).\n\n**`roles`** — Roles del sistema (ej: admin). Campos: `id`, `name`, `description`.\n\n**`user_roles`** — Asignación de roles. FKs: `user_id → users`, `role_id → roles`.\n\n## Flujo recomendado\n1. **Legal:** `GET /legal/terms/current` y `GET /legal/privacy/current` (los tests de la carpeta Legal guardan `terms_document_id` y `privacy_document_id`).\n2. `POST /auth/register` o `POST /google/register` — incluir esos ids en el body.\n3. `POST /auth/login` — Obtener token (`{{token}}`)\n4. Si falta consentimiento: `POST /legal/accept` con ids vigentes.\n5. `POST /onboarding/update` — Completar perfil\n6. Crear post (endpoints especializados o `POST /posts/`)\n7. `POST /posts/{{post_id}}/publish` — Publicar\n8. `GET /feed` — Ver en el feed",
+    "description": "# Utopp API\n\nAPI REST del backend de Utopp, plataforma de publicaciones académicas para la comunidad académica. Construida con FastAPI + SQLAlchemy + PostgreSQL.\n\n## Arquitectura\nCapas: Routers (endpoints HTTP) → Services (lógica de negocio) → Models (SQLAlchemy/PostgreSQL) → Schemas (Pydantic). Autenticación: cookie HttpOnly de sesión (`utopp_session`) tras OAuth Google server-side; Bearer opcional en transición.\n\n## Tablas y relaciones\n\n**`users`** — Usuarios registrados. Campos: `id`, `email`, `full_name`, `career`, `cycle`, `interests` (JSONB), `availability`, `onboarding_completed`.\n\n**`posts`** — Publicaciones. FK: `user_id → users`. Campos clave: `title` (nullable), `description`, `post_type` (enum), `subtype` (enum), `status` (draft/published/archived), `time_status` (no_deadline/in_time/out_of_time), `deadline_at`, `tags` (JSONB), `specific_fields` (JSONB).\n\nTipos de post: `international_opportunity`, `event`, `academic_project`, `announcement`, `simple_post`.\nSubtipos por tipo: international_opportunity → [intercambio, pasantia, investigacion, 4+1] | event → [conferencia, congresos_talleres, arte, emprendimiento, competencias, voluntariado, deporte, visita_academica, empleo] | academic_project → [competencia, proyecto_investigacion] | announcement → (sin subtipo; opcional en legacy) | simple_post → [informativo, pregunta, debate].\n\n**`post_images`** — Imágenes de posts. FK: `post_id → posts`. Campos: `cloudinary_id`, `url`, `position`.\n\n**`post_links`** — Links de posts. FK: `post_id → posts`. Campos: `label`, `url`, `type`, `display_type`, `position`.\n\n**`follows`** — Seguimiento entre usuarios. FKs: `follower_id → users`, `following_id → users`. Clave compuesta única.\n\n**`saved_posts`** — Posts guardados como favoritos. FKs: `user_id → users`, `post_id → posts`. Clave compuesta única.\n\n**`event_participants`** — Participación en eventos/proyectos. FKs: `user_id → users`, `post_id → posts`. Campo: `status` (interested/going/attended).\n\n**`roles`** — Roles del sistema (ej: admin). Campos: `id`, `name`, `description`.\n\n**`user_roles`** — Asignación de roles. FKs: `user_id → users`, `role_id → roles`.\n\n## Flujo recomendado\n1. **Legal:** `GET /legal/terms/current` y `GET /legal/privacy/current` (los tests de la carpeta Legal guardan `terms_document_id` y `privacy_document_id`).\n2. `GET /auth/google/login` — OAuth con Google (redirect en navegador).\n3. Tras callback, la cookie de sesión se establece automáticamente.\n4. Si falta consentimiento: `POST /legal/accept` con ids vigentes.\n5. `POST /onboarding/update` — Completar perfil\n6. Crear post (endpoints especializados o `POST /posts/`)\n7. `POST /posts/{{post_id}}/publish` — Publicar\n8. `GET /feed` — Ver en el feed",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "45592436",
     "_collection_link": "https://go.postman.co/collection/45592436-22f00328-432a-40fe-889c-39c0c30030d5?source=collection_link"
@@ -37,98 +37,66 @@
       "name": "Auth",
       "item": [
         {
-          "name": "Register",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "if (pm.response.code === 201) {",
-                  "    // Usuario creado exitosamente",
-                  "    pm.test('User created', function () {",
-                  "        var jsonData = pm.response.json();",
-                  "        pm.expect(jsonData.id).to.exist;",
-                  "    });",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
+          "name": "Auth Me (sin sesión)",
           "request": {
             "auth": {
               "type": "noauth"
             },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"email\": \"alumno@utec.edu.pe\",\n    \"password\": \"password123\",\n    \"full_name\": \"Juan Pérez\",\n    \"terms_document_id\": {{terms_document_id}},\n    \"privacy_document_id\": {{privacy_document_id}}\n}"
-            },
+            "method": "GET",
+            "header": [],
             "url": {
-              "raw": "{{base_url}}/auth/register",
+              "raw": "{{base_url}}/auth/me",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "auth",
-                "register"
+                "me"
               ]
             },
-            "description": "POST /auth/register — Crea usuario en `users`. Requiere `email`, `password`, `full_name`, **`terms_document_id`** y **`privacy_document_id`** (ids del `GET /legal/terms/current` y `GET /legal/privacy/current` vigentes). Ejecuta antes las peticiones **Legal → Terms** y **Legal → Privacy** para guardar esos ids en variables de colección. Registra también las aceptaciones legales. No requiere JWT."
+            "description": "GET /auth/me — Sin autenticación devuelve `{ \"authenticated\": false }`. Con cookie o Bearer válido devuelve `{ \"authenticated\": true, \"user\": { id, email, full_name, onboarding_completed, needs_terms, profile_image_url? } }`."
           },
           "response": []
         },
         {
-          "name": "Login",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "if (pm.response.code === 200) {",
-                  "    var jsonData = pm.response.json();",
-                  "    pm.collectionVariables.set('token', jsonData.access_token);",
-                  "    pm.test('Token saved', function () {",
-                  "        pm.expect(jsonData.access_token).to.exist;",
-                  "    });",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
+          "name": "Google OAuth Login",
           "request": {
             "auth": {
               "type": "noauth"
             },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"email\": \"alumno@utec.edu.pe\",\n    \"password\": \"password123\"\n}"
-            },
+            "method": "GET",
+            "header": [],
             "url": {
-              "raw": "{{base_url}}/auth/login",
+              "raw": "{{base_url}}/auth/google/login",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "auth",
+                "google",
                 "login"
               ]
             },
-            "description": "POST /auth/login — Autentica con `email` y `password`. Devuelve un JWT (`access_token`) que se guarda automáticamente en `{{token}}`. Usar este token como Bearer en todos los endpoints autenticados."
+            "description": "GET /auth/google/login — Inicia flujo OAuth server-side. Responde 302 a Google y guarda cookie efímera `utopp_oauth_state` (CSRF). Abrir en navegador, no en Postman sin seguir redirects manualmente."
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/logout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "logout"
+              ]
+            },
+            "description": "POST /auth/logout — Elimina la cookie HttpOnly de sesión."
           },
           "response": []
         },
@@ -141,7 +109,9 @@
                 "exec": [
                   "if (pm.response.code === 200) {",
                   "    var jsonData = pm.response.json();",
-                  "    pm.collectionVariables.set('token', jsonData.access_token);",
+                  "    if (jsonData.access_token) {",
+                  "        pm.collectionVariables.set('token', jsonData.access_token);",
+                  "    }",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -161,12 +131,12 @@
                 "refresh"
               ]
             },
-            "description": "POST /auth/refresh — Renueva el JWT del usuario autenticado sin re-ingresar credenciales. Requiere el token actual en el header. Útil para mantener la sesión activa."
+            "description": "POST /auth/refresh — Renueva JWT en cookie HttpOnly. Requiere sesión activa (cookie o Bearer)."
           },
           "response": []
         },
         {
-          "name": "Auth Me",
+          "name": "Auth Me (autenticado)",
           "request": {
             "method": "GET",
             "header": [],
@@ -180,108 +150,12 @@
                 "me"
               ]
             },
-            "description": "GET /auth/me — Devuelve `id`, `email`, `onboarding_completed`, **`needs_terms`** (true si falta cualquier consentimiento legal), **`needs_terms_consent`** y **`needs_privacy_consent`**. Requiere Bearer."
+            "description": "GET /auth/me — Con sesión válida devuelve usuario autenticado y flags `needs_terms`."
           },
           "response": []
         }
       ],
-      "description": "Autenticación clásica con email y contraseña. Gestiona el ciclo completo de sesión: registro, login, renovación de token y consulta del usuario autenticado. Los endpoints de login y refresh guardan el token automáticamente en `{{token}}`."
-    },
-    {
-      "name": "Google Auth",
-      "item": [
-        {
-          "name": "Google Register",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "if (pm.response.code === 200) {",
-                  "    var jsonData = pm.response.json();",
-                  "    pm.collectionVariables.set('token', jsonData.access_token);",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"token\": \"GOOGLE_ID_TOKEN_AQUI\",\n    \"terms_document_id\": {{terms_document_id}},\n    \"privacy_document_id\": {{privacy_document_id}}\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/google/register",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "google",
-                "register"
-              ]
-            },
-            "description": "POST /google/register — Registra usuario nuevo con Google ID Token más **`terms_document_id`** y **`privacy_document_id`** vigentes. El backend verifica criptográficamente el ID Token (google-auth) y exige cuenta institucional UTEC: `hd=utec.edu.pe`, `email_verified=true` y email `@utec.edu.pe`. Devuelve JWT Utopp. **403** si la cuenta no es UTEC. **409** si el email ya existe. **400** si los ids legales no coinciden con los activos. **401** si el token es inválido."
-          },
-          "response": []
-        },
-        {
-          "name": "Google Login",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "if (pm.response.code === 200) {",
-                  "    var jsonData = pm.response.json();",
-                  "    pm.collectionVariables.set('token', jsonData.access_token);",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"token\": \"GOOGLE_ID_TOKEN_AQUI\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/google/login",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "google",
-                "login"
-              ]
-            },
-            "description": "POST /google/login — Autentica un usuario existente con un Google ID Token. El backend verifica criptográficamente el token y exige cuenta institucional UTEC (`hd=utec.edu.pe`, `email_verified=true`, email `@utec.edu.pe`). Busca el usuario por email y devuelve JWT. **403** si la cuenta no es UTEC. **401** si el token es inválido o el usuario no está registrado."
-          },
-          "response": []
-        }
-      ],
-      "description": "Autenticación mediante Google OAuth 2.0. El frontend obtiene un Google ID Token → lo envía al backend → el backend lo valida criptográficamente con Google (firma, exp, aud) y aplica guard institucional UTEC antes de crear usuario o emitir JWT. Solo cuentas `@utec.edu.pe` con claim `hd=utec.edu.pe` y `email_verified=true`. Usar `/google/register` la primera vez y `/google/login` en accesos posteriores. **Registro:** incluir `terms_document_id` y `privacy_document_id` vigentes."
+      "description": "Autenticación unificada con Google OAuth server-side. Sesión HttpOnly (`utopp_session`). Solo emails `@utec.edu.pe`. Login y registro ocurren en el callback `/auth/google/callback`."
     },
     {
       "name": "Legal",
@@ -2684,27 +2558,40 @@
           "response": []
         },
         {
-          "name": "Delete user",
+          "name": "Eliminar usuario",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 204 No Content', function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/admin/users/{{user_id}}",
+              "raw": "{{base_url}}/admin/users/{{target_user_id}}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "admin",
                 "users",
-                "{{user_id}}"
+                "{{target_user_id}}"
               ]
             },
-            "description": "DELETE /admin/users/{user_id} — Elimina al usuario y sus datos asociados (posts, follows, roles, imágenes, guardados, participaciones). No puedes eliminar tu propia cuenta (400). Requiere Bearer con rol administrador o root."
+            "description": "DELETE /admin/users/{user_id} — Elimina al usuario y sus datos asociados (publicaciones, follows, roles, imágenes de perfil, guardados, participaciones, aceptaciones legales).\n\n**Auth:** Bearer (`{{token}}`) con rol **administrador** o **root**.\n\n**Variable:** usa `target_user_id` (no tu propio `user_id`; auto-eliminación responde `400`).\n\n**Respuestas:**\n- `204 No Content` — usuario eliminado\n- `400` — intentas eliminar tu propia cuenta\n- `403` — sin permisos de admin\n- `404` — usuario no encontrado"
           },
           "response": []
         }
       ],
-      "description": "Panel de administración: identificación del admin (`GET /admin/me`, `GET /admin/admins`) y CRUD de usuarios (`/admin/users`). Salvo `GET /admin/me` (cualquier usuario autenticado), todos requieren rol **administrador o root**."
+      "description": "Panel de administración: identificación del admin (`GET /admin/me`, `GET /admin/admins`) y CRUD de usuarios (`/admin/users`). Incluye **Eliminar usuario** (`DELETE /admin/users/{user_id}`). Salvo `GET /admin/me` (cualquier usuario autenticado), todos requieren rol **administrador o root**."
     },
     {
       "name": "Setup",
@@ -2821,6 +2708,12 @@
       "key": "follower_id",
       "value": "2",
       "type": "string"
+    },
+    {
+      "key": "target_user_id",
+      "value": "2",
+      "type": "string",
+      "description": "ID del usuario a eliminar vía DELETE /admin/users/{user_id}. No uses tu propio ID."
     },
     {
       "key": "terms_document_id",

@@ -1,6 +1,6 @@
 from typing import Optional
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
@@ -10,7 +10,6 @@ from app.database.session import get_db
 from app.models.user import User
 from app.services import legal_service
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
 
 _TERMS_DETAIL = {
@@ -19,39 +18,61 @@ _TERMS_DETAIL = {
 }
 
 
-def get_current_user(
-    token: str = Depends(oauth2_scheme),
-    db: Session = Depends(get_db)
-) -> User:
-    """Obtiene el usuario autenticado actual. Requiere autenticación."""
+def _extract_token(request: Request, bearer_token: Optional[str]) -> Optional[str]:
+    cookie_token = request.cookies.get(settings.SESSION_COOKIE_NAME)
+    if cookie_token:
+        return cookie_token
+    return bearer_token
+
+
+def _decode_user_id(token: str) -> str:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="No se pudieron validar las credenciales",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    
     try:
         payload = jwt.decode(
-            token, 
-            settings.JWT_SECRET_KEY, 
-            algorithms=[settings.ALGORITHM]
+            token,
+            settings.JWT_SECRET_KEY,
+            algorithms=[settings.ALGORITHM],
         )
-        user_id: str = payload.get("sub")
+        user_id: str | None = payload.get("sub")
         if user_id is None:
             raise credentials_exception
-    except JWTError as e:
-        if "expired" in str(e).lower():
+        return user_id
+    except JWTError as exc:
+        if "expired" in str(exc).lower():
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token expirado. Por favor inicia sesión nuevamente.",
                 headers={"WWW-Authenticate": "Bearer"},
-            )
-        raise credentials_exception
+            ) from exc
+        raise credentials_exception from exc
 
+
+def get_current_user(
+    request: Request,
+    bearer_token: Optional[str] = Depends(oauth2_scheme_optional),
+    db: Session = Depends(get_db),
+) -> User:
+    """Obtiene el usuario autenticado desde cookie HttpOnly o Bearer."""
+    token = _extract_token(request, bearer_token)
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="No se pudieron validar las credenciales",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    user_id = _decode_user_id(token)
     user = db.query(User).filter(User.id == int(user_id)).first()
     if user is None:
-        raise credentials_exception
-
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="No se pudieron validar las credenciales",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     return user
 
 
@@ -69,28 +90,21 @@ def require_terms_accepted(
 
 
 def get_optional_user(
-    token: Optional[str] = Depends(oauth2_scheme_optional),
-    db: Session = Depends(get_db)
+    request: Request,
+    bearer_token: Optional[str] = Depends(oauth2_scheme_optional),
+    db: Session = Depends(get_db),
 ) -> Optional[User]:
     """Obtiene el usuario si está autenticado, None si no lo está."""
+    token = _extract_token(request, bearer_token)
     if not token:
         return None
-    
+
     try:
-        payload = jwt.decode(
-            token, 
-            settings.JWT_SECRET_KEY, 
-            algorithms=[settings.ALGORITHM]
-        )
-        user_id: str = payload.get("sub")
-        if user_id is None:
-            return None
-    except JWTError:
+        user_id = _decode_user_id(token)
+    except HTTPException:
         return None
 
     user = db.query(User).filter(User.id == int(user_id)).first()
     if user is None:
-        return None
-    if not legal_service.user_has_required_legal_consent(db, user.id):
         return None
     return user

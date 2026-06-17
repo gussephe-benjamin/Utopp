@@ -58,6 +58,7 @@ export default function OrganizationFeedPage({
           variant="organization"
           userName={userName}
           avatarUrl={avatarUrl}
+          userId={currentUserId}
         />
 
         <div className="w-full min-w-0 max-w-[700px] flex-1 space-y-0 md:space-y-5">

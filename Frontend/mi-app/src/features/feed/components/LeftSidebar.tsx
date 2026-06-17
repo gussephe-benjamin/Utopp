@@ -1,8 +1,7 @@
-import { UserCircle } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { INTERESTS } from "../../../constants/interests";
 import { AppLink } from "../../../shared/navigation/AppLink";
-import { resolveAvatarUrl } from "../../../shared/lib/cloudinaryUrl";
+import { ProfileAvatar } from "../../profile/components/ProfileAvatar";
 
 /** Referencia estable: evita bucle infinito cuando `interests` no se pasa como prop. */
 const EMPTY_INTERESTS: string[] = []
@@ -10,6 +9,7 @@ const EMPTY_INTERESTS: string[] = []
 type LeftSidebarProps = {
   userName?: string;
   avatarUrl?: string | null;
+  userId?: number | null;
   career?: string | null;
   cycle?: number | null;
   postsCount?: number;
@@ -26,6 +26,7 @@ type LeftSidebarProps = {
 export function LeftSidebar({
   userName,
   avatarUrl,
+  userId,
   career,
   cycle,
   interests,
@@ -79,14 +80,13 @@ export function LeftSidebar({
       {/* Widget Perfil */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
         <div className="h-24 bg-gradient-to-br from-blue-600 via-indigo-500 to-fuchsia-500 w-full relative">
-           <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full border-4 border-white bg-gray-100 overflow-hidden shadow-sm">
-             {avatarUrl ? (
-               <img src={resolveAvatarUrl(avatarUrl) ?? avatarUrl} alt={displayName} className="w-full h-full object-cover" />
-             ) : (
-               <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-violet-400 to-indigo-500">
-                 <UserCircle className="w-10 h-10 text-white/80" />
-               </div>
-             )}
+           <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 rounded-full border-4 border-white bg-white p-0.5 shadow-sm">
+             <ProfileAvatar
+               name={displayName}
+               userId={userId}
+               imageUrl={avatarUrl}
+               size="md"
+             />
            </div>
         </div>
         <div className="pt-10 pb-5 px-4 text-center flex flex-col items-center">

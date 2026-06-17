@@ -183,11 +183,13 @@ Cada usuario tiene un rol que determina qué puede publicar, qué nivel de visib
 - Las publicaciones pinned aparecen antes que cualquier filtro de fecha o tipo
 - Card con borde dorado, banner "Publicación destacada" y etiqueta de rol
 
-### Autenticación dual
-- Login con **email + contraseña** (JWT firmado, expiración configurable)
-- Login con **Google OAuth2** (un clic)
-- Registro restringido a cuentas institucionales **`@utec.edu.pe`**
-- Google OAuth: el backend verifica criptográficamente el ID Token y exige `hd=utec.edu.pe`, `email_verified=true` y email `@utec.edu.pe` (403 si no cumple)
+### Autenticación con Google OAuth
+- Acceso exclusivo con **Google OAuth server-side** (redirect + callback)
+- Una sola pantalla: **Continuar con Google**
+- Sesión en cookie **HttpOnly** (`Secure` + `SameSite=Lax` en producción)
+- Registro e inicio de sesión unificados en el callback del backend (upsert por email)
+- Solo cuentas **`@utec.edu.pe`** (403 si el email no es institucional)
+- Consentimiento legal post-auth en `/app/terms` si falta aceptación
 
 ### Onboarding guiado
 - Selección de intereses académicos personalizados
@@ -247,8 +249,14 @@ SECRET_KEY=clave_secreta_aleatoria_muy_larga
 ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=10080
 
-# ── Google OAuth2 ──────────────────────────────────────
+# ── Google OAuth2 (server-side) ───────────────────────
 GOOGLE_CLIENT_ID=tu_client_id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=tu_client_secret
+GOOGLE_REDIRECT_URI=http://localhost:8000/auth/google/callback
+FRONTEND_URL=http://localhost:5173
+SESSION_COOKIE_NAME=utopp_session
+COOKIE_SECURE=false
+COOKIE_SAMESITE=lax
 
 # ── Cloudinary ─────────────────────────────────────────
 VITE_CLOUDINARY_CLOUD_NAME=tu_cloud_name
@@ -369,8 +377,8 @@ Utopp/
 │       │   ├── feed.py              # + is_pinned, pin_priority en FeedPostOut
 │       │   └── ...
 │       ├── routers/                 # Endpoints REST
-│       │   ├── auth.py              # POST /auth/login, /auth/register
-│       │   ├── googleAuth.py        # POST /google/login
+│       │   ├── auth.py              # GET /auth/me, /auth/google/*, logout
+│       │   ├── session.py           # Cookie HttpOnly de sesión
 │       │   ├── setup.py             # POST /setup/bootstrap-admin
 │       │   ├── posts.py             # CRUD posts + publish
 │       │   ├── feed.py              # GET /feed
@@ -388,7 +396,7 @@ Utopp/
         ├── App.tsx                  # Rutas SPA (Login activo)  ← v1.1.0
         ├── auth/                    # AuthContext, ProtectedRoute, AppRoute
         ├── api/                     # Clientes Axios por dominio
-        │   ├── axios.ts             # Instancia base + interceptor JWT
+        │   ├── axios.ts             # Instancia base + withCredentials + refresh
         │   ├── feed.api.ts
         │   ├── posts.api.ts         # + is_pinned en PostCreate/PostUpdate
         │   └── ...
@@ -401,8 +409,7 @@ Utopp/
         │   ├── Profile.tsx
         │   ├── Dashboard.tsx
         │   └── auth/
-        │       ├── Login.tsx        # Formulario de credenciales  ← v1.1.0
-        │       └── RegisterOG.tsx
+        │       └── AuthEntry.tsx    # Continuar con Google (única pantalla)
         ├── hooks/
         │   └── useRole.ts           # Detecta rol del usuario autenticado
         └── types/
@@ -415,10 +422,11 @@ Utopp/
 
 | Método | Ruta | Descripción | Auth |
 |--------|------|-------------|------|
-| `POST` | `/auth/login` | Login con email + contraseña | ❌ |
-| `POST` | `/auth/register` | Registro de nuevo usuario | ❌ |
-| `POST` | `/google/login` | Autenticación con Google OAuth2 (solo `@utec.edu.pe`) | ❌ |
-| `POST` | `/google/register` | Registro con Google OAuth2 (solo `@utec.edu.pe`) | ❌ |
+| `GET` | `/auth/me` | Estado de sesión (`authenticated` + `user` o `false`) | ❌ |
+| `GET` | `/auth/google/login` | Inicia OAuth con Google (redirect 302) | ❌ |
+| `GET` | `/auth/google/callback` | Callback OAuth: upsert usuario + cookie + redirect FE | ❌ |
+| `POST` | `/auth/logout` | Cierra sesión (borra cookie) | ✅ |
+| `POST` | `/auth/refresh` | Renueva JWT en cookie HttpOnly | ✅ |
 | `POST` | `/setup/bootstrap-admin` | Crear primer admin (token) | Token |
 | `GET` | `/feed` | Feed paginado con filtros | ✅ |
 | `GET` | `/feed?type=evento` | Feed filtrado por tipo | ✅ |

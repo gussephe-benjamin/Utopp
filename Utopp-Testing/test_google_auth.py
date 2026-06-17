@@ -3,6 +3,10 @@ import uuid
 import httpx
 import pytest
 
+pytestmark = pytest.mark.skip(
+    reason="POST /google/login and /google/register were removed; see test_auth_unified.py and test_google_oauth_unified.py"
+)
+
 from config import API_BASE_URL
 from auth_helpers import google_register_json, with_legal_ids
 
