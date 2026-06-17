@@ -5,6 +5,7 @@ import { googleLogin } from "../api/auth.api";
 import { redirectAfterAuthSession } from "./postAuthRedirect";
 import { GoogleButton } from "../features/auth/components/GoogleButton";
 import { AUTH_GOOGLE } from "../features/auth/constants/authCopy";
+import { parseGoogleAuthError } from "../features/auth/lib/parseGoogleAuthError";
 
 export default function GoogleLogin() {
   const { login } = useAuth();
@@ -21,7 +22,7 @@ export default function GoogleLogin() {
       await redirectAfterAuthSession(navigate);
     } catch (err) {
       console.error("Error en Google login:", err);
-      setError("No se pudo iniciar sesión con Google. Intenta de nuevo.");
+      setError(parseGoogleAuthError(err, "No se pudo iniciar sesión con Google. Intenta de nuevo."));
     } finally {
       setIsLoading(false);
     }
@@ -33,9 +34,9 @@ export default function GoogleLogin() {
         variant="login"
         recommended
         isLoading={isLoading}
-        loadingLabel={AUTH_GOOGLE.validatingLogin}
+        loadingLabel={AUTH_GOOGLE.continueWithGoogle}
         onSuccess={handleGoogleSuccess}
-        onError={() => setError("Login con Google falló. Intenta de nuevo.")}
+        onError={() => setError("Iniciar sesión con Google falló. Intenta de nuevo.")}
       />
       {error && (
         <p className="text-center text-xs text-red-600" role="alert" aria-live="polite">

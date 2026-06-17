@@ -20,7 +20,7 @@ import { listImages, type PostImage } from "../../../api/post-images.api";
 import { listLinks } from "../../../api/post-links.api";
 import { savePost, unsavePost } from "../../../api/saved-posts.api";
 import { toggleReaction } from "../../../api/reactions.api";
-import { PostCommentsSection } from "./PostCommentsSection";
+// import { PostCommentsSection } from "./PostCommentsSection";
 import { archivePost, deletePost, unarchivePost } from "../../../api/posts.api";
 import EditPostWizard from "../../../components/EditPostWizard";
 import { ConfirmModal } from "../../profile/components/ConfirmModal";
@@ -39,6 +39,7 @@ import { PostImageViewerModal } from "./PostImageViewerModal";
 import { UserAvatar } from "./UserAvatar";
 import { resolvePostImageUrl } from "../../../shared/lib/postImageUrl";
 import { ProfileLink } from "../../profile/components/ProfileLink";
+import { PostCommentsSection } from "./PostCommentsSection";
 
 type PostCardProps = {
   post: FeedPostOut;

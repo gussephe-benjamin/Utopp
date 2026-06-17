@@ -1,7 +1,7 @@
 import type { AxiosError } from "axios";
+import { AUTH_UTEC } from "../../features/auth/constants/authCopy";
 
-const INSTITUTIONAL_EMAIL_MESSAGE =
-  "Este correo no está autorizado. Usa tu correo institucional registrado en la plataforma.";
+const INSTITUTIONAL_EMAIL_MESSAGE = AUTH_UTEC.accessDenied;
 
 /** Errores de login / sesión (respuesta típica `{ detail: string }`). */
 export function parseAuthApiError(err: unknown): string {

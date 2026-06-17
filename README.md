@@ -186,7 +186,8 @@ Cada usuario tiene un rol que determina qué puede publicar, qué nivel de visib
 ### Autenticación dual
 - Login con **email + contraseña** (JWT firmado, expiración configurable)
 - Login con **Google OAuth2** (un clic)
-- Registro con validación de formato de email institucional
+- Registro restringido a cuentas institucionales **`@utec.edu.pe`**
+- Google OAuth: el backend verifica criptográficamente el ID Token y exige `hd=utec.edu.pe`, `email_verified=true` y email `@utec.edu.pe` (403 si no cumple)
 
 ### Onboarding guiado
 - Selección de intereses académicos personalizados
@@ -416,7 +417,8 @@ Utopp/
 |--------|------|-------------|------|
 | `POST` | `/auth/login` | Login con email + contraseña | ❌ |
 | `POST` | `/auth/register` | Registro de nuevo usuario | ❌ |
-| `POST` | `/google/login` | Autenticación con Google OAuth2 | ❌ |
+| `POST` | `/google/login` | Autenticación con Google OAuth2 (solo `@utec.edu.pe`) | ❌ |
+| `POST` | `/google/register` | Registro con Google OAuth2 (solo `@utec.edu.pe`) | ❌ |
 | `POST` | `/setup/bootstrap-admin` | Crear primer admin (token) | Token |
 | `GET` | `/feed` | Feed paginado con filtros | ✅ |
 | `GET` | `/feed?type=evento` | Feed filtrado por tipo | ✅ |

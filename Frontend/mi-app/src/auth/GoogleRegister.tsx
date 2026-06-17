@@ -6,6 +6,7 @@ import { getCurrentPrivacy, getCurrentTerms } from "../api/legal.api";
 import { redirectAfterAuthSession } from "./postAuthRedirect";
 import { GoogleButton } from "../features/auth/components/GoogleButton";
 import { AUTH_GOOGLE } from "../features/auth/constants/authCopy";
+import { parseGoogleAuthError } from "../features/auth/lib/parseGoogleAuthError";
 
 export interface GoogleRegisterProps {
   /** Documentos legales cargados correctamente. */
@@ -57,7 +58,7 @@ export default function GoogleRegister({
       ) {
         setError("Los textos legales se actualizaron. Recarga la página y vuelve a intentarlo.");
       } else {
-        setError("No se pudo registrar con Google. Intenta de nuevo.");
+        setError(parseGoogleAuthError(err, "No se pudo registrar con Google. Intenta de nuevo."));
       }
     } finally {
       setIsLoading(false);
@@ -72,9 +73,9 @@ export default function GoogleRegister({
         variant="register"
         disabled={!legalDocsReady}
         isLoading={isLoading}
-        loadingLabel={AUTH_GOOGLE.registering}
+        loadingLabel={AUTH_GOOGLE.registerWithGoogle}
         onSuccess={handleGoogleSuccess}
-        onError={() => setError("Registro con Google falló. Intenta de nuevo.")}
+        onError={() => setError("Registrar con Google falló. Intenta de nuevo.")}
       />
       {showLegalGate && (
         <button

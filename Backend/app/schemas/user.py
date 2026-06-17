@@ -236,3 +236,10 @@ class GoogleRegisterIn(BaseModel):
     token: str = Field(..., min_length=10)
     terms_document_id: int = Field(..., ge=1)
     privacy_document_id: int = Field(..., ge=1)
+
+
+class GoogleLoginIn(BaseModel):
+    """Login con Google ID Token."""
+    model_config = {"extra": "ignore"}
+
+    token: str = Field(..., min_length=10)

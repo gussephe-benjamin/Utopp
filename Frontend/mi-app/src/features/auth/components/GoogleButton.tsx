@@ -47,11 +47,20 @@ export function GoogleButton({
   onError,
   disabled = false,
   isLoading = false,
-  loadingLabel = AUTH_GOOGLE.connecting,
+  loadingLabel,
   variant = "login",
   recommended = false,
 }: GoogleButtonProps) {
   const blocked = disabled || isLoading;
+  const buttonLabel =
+    variant === "register"
+      ? AUTH_GOOGLE.registerWithGoogle
+      : AUTH_GOOGLE.continueWithGoogle;
+  const resolvedLoadingLabel =
+    loadingLabel ??
+    (variant === "register"
+      ? AUTH_GOOGLE.registeringWithGoogle
+      : AUTH_GOOGLE.connectingWithGoogle);
 
   const handleSuccess = async (credentialResponse: { credential?: string }) => {
     if (!credentialResponse.credential || blocked) return;
@@ -70,7 +79,7 @@ export function GoogleButton({
             className="h-4 w-4 animate-spin rounded-full border-2 border-violet-300 border-t-violet-600 motion-reduce:animate-none"
             aria-hidden
           />
-          <span className="auth-ellipsis">{loadingLabel.replace(/\.+$/, "")}</span>
+          <span className="auth-ellipsis">{resolvedLoadingLabel.replace(/\.+$/, "")}</span>
         </div>
       </div>
     );
@@ -84,7 +93,7 @@ export function GoogleButton({
           aria-hidden
         >
           <GoogleIcon />
-          <span>{AUTH_GOOGLE.continue}</span>
+          <span>{buttonLabel}</span>
         </div>
 
         <div

@@ -334,23 +334,14 @@ def create_google_user(
 
     return user
 
-def obtener_organizacion(email):
-    """Extrae el nombre de la organización del dominio del email."""
-    try:
-        # Dividimos el correo en el '@' y tomamos la segunda parte
-        dominio = email.split('@')[1].lower()
-        dominio = dominio.split('.')[0].lower()
-        
-        return dominio
-    except IndexError:
-        return None
+
+def is_utec_institutional_email(email: str) -> bool:
+    """Verifica que el email pertenezca exactamente al dominio @utec.edu.pe."""
+    if not email:
+        return False
+    return email.strip().lower().endswith("@utec.edu.pe")
+
 
 def is_domUtec(email):
     """Verifica si el email pertenece al dominio institucional habilitado."""
-    
-    org = obtener_organizacion(email=email)
-    
-    if org != "utec":
-        return False
-    else:
-        return True
+    return is_utec_institutional_email(email)

@@ -4,19 +4,12 @@ from app.schemas.onboarding import UserOnboarding_Response, OnboardingStatusOut,
 from app.schemas.user import UserCreate, UserOut
 from app.models.user import User
 from app.dependencies.auth import get_current_user
-from app.services.users_service import authenticate_user, create_user, get_user_by_email, create_google_user, is_domUtec
+from app.services.users_service import authenticate_user, create_user, get_user_by_email, is_domUtec
+from app.services.google_token_service import UTEC_ACCESS_DENIED_MESSAGE
 from app.core.security import create_access_token
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
-
-from google.auth.transport import requests
-from google.oauth2 import id_token
-
-import yaml
-import os
-
-GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 
 router = APIRouter()
 
@@ -37,7 +30,7 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
     if is_domUtec(user.email) is not True:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="El correo no está autorizado. Usa tu correo institucional registrado en la plataforma.",
+            detail=UTEC_ACCESS_DENIED_MESSAGE,
         )
         
     token = create_access_token(subject=str(user.id))
@@ -59,7 +52,7 @@ def register(payload: UserCreate, request: Request, db: Session = Depends(get_db
     if is_domUtec(payload.email) is not True:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="El correo no está autorizado. Usa tu correo institucional registrado en la plataforma.",
+            detail=UTEC_ACCESS_DENIED_MESSAGE,
         )
     if not legal_service.register_legal_ids_match_active(
         db, payload.terms_document_id, payload.privacy_document_id

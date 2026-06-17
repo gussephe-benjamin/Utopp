@@ -231,7 +231,7 @@
                 "register"
               ]
             },
-            "description": "POST /google/register — Registra usuario nuevo con Google ID Token más **`terms_document_id`** y **`privacy_document_id`** vigentes (mismo criterio que `/auth/register`). Devuelve JWT Utopp. 409 si el email ya existe. 400 si los ids legales no coinciden con los activos."
+            "description": "POST /google/register — Registra usuario nuevo con Google ID Token más **`terms_document_id`** y **`privacy_document_id`** vigentes. El backend verifica criptográficamente el ID Token (google-auth) y exige cuenta institucional UTEC: `hd=utec.edu.pe`, `email_verified=true` y email `@utec.edu.pe`. Devuelve JWT Utopp. **403** si la cuenta no es UTEC. **409** si el email ya existe. **400** si los ids legales no coinciden con los activos. **401** si el token es inválido."
           },
           "response": []
         },
@@ -276,12 +276,12 @@
                 "login"
               ]
             },
-            "description": "POST /google/login — Autentica un usuario existente con un Google ID Token. El backend busca el usuario por email en `users` y devuelve un JWT. Error 404 si el usuario no existe (usar /google/register primero)."
+            "description": "POST /google/login — Autentica un usuario existente con un Google ID Token. El backend verifica criptográficamente el token y exige cuenta institucional UTEC (`hd=utec.edu.pe`, `email_verified=true`, email `@utec.edu.pe`). Busca el usuario por email y devuelve JWT. **403** si la cuenta no es UTEC. **401** si el token es inválido o el usuario no está registrado."
           },
           "response": []
         }
       ],
-      "description": "Autenticación mediante Google OAuth 2.0. El frontend obtiene un Google ID Token → lo envía al backend → el backend lo valida con Google, extrae email y nombre, y devuelve un JWT propio de Utopp. Usar `/google/register` la primera vez y `/google/login` en accesos posteriores. **Registro:** el body debe incluir también `terms_document_id` y `privacy_document_id` (ids vigentes de `GET /legal/terms/current` y `GET /legal/privacy/current`)."
+      "description": "Autenticación mediante Google OAuth 2.0. El frontend obtiene un Google ID Token → lo envía al backend → el backend lo valida criptográficamente con Google (firma, exp, aud) y aplica guard institucional UTEC antes de crear usuario o emitir JWT. Solo cuentas `@utec.edu.pe` con claim `hd=utec.edu.pe` y `email_verified=true`. Usar `/google/register` la primera vez y `/google/login` en accesos posteriores. **Registro:** incluir `terms_document_id` y `privacy_document_id` vigentes."
     },
     {
       "name": "Legal",

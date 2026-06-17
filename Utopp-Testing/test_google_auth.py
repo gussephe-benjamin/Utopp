@@ -8,7 +8,11 @@ from auth_helpers import google_register_json, with_legal_ids
 
 
 class TestGoogleAuthAPI:
-    """Integration tests for Google Auth endpoints."""
+    """Integration tests for Google Auth endpoints.
+
+    Domain/institutional guard cases (hd, email_verified, @utec.edu.pe) are covered
+    in test_google_utec_domain.py with mocked ID token payloads.
+    """
 
     @pytest.fixture(scope="module")
     def client(self):

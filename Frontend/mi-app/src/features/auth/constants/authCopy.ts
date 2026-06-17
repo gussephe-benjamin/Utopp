@@ -40,8 +40,13 @@ export const AUTH_REGISTER = {
 } as const;
 
 export const AUTH_GOOGLE = {
-  continue: "Continuar con Google",
-  connecting: "Conectando con Google...",
-  validatingLogin: "Validando con Google...",
-  registering: "Registrando con Google...",
+  continueWithGoogle: "Iniciar sesión con Google",
+  registerWithGoogle: "Crear cuenta con Google",
+  connectingWithGoogle: "Conectando con Google...",
+  validatingLoginWithGoogle: "Validando inicio de sesión con Google...",
+  registeringWithGoogle: "Creando cuenta con Google...",
+} as const;
+
+export const AUTH_UTEC = {
+  accessDenied: "Solo se permiten cuentas institucionales UTEC (@utec.edu.pe).",
 } as const;
