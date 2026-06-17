@@ -1,4 +1,5 @@
 import api from "./axios"
+import { resolveApiBaseUrl } from "../shared/lib/apiBaseUrl"
 
 export interface AuthMeUser {
   id: number
@@ -81,8 +82,7 @@ export async function cancelGoogleOAuthPending() {
 
 /** URL absoluta para iniciar OAuth server-side con Google. */
 export function getGoogleOAuthLoginUrl(): string {
-  const base = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, "") ?? ""
-  return `${base}/auth/google/login`
+  return `${resolveApiBaseUrl()}/auth/google/login`
 }
 
 export async function loginSession(payload: { email: string; password: string }) {

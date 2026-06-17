@@ -38,3 +38,17 @@ def test_cookie_samesite_normalized(monkeypatch):
     monkeypatch.setenv("COOKIE_SAMESITE", "None")
     cfg = Settings()
     assert cfg.COOKIE_SAMESITE == "none"
+
+
+def test_render_external_url_overrides_localhost_oauth(monkeypatch):
+    monkeypatch.setenv("RENDER_EXTERNAL_URL", "https://utopp.onrender.com")
+    monkeypatch.setenv("RENDER", "true")
+    monkeypatch.setenv("GOOGLE_REDIRECT_URI", "http://localhost:8000/auth/google/callback")
+    monkeypatch.setenv("FRONTEND_URL", "http://localhost:5173")
+    from app.core import config
+
+    config.settings = Settings()
+    assert config.settings.GOOGLE_REDIRECT_URI == "https://utopp.onrender.com/auth/google/callback"
+    assert config.settings.FRONTEND_URL == "https://utopp-fronted.onrender.com"
+    assert config.settings.COOKIE_SECURE is True
+    assert config.settings.COOKIE_SAMESITE == "none"
