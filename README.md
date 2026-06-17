@@ -258,6 +258,9 @@ SESSION_COOKIE_NAME=utopp_session
 COOKIE_SECURE=false
 COOKIE_SAMESITE=lax
 
+# Orígenes CORS adicionales (opcional, separados por coma). FRONTEND_URL se añade automáticamente.
+# ALLOWED_ORIGINS=https://otro-dominio.ejemplo.com
+
 # ── Cloudinary ─────────────────────────────────────────
 VITE_CLOUDINARY_CLOUD_NAME=tu_cloud_name
 VITE_CLOUDINARY_UPLOAD_PRESET=tu_upload_preset
@@ -266,6 +269,21 @@ VITE_CLOUDINARY_UPLOAD_PRESET=tu_upload_preset
 ENABLE_ADMIN_BOOTSTRAP=true
 BOOTSTRAP_ADMIN_TOKEN=token_secreto_para_primer_admin
 ```
+
+### Producción en Render
+
+Para OAuth Google en la nube (dos servicios Render: frontend + backend), configura variables distintas a local. Guía paso a paso:
+
+- **[docs/deploy/RENDER_OAUTH.md](docs/deploy/RENDER_OAUTH.md)** — checklist completo
+- **[deploy/render.env.example](deploy/render.env.example)** — plantilla de variables
+
+Resumen rápido:
+
+| Servicio | Variables clave |
+|----------|-----------------|
+| **Backend** | `GOOGLE_REDIRECT_URI=https://utopp.onrender.com/auth/google/callback`, `FRONTEND_URL=https://utopp-fronted.onrender.com`, `COOKIE_SECURE=true`, `COOKIE_SAMESITE=none` |
+| **Frontend** | `VITE_API_URL=https://utopp.onrender.com` (requiere **rebuild** tras cambiar) |
+| **Google Console** | Registrar la misma redirect URI de producción en Authorized redirect URIs |
 
 ---
 

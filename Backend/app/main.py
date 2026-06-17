@@ -1,16 +1,19 @@
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
-from contextlib import asynccontextmanager
+import logging
 import os
 import time
 import uuid
-import logging
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from app.database.session import engine, SessionLocal
+from fastapi.responses import JSONResponse
+
+from app.core.config import settings, validate_deployment_settings
 from app.database.base import Base
 from app.database.migrations import run_migrations
-from app.services import role_service
+from app.database.session import SessionLocal, engine
 from app.models import legal as _legal_models  # noqa: F401 — registra tablas legales en metadata
+from app.services import role_service
 logger = logging.getLogger("utopp.api")
 _slow_request_ms = int(os.getenv("SLOW_REQUEST_MS", "1000"))
 
@@ -39,6 +42,7 @@ from app.routers import (
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # --- STARTUP ---
+    validate_deployment_settings()
     Base.metadata.create_all(bind=engine)
     run_migrations(engine)
     db = SessionLocal()
@@ -59,15 +63,7 @@ app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://utopp-fronted.onrender.com",
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:5173",
-        "https://www.utopp.app",
-        "https://utopp.app",
-    ],
+    allow_origins=settings.cors_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

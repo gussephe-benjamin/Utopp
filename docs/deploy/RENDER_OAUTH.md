@@ -1,0 +1,81 @@
+# Despliegue OAuth en Render
+
+Guía para que Google OAuth funcione con frontend y backend en dos servicios de [Render](https://render.com).
+
+## 1. Variables del backend (Render → tu servicio API → Environment)
+
+| Variable | Valor producción |
+|----------|------------------|
+| `GOOGLE_CLIENT_ID` | Client ID de Google Cloud |
+| `GOOGLE_CLIENT_SECRET` | Client secret |
+| `GOOGLE_REDIRECT_URI` | `https://utopp.onrender.com/auth/google/callback` |
+| `FRONTEND_URL` | `https://utopp-fronted.onrender.com` |
+| `COOKIE_SECURE` | `true` |
+| `COOKIE_SAMESITE` | `none` |
+| `SECRET_KEY` | Valor aleatorio fuerte (distinto a local) |
+
+Plantilla completa: [`deploy/render.env.example`](../deploy/render.env.example)
+
+### Por qué `COOKIE_SAMESITE=none`
+
+Frontend y backend en Render tienen hosts distintos (`*.onrender.com`). Con `SameSite=Lax` el navegador **no envía** cookies en peticiones cross-origin. La app usa sesión HttpOnly (`withCredentials: true`), así que en producción cross-origin necesitas `none` + `secure`.
+
+## 2. Variables del frontend (Render → tu servicio frontend → Environment)
+
+| Variable | Valor |
+|----------|--------|
+| `VITE_API_URL` | `https://utopp.onrender.com` |
+
+**Rebuild obligatorio:** Vite incluye `VITE_*` en el bundle al compilar. Después de cambiar `VITE_API_URL`, lanza un nuevo deploy (idealmente con *Clear build cache*).
+
+## 3. Google Cloud Console
+
+1. [APIs & Services → Credentials](https://console.cloud.google.com/apis/credentials)
+2. Edita tu **OAuth 2.0 Client ID** (Web application)
+3. **Authorized redirect URIs** — añade **las dos**:
+   - `http://localhost:8000/auth/google/callback` (desarrollo)
+   - `https://utopp.onrender.com/auth/google/callback` (producción)
+4. **Authorized JavaScript origins** (opcional):
+   - `https://utopp-fronted.onrender.com`
+
+El valor de `GOOGLE_REDIRECT_URI` en Render debe coincidir **exactamente** con una URI autorizada.
+
+## 4. CORS
+
+El backend añade automáticamente `FRONTEND_URL` y `ALLOWED_ORIGINS` (lista separada por comas) a los orígenes CORS permitidos. Orígenes conocidos (`utopp-fronted.onrender.com`, `utopp.app`, localhost) ya están incluidos.
+
+## 5. Verificación
+
+1. `curl https://utopp.onrender.com/health/` → respuesta OK de la API
+2. Abre la app en `https://utopp-fronted.onrender.com/login`
+3. Clic en **Continuar con Google** → la URL debe ser `https://utopp.onrender.com/auth/google/login` (no `localhost`)
+4. Tras Google → `https://utopp.onrender.com/auth/google/callback?...`
+5. Redirect a `https://utopp-fronted.onrender.com/...`
+6. Sesión activa: la app carga el feed sin volver a login
+
+### Error `localhost refused to connect` en el callback
+
+Google está redirigiendo a `localhost` porque:
+
+- `GOOGLE_REDIRECT_URI` en el backend de Render sigue en `localhost`, **o**
+- El frontend desplegado aún usa `VITE_API_URL=http://localhost:8000` (rebuild pendiente)
+
+Revisa logs del backend al arrancar: se imprime `redirect_uri` y `cors_origins` para depuración.
+
+### Diagnóstico (jun 2026)
+
+Al probar `GET https://utopp.onrender.com/auth/google/login`, el backend en Render aún enviaba a Google:
+
+`redirect_uri=http://localhost:8000/auth/google/callback`
+
+**Acción requerida en el panel de Render (servicio backend):** actualizar `GOOGLE_REDIRECT_URI`, `FRONTEND_URL`, `COOKIE_SECURE` y `COOKIE_SAMESITE`, luego redeploy. En el frontend, fijar `VITE_API_URL=https://utopp.onrender.com` y rebuild.
+
+## Desarrollo local vs producción
+
+| | Local (Docker) | Render |
+|---|----------------|--------|
+| `GOOGLE_REDIRECT_URI` | `http://localhost:8000/auth/google/callback` | `https://utopp.onrender.com/auth/google/callback` |
+| `FRONTEND_URL` | `http://localhost:5173` | `https://utopp-fronted.onrender.com` |
+| `VITE_API_URL` | `http://localhost:8000` | `https://utopp.onrender.com` |
+| `COOKIE_SECURE` | `false` | `true` |
+| `COOKIE_SAMESITE` | `lax` | `none` |
