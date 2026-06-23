@@ -77,6 +77,10 @@ async def request_timing_middleware(request: Request, call_next):
     elapsed_ms = (time.perf_counter() - started) * 1000
     response.headers["x-request-id"] = request_id
     response.headers["x-response-time-ms"] = f"{elapsed_ms:.2f}"
+    existing_vary = response.headers.get("Vary", "")
+    vary_parts = {part.strip() for part in existing_vary.split(",") if part.strip()}
+    vary_parts.update({"Cookie", "Origin"})
+    response.headers["Vary"] = ", ".join(sorted(vary_parts))
     if elapsed_ms >= _slow_request_ms:
         logger.warning(
             "slow_request request_id=%s method=%s path=%s status=%s elapsed_ms=%.2f",

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react"
 import { UtoppBrandMark } from "../../../shared/brand/UtoppBrandMark"
+import { TW_AUTH } from "../constants/authTheme"
 import { TW_UTOPP_GRADIENT_R } from "../../../shared/constants/brand"
 
 type AuthFormShellProps = {
@@ -85,10 +86,7 @@ export function AuthFormDivider({ label }: { label?: string }) {
 
 export function AuthFormAlert({ message }: { message: string }) {
   return (
-    <div
-      className="rounded-2xl border border-red-100 bg-red-50/90 px-3.5 py-3 text-center text-xs leading-relaxed text-red-700"
-      role="alert"
-    >
+    <div className={TW_AUTH.alertError} role="alert">
       {message}
     </div>
   )

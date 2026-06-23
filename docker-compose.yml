@@ -17,6 +17,9 @@ services:
       - DATABASE_URL=${DATABASE_URL}
     ports:
       - "${BACKEND_PORT}:8000"
+    volumes:
+      - ./Backend:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     depends_on:
       - db
   frontend:

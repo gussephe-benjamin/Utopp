@@ -18,6 +18,14 @@ export default defineConfig({
         target: 'http://utopp-backend-1:8000',
         changeOrigin: true,
         secure: false,
+        bypass(req) {
+          const frontendOnlyPaths = ['/auth/callback']
+          const url = req.url ?? ''
+          if (frontendOnlyPaths.some((path) => url.startsWith(path))) {
+            return '/index.html'
+          }
+          return null
+        },
       },
     },
   },

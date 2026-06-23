@@ -1,37 +1,33 @@
-import type { ReactNode } from "react";
-import { AuthLeftPanel } from "./AuthLeftPanel";
+import type { ReactNode } from "react"
+import { AuthLeftPanel } from "./AuthLeftPanel"
+import { AuthMobileBenefits, AuthMobileLogo } from "./AuthMobileBenefits"
 
-export type AuthTransitionDirection = "from-right" | "from-left";
+export type AuthTransitionDirection = "from-right" | "from-left"
 
 type AuthSplitLayoutProps = {
-  children: ReactNode;
-};
+  children: ReactNode
+}
 
 /**
- * Shell de las pantallas de autenticación.
- * - Móvil: cabecera de marca + card blanca que se solapa (rounded-t-3xl).
- * - Tablet (md–xl): split 45/55 con panel de valor a la izquierda.
- * - Laptop (xl+): split 50/50.
- *
- * El panel izquierdo permanece estático entre rutas; solo el derecho anima
- * (la dirección se controla en `AuthRightPanel`).
+ * Shell dark de autenticación.
+ * - Móvil: pantalla completa (#0F1117), logo + card + benefits carousel.
+ * - Desktop: split 55/45 con storytelling a la izquierda.
  */
 export function AuthSplitLayout({ children }: AuthSplitLayoutProps) {
   return (
-    <div className="flex min-h-screen flex-col bg-[#F8FAFC] md:h-screen md:flex-row md:overflow-hidden">
-      {/* Cabecera compacta (solo móvil) */}
-      <AuthLeftPanel compact />
+    <div className="flex min-h-screen flex-col bg-[#0F1117] md:h-screen md:flex-row md:overflow-hidden">
+      <AuthMobileLogo />
 
-      {/* Panel izquierdo (tablet/laptop) — estático, no anima */}
-      <div className="relative hidden md:block md:h-screen md:w-5/12 xl:w-1/2">
+      <div className="relative hidden h-screen w-[55%] md:block">
         <AuthLeftPanel />
       </div>
 
-      {/* Panel derecho (auth) — `safe center` mantiene el contenido centrado
-          cuando cabe y lo alinea arriba (con scroll, sin recortar) en pantallas bajas. */}
-      <div className="relative z-10 -mt-4 flex flex-1 items-start justify-center rounded-t-3xl bg-[#F8FAFC] px-4 pt-10 pb-14 md:mt-0 md:w-7/12 md:overflow-y-auto md:rounded-none md:px-6 md:py-10 md:[align-items:safe_center] xl:w-1/2 xl:px-8">
-        {children}
+      <div className="relative flex flex-1 flex-col md:h-screen md:w-[45%] md:overflow-y-auto">
+        <div className="flex flex-1 items-start justify-center px-4 py-6 md:items-center md:px-6 md:py-10 lg:px-10 md:[align-items:safe_center]">
+          {children}
+        </div>
+        <AuthMobileBenefits />
       </div>
     </div>
-  );
+  )
 }

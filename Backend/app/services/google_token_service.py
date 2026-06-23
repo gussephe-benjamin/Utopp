@@ -7,6 +7,7 @@ Seguridad:
   verificado; nunca se confía en valores enviados manualmente por el frontend.
 """
 
+import logging
 from dataclasses import dataclass
 
 from fastapi import HTTPException, status
@@ -14,6 +15,8 @@ from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token
 
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 UTEC_DOMAIN = "utec.edu.pe"
 UTEC_ACCESS_DENIED_MESSAGE = (
@@ -56,10 +59,29 @@ def verify_google_id_token(token: str) -> dict:
         ) from exc
 
 
-def assert_utec_email(email: str) -> None:
-    """Guard institucional: solo emails @utec.edu.pe."""
-    normalized = (email or "").strip().lower()
-    if not normalized.endswith(f"@{UTEC_DOMAIN}"):
+def is_utec_profile(email: str | None, hd: str | None = None) -> bool:
+    """True si el perfil Google pertenece a UTEC (claim hd o sufijo de email)."""
+    normalized_email = (email or "").strip().lower()
+    normalized_hd = (hd or "").strip().lower()
+    hd_valid = normalized_hd == UTEC_DOMAIN
+    email_valid = normalized_email.endswith(f"@{UTEC_DOMAIN}")
+    return hd_valid or email_valid
+
+
+def assert_utec_email(email: str, hd: str | None = None) -> None:
+    """Guard institucional: claim hd de Workspace o email @utec.edu.pe."""
+    normalized_email = (email or "").strip().lower()
+    normalized_hd = (hd or "").strip().lower()
+    hd_valid = normalized_hd == UTEC_DOMAIN
+    email_valid = normalized_email.endswith(f"@{UTEC_DOMAIN}")
+    logger.warning(
+        "=== assert_utec_email === email=%s, hd=%s, hd_valid=%s, email_valid=%s",
+        normalized_email,
+        normalized_hd or None,
+        hd_valid,
+        email_valid,
+    )
+    if not hd_valid and not email_valid:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=UTEC_ACCESS_DENIED_MESSAGE,
@@ -67,8 +89,9 @@ def assert_utec_email(email: str) -> None:
 
 
 def assert_utec_institutional_google_account(idinfo: dict) -> None:
-    """Guard institucional basado en email verificado del ID token."""
-    assert_utec_email(idinfo.get("email") or "")
+    """Guard institucional basado en email y hd verificados del ID token."""
+    email = (idinfo.get("email") or "").strip().lower()
+    assert_utec_email(email, hd=idinfo.get("hd"))
 
 
 def authenticate_google_token(token: str) -> VerifiedGoogleIdentity:

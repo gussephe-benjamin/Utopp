@@ -29,6 +29,27 @@
             "description": "GET /health — Verifica que el servidor FastAPI esté activo. Devuelve `{\"status\": \"ok\"}`. Útil para health checks de Docker o balanceadores de carga. No requiere autenticación."
           },
           "response": []
+        },
+        {
+          "name": "Root Check",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                ""
+              ]
+            },
+            "description": "GET / — Comprobación rápida de que la API responde. Devuelve `{\"status\": \"ok\"}`. No requiere autenticación."
+          },
+          "response": []
         }
       ],
       "description": "Endpoints de diagnóstico del sistema. Permiten verificar que el servidor esté activo antes de ejecutar cualquier flujo. No requieren autenticación."
@@ -59,6 +80,100 @@
           "response": []
         },
         {
+          "name": "Register (email/contraseña)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.id) {",
+                  "        pm.collectionVariables.set('user_id', String(jsonData.id));",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"alumno@utec.edu.pe\",\n    \"password\": \"password123\",\n    \"full_name\": \"Alumno UTEC\",\n    \"terms_document_id\": {{terms_document_id}},\n    \"privacy_document_id\": {{privacy_document_id}}\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "description": "POST /auth/register — Registro por email/contraseña (testing, bootstrap, herramientas). Solo emails `@utec.edu.pe`. Requiere ids vigentes de términos y privacidad (`terms_document_id`, `privacy_document_id`). No establece cookie de sesión; usa **Login** después. Respuesta `201` con `UserOut`."
+          },
+          "response": []
+        },
+        {
+          "name": "Login (email/contraseña)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.access_token) {",
+                  "        pm.collectionVariables.set('token', jsonData.access_token);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"alumno@utec.edu.pe\",\n    \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "POST /auth/login — Login por email/contraseña (testing, herramientas). Establece cookie HttpOnly de sesión y devuelve JWT Bearer (`access_token`). El script guarda el token en `{{token}}`. Solo emails `@utec.edu.pe`."
+          },
+          "response": []
+        },
+        {
           "name": "Google OAuth Login",
           "request": {
             "auth": {
@@ -78,6 +193,133 @@
               ]
             },
             "description": "GET /auth/google/login — Inicia flujo OAuth server-side. Responde 302 a Google y guarda cookie efímera `utopp_oauth_state` (CSRF). Abrir en navegador, no en Postman sin seguir redirects manualmente."
+          },
+          "response": []
+        },
+        {
+          "name": "Google OAuth Pending",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/google/pending?pending_token={{pending_token}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "google",
+                "pending"
+              ],
+              "query": [
+                {
+                  "key": "pending_token",
+                  "value": "{{pending_token}}",
+                  "description": "Opcional si usas cookie HttpOnly utopp_oauth_pending (navegador). En Postman puedes pasar el token del redirect del frontend."
+                }
+              ]
+            },
+            "description": "GET /auth/google/pending — Consulta si hay un registro Google pendiente de aceptar términos. Con cookie `utopp_oauth_pending` o query `pending_token`. Devuelve `{ pending: false }` o `{ pending: true, email, full_name, picture_url }`."
+          },
+          "response": []
+        },
+        {
+          "name": "Google Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.id) {",
+                  "        pm.collectionVariables.set('user_id', String(jsonData.id));",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"terms_document_id\": {{terms_document_id}},\n    \"privacy_document_id\": {{privacy_document_id}},\n    \"pending_token\": \"{{pending_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/google/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "google",
+                "register"
+              ]
+            },
+            "description": "POST /auth/google/register — Completa el registro tras OAuth Google cuando el usuario aún no existe. Requiere cookie `utopp_oauth_pending` o `pending_token` en el body. Acepta términos/privacidad vigentes, crea la cuenta, limpia la cookie pendiente y establece sesión. Respuesta `201` con `UserOut`."
+          },
+          "response": []
+        },
+        {
+          "name": "Google Cancel Pending",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/google/cancel-pending",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "google",
+                "cancel-pending"
+              ]
+            },
+            "description": "POST /auth/google/cancel-pending — Cancela un registro Google pendiente y elimina la cookie `utopp_oauth_pending`."
+          },
+          "response": []
+        },
+        {
+          "name": "Session Exchange",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"session_token\": \"{{session_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/session/exchange",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "session",
+                "exchange"
+              ]
+            },
+            "description": "POST /auth/session/exchange — Canjea un token de sesión de un solo uso (handoff cross-origin tras OAuth). Establece cookie HttpOnly de sesión. Body: `{ session_token }`. Respuesta `{ authenticated: true, user }` o `401` si expiró."
           },
           "response": []
         },
@@ -155,7 +397,7 @@
           "response": []
         }
       ],
-      "description": "Autenticación unificada con Google OAuth server-side. Sesión HttpOnly (`utopp_session`). Solo emails `@utec.edu.pe`. Login y registro ocurren en el callback `/auth/google/callback`."
+      "description": "Autenticación: Google OAuth server-side (producción) y email/contraseña (testing). Sesión HttpOnly (`utopp_session`) y Bearer opcional (`{{token}}`). Solo emails `@utec.edu.pe`. Flujo Google nuevo usuario: callback → cookie pendiente → **Google Register**; handoff cross-origin: **Session Exchange**."
     },
     {
       "name": "Legal",
@@ -806,6 +1048,69 @@
           "response": []
         },
         {
+          "name": "My Following Organizations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/me/following-organizations?page=1&size=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "following-organizations"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "GET /users/me/following-organizations — Lista las organizaciones estudiantiles que sigue el usuario autenticado. Paginación `page`/`size`. Requiere autenticación y términos aceptados."
+          },
+          "response": []
+        },
+        {
+          "name": "User Following Organizations",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/{{user_id}}/following-organizations?page=1&size=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "{{user_id}}",
+                "following-organizations"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "GET /users/{user_id}/following-organizations — Lista las organizaciones estudiantiles seguidas por un usuario. Paginación `page`/`size`. No requiere autenticación. `404` si el usuario no existe."
+          },
+          "response": []
+        },
+        {
           "name": "Follow User",
           "request": {
             "method": "POST",
@@ -1102,13 +1407,12 @@
               "raw": "{\n  \"subtype\": \"competencia\",\n  \"title\": \"Hackathon Utopp 2026\",\n  \"description\": \"Proyecto de IA para...\",\n  \"tags\": [\"ia\", \"hackathon\"],\n  \"deadline_at\": \"2026-06-01T00:00:00Z\",\n  \"participants_needed\": 5,\n  \"estimated_time\": \"2 semanas\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/posts//academic-projects",
+              "raw": "{{base_url}}/posts/academic-projects",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "posts",
-                "",
                 "academic-projects"
               ]
             },
@@ -1188,9 +1492,9 @@
               "raw": "{\r\n  \"deadline_at\": \"2027-06-01T00:00:00Z\"\r\n}"
             },
             "url": {
-              "raw": "{{BASE}}/posts/{{post_id}}/deadline",
+              "raw": "{{base_url}}/posts/{{post_id}}/deadline",
               "host": [
-                "{{BASE}}"
+                "{{base_url}}"
               ],
               "path": [
                 "posts",
@@ -1229,9 +1533,9 @@
               }
             ],
             "url": {
-              "raw": "{{BASE}}/posts/{{post_id}}/deadline",
+              "raw": "{{base_url}}/posts/{{post_id}}/deadline",
               "host": [
-                "{{BASE}}"
+                "{{base_url}}"
               ],
               "path": [
                 "posts",
@@ -1284,6 +1588,35 @@
               ]
             },
             "description": "POST /posts/simple-posts — Crea una publicación simple. `title` es opcional (puede omitirse). Solo requiere `description` y `subtype`. Subtipos válidos: `informativo`, `pregunta`, `debate`. Sin `deadline_at` ni `specific_fields`. Requiere autenticación."
+          },
+          "response": []
+        },
+        {
+          "name": "List All Posts (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/posts/?page=1&size=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                ""
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "GET /posts/ — Lista paginada de todas las publicaciones del sistema (draft, published, archived) en formato resumido. Solo administrador o root. Respuesta `PageResponse[AdminPostSummaryOut]`."
           },
           "response": []
         },
@@ -2310,6 +2643,34 @@
           "response": []
         },
         {
+          "name": "Create Role",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"moderador\",\n    \"description\": \"Rol de moderación de contenido\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/roles/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "roles",
+                ""
+              ]
+            },
+            "description": "POST /roles/ — Crea un rol en el catálogo. Body: `name` (requerido), `description` (opcional). Requiere rol administrador o root. Respuesta `201` con `RoleOut`."
+          },
+          "response": []
+        },
+        {
           "name": "Assign Role to User",
           "request": {
             "method": "POST",
@@ -2328,6 +2689,28 @@
               ]
             },
             "description": "POST /roles/users/{user_id}/roles/{role_identifier} — Asigna un rol a un usuario usando el **identifier numérico** del rol (1=estudiante, 2=organización estudiantil, 3=oficina, 4=administrador, 5=root). Reemplaza cualquier rol previo (exclusividad). Respuesta incluye `user_email`, `role_identifier`, `role_name` y `assigned_at`. Requiere autenticación."
+          },
+          "response": []
+        },
+        {
+          "name": "Remove Role from User",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/roles/users/{{user_id}}/roles/{{role_identifier}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "roles",
+                "users",
+                "{{user_id}}",
+                "roles",
+                "{{role_identifier}}"
+              ]
+            },
+            "description": "DELETE /roles/users/{user_id}/roles/{role_identifier} — Quita un rol asignado a un usuario. Usa el **identifier** numérico del rol en la URL. Requiere rol administrador o root. Respuesta `204 No Content`."
           },
           "response": []
         },
@@ -2724,6 +3107,24 @@
       "key": "privacy_document_id",
       "value": "2",
       "type": "string"
+    },
+    {
+      "key": "comment_id",
+      "value": "1",
+      "type": "string",
+      "description": "ID del comentario para DELETE /posts/{post_id}/comments/{comment_id}"
+    },
+    {
+      "key": "session_token",
+      "value": "",
+      "type": "string",
+      "description": "Token de un solo uso para POST /auth/session/exchange (handoff OAuth cross-origin)"
+    },
+    {
+      "key": "pending_token",
+      "value": "",
+      "type": "string",
+      "description": "Token opcional para registro Google pendiente (GET /auth/google/pending, POST /auth/google/register)"
     }
   ]
 }

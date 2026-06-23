@@ -44,11 +44,11 @@ function getAnimClass(state: AnimState): string {
 
 function OrgSkeleton() {
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-white/20 bg-white/12 p-3 backdrop-blur-md">
-      <div className="h-11 w-11 shrink-0 animate-pulse rounded-full bg-white/25" />
+    <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 backdrop-blur-sm">
+      <div className="h-11 w-11 shrink-0 animate-pulse rounded-full bg-white/10" />
       <div className="min-w-0 flex-1 space-y-2">
-        <div className="h-3 w-2/3 animate-pulse rounded bg-white/25" />
-        <div className="h-2.5 w-1/3 animate-pulse rounded bg-white/15" />
+        <div className="h-3 w-2/3 animate-pulse rounded bg-white/10" />
+        <div className="h-2.5 w-1/3 animate-pulse rounded bg-white/[0.06]" />
       </div>
     </div>
   );
@@ -177,7 +177,7 @@ export function OrgCarousel({ organizations, loading }: OrgCarouselProps) {
     >
       <div className="overflow-hidden rounded-xl">
         <div
-          className={`flex items-center gap-3 rounded-2xl border border-white/20 bg-white/12 p-3 backdrop-blur-md shadow-[inset_0_1px_0_rgba(255,255,255,0.15)] ${getAnimClass(animState)}`}
+          className={`flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 backdrop-blur-sm ${getAnimClass(animState)}`}
         >
           {org.profile_image_url ? (
             <img
@@ -196,8 +196,8 @@ export function OrgCarousel({ organizations, loading }: OrgCarouselProps) {
           )}
 
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-white">{name}</p>
-            <p className="truncate text-xs text-white/70">{metric}</p>
+            <p className="truncate text-sm font-semibold text-white/90">{name}</p>
+            <p className="truncate text-xs text-white/60">{metric}</p>
           </div>
 
           {showDots && (

@@ -5,6 +5,10 @@ El backend intercambia el code, verifica el ID token criptográficamente
 y valida el dominio institucional antes de crear sesión o usuario.
 """
 
+import hashlib
+import logging
+import secrets
+from base64 import urlsafe_b64encode
 from dataclasses import dataclass
 from urllib.parse import urlencode
 
@@ -28,6 +32,8 @@ from app.services.users_service import create_google_user, get_user_by_email
 GOOGLE_AUTH_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth"
 GOOGLE_TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token"
 
+logger = logging.getLogger(__name__)
+
 
 @dataclass(frozen=True)
 class GoogleOAuthProfile:
@@ -49,46 +55,89 @@ class GoogleOAuthUpsertResult:
     is_new_user: bool
 
 
-def build_google_auth_url(state: str) -> str:
-    if not settings.GOOGLE_CLIENT_ID or not settings.GOOGLE_REDIRECT_URI:
+def generate_pkce_pair() -> tuple[str, str]:
+    """Genera code_verifier y code_challenge (S256) para OAuth con PKCE."""
+    verifier = urlsafe_b64encode(secrets.token_bytes(32)).rstrip(b"=").decode("ascii")
+    challenge = urlsafe_b64encode(
+        hashlib.sha256(verifier.encode("ascii")).digest()
+    ).rstrip(b"=").decode("ascii")
+    return verifier, challenge
+
+
+def build_google_auth_url(state: str, *, code_challenge: str | None = None) -> str:
+    client_id, _, redirect_uri = _google_oauth_credentials()
+    if not client_id or not redirect_uri:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Google OAuth no está configurado en el servidor.",
         )
 
     params = {
-        "client_id": settings.GOOGLE_CLIENT_ID,
-        "redirect_uri": settings.GOOGLE_REDIRECT_URI,
+        "client_id": client_id,
+        "redirect_uri": redirect_uri,
         "response_type": "code",
         "scope": "openid email profile",
         "access_type": "online",
         "prompt": "select_account",
         "state": state,
     }
+    if code_challenge:
+        params["code_challenge"] = code_challenge
+        params["code_challenge_method"] = "S256"
     return f"{GOOGLE_AUTH_ENDPOINT}?{urlencode(params)}"
 
 
-def exchange_code_for_id_token(code: str) -> dict:
-    if not settings.GOOGLE_CLIENT_SECRET:
+def _google_oauth_credentials() -> tuple[str, str, str]:
+    """Client id, secret y redirect_uri normalizados (sin espacios accidentales)."""
+    return (
+        settings.GOOGLE_CLIENT_ID.strip(),
+        settings.GOOGLE_CLIENT_SECRET.strip(),
+        settings.GOOGLE_REDIRECT_URI.strip(),
+    )
+
+
+def exchange_code_for_id_token(code: str, code_verifier: str | None = None) -> dict:
+    client_id, client_secret, redirect_uri = _google_oauth_credentials()
+    if not client_secret:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Google OAuth no está configurado en el servidor.",
         )
 
+    logger.warning(
+        "Google token exchange attempt: redirect_uri=%s client_id=%s code_prefix=%s",
+        redirect_uri,
+        f"{client_id[:20]}..." if client_id else None,
+        f"{code[:12]}..." if code else None,
+    )
+
+    token_data = {
+            "code": code,
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "redirect_uri": redirect_uri,
+            "grant_type": "authorization_code",
+        }
+    if code_verifier:
+        token_data["code_verifier"] = code_verifier
+
     response = requests.post(
         GOOGLE_TOKEN_ENDPOINT,
-        data={
-            "code": code,
-            "client_id": settings.GOOGLE_CLIENT_ID,
-            "client_secret": settings.GOOGLE_CLIENT_SECRET,
-            "redirect_uri": settings.GOOGLE_REDIRECT_URI,
-            "grant_type": "authorization_code",
-        },
+        data=token_data,
         headers={"Content-Type": "application/x-www-form-urlencoded"},
         timeout=15,
     )
 
     if response.status_code != 200:
+        try:
+            err_body = response.json()
+        except ValueError:
+            err_body = response.text[:500]
+        logger.warning(
+            "Google token exchange failed: status=%s body=%s",
+            response.status_code,
+            err_body,
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=GOOGLE_TOKEN_INVALID_MESSAGE,
@@ -97,6 +146,10 @@ def exchange_code_for_id_token(code: str) -> dict:
     token_payload = response.json()
     raw_id_token = token_payload.get("id_token")
     if not raw_id_token:
+        logger.warning(
+            "Google token exchange missing id_token: keys=%s",
+            sorted(token_payload.keys()),
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=GOOGLE_TOKEN_INVALID_MESSAGE,
@@ -106,9 +159,11 @@ def exchange_code_for_id_token(code: str) -> dict:
         return id_token.verify_oauth2_token(
             raw_id_token,
             google_requests.Request(),
-            settings.GOOGLE_CLIENT_ID,
+            client_id,
+            clock_skew_in_seconds=60,
         )
     except ValueError as exc:
+        logger.warning("Google id_token verify failed: %s", exc)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=GOOGLE_TOKEN_INVALID_MESSAGE,
@@ -116,15 +171,21 @@ def exchange_code_for_id_token(code: str) -> dict:
 
 
 def parse_google_profile(idinfo: dict) -> GoogleOAuthProfile:
-    email = idinfo.get("email")
-    google_id = idinfo.get("sub")
+    email = (idinfo.get("email") or "").strip().lower()
+    google_id = idinfo.get("sub") or ""
+    hd = idinfo.get("hd")
     if not email or not google_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=GOOGLE_TOKEN_INVALID_MESSAGE,
         )
 
-    assert_utec_email(email)
+    logger.warning(
+        "=== GOOGLE ID TOKEN CLAIMS === %s",
+        {k: idinfo.get(k) for k in ("email", "hd", "sub", "email_verified", "iss", "aud")},
+    )
+    logger.warning("=== UTEC VALIDATION === email=%s, hd=%s", email, hd)
+    assert_utec_email(email, hd=hd)
 
     return GoogleOAuthProfile(
         email=email,
@@ -163,9 +224,13 @@ def _set_google_profile_picture(
     )
 
 
-def resolve_google_oauth_code(db: Session, code: str) -> GoogleOAuthResolveResult:
+def resolve_google_oauth_code(
+    db: Session,
+    code: str,
+    code_verifier: str | None = None,
+) -> GoogleOAuthResolveResult:
     """Intercambia code por perfil Google. Devuelve usuario existente o None si es nuevo."""
-    idinfo = exchange_code_for_id_token(code)
+    idinfo = exchange_code_for_id_token(code, code_verifier=code_verifier)
     profile = parse_google_profile(idinfo)
     user = get_user_by_email(db, profile.email)
     if user:
@@ -247,8 +312,12 @@ def upsert_user_from_google(db: Session, profile: GoogleOAuthProfile) -> GoogleO
     return GoogleOAuthUpsertResult(user=user, is_new_user=True)
 
 
-def authenticate_google_oauth_code(db: Session, code: str) -> GoogleOAuthUpsertResult:
-    resolved = resolve_google_oauth_code(db, code)
+def authenticate_google_oauth_code(
+    db: Session,
+    code: str,
+    code_verifier: str | None = None,
+) -> GoogleOAuthUpsertResult:
+    resolved = resolve_google_oauth_code(db, code, code_verifier=code_verifier)
     if resolved.user:
         return GoogleOAuthUpsertResult(user=resolved.user, is_new_user=False)
     return upsert_user_from_google(db, resolved.profile)

@@ -40,18 +40,48 @@ Frontend y backend en Render tienen hosts distintos (`*.onrender.com`). Con `Sam
 
 El valor de `GOOGLE_REDIRECT_URI` en Render debe coincidir **exactamente** con una URI autorizada.
 
+El backend usa **PKCE (S256)** en el flujo OAuth: al iniciar sesión se envían `code_challenge` y en el callback `code_verifier`. No requiere configuración extra en Google Cloud Console.
+
 ## 4. CORS
 
 El backend añade automáticamente `FRONTEND_URL` y `ALLOWED_ORIGINS` (lista separada por comas) a los orígenes CORS permitidos. Orígenes conocidos (`utopp-fronted.onrender.com`, `utopp.app`, localhost) ya están incluidos.
 
-## 5. Verificación
+## 5. Session handoff (login de usuarios existentes)
+
+En producción, frontend y backend están en dominios distintos. Aunque la cookie `utopp_session` se establece en el callback de Google, el navegador puede no enviarla en peticiones XHR cross-origin (`GET /auth/me`), lo que provocaba un bucle `/login` → Google → `/login`.
+
+**Solución:** tras OAuth, el backend redirige a:
+
+`https://utopp-fronted.onrender.com/auth/callback?session_token=...`
+
+El frontend (`AuthCallback.tsx`) canjea el token con:
+
+`POST https://utopp.onrender.com/auth/session/exchange`
+
+Ese endpoint valida un JWT de un solo uso (2 min), setea `utopp_session` en la respuesta XHR y devuelve el usuario autenticado. Luego la app redirige según estado (`/app/terms`, `/onboarding`, `/app/inicio`).
+
+El registro de usuarios nuevos sigue usando `pending_token` en la URL (`/login?google_register=1&pending_token=...`).
+
+## 6. Verificación
 
 1. `curl https://utopp.onrender.com/health/` → respuesta OK de la API
 2. Abre la app en `https://utopp-fronted.onrender.com/login`
 3. Clic en **Continuar con Google** → la URL debe ser `https://utopp.onrender.com/auth/google/login` (no `localhost`)
 4. Tras Google → `https://utopp.onrender.com/auth/google/callback?...`
-5. Redirect a `https://utopp-fronted.onrender.com/...`
-6. Sesión activa: la app carga el feed sin volver a login
+5. Redirect a `https://utopp-fronted.onrender.com/auth/callback?session_token=...`
+6. Pantalla "Iniciando sesión..." → exchange → feed o términos sin volver a login
+
+### Comprobar exchange manualmente
+
+```bash
+# Tras un login Google, copia session_token de la URL del frontend y:
+curl -s -X POST https://utopp.onrender.com/auth/session/exchange \
+  -H "Content-Type: application/json" \
+  -d '{"session_token":"TOKEN_AQUI"}' \
+  -c cookies.txt -b cookies.txt
+```
+
+Respuesta esperada: `{"authenticated": true, "user": {...}}` y header `Set-Cookie: utopp_session=...`.
 
 ### Error `localhost refused to connect` en el callback
 
@@ -68,7 +98,9 @@ Al probar `GET https://utopp.onrender.com/auth/google/login`, el backend en Rend
 
 `redirect_uri=http://localhost:8000/auth/google/callback`
 
-**Acción requerida en el panel de Render (servicio backend):** actualizar `GOOGLE_REDIRECT_URI`, `FRONTEND_URL`, `COOKIE_SECURE` y `COOKIE_SAMESITE`, luego redeploy. En el frontend, fijar `VITE_API_URL=https://utopp.onrender.com` y rebuild.
+El backend en Render fuerza automáticamente `COOKIE_SAMESITE=none` y `COOKIE_SECURE=true` cuando detecta `RENDER_EXTERNAL_URL` y hosts distintos entre frontend y backend (incluso si el env tiene `strict` o `lax`).
+
+**Acción requerida en el panel de Render (servicio backend):** verificar `GOOGLE_REDIRECT_URI`, `FRONTEND_URL`, redeploy backend. En el frontend, fijar `VITE_API_URL=https://utopp.onrender.com` y rebuild.
 
 ## Desarrollo local vs producción
 

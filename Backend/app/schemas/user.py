@@ -229,6 +229,11 @@ class TokenOut(BaseModel):
     token_type: str = "bearer"
 
 
+class SessionExchangeIn(BaseModel):
+    """Canje de token de sesión de un solo uso tras OAuth cross-origin."""
+    session_token: str = Field(..., min_length=10)
+
+
 class GoogleOAuthRegisterIn(BaseModel):
     """Completa registro Google tras aceptar términos (perfil en cookie o token)."""
     terms_document_id: int = Field(..., ge=1)

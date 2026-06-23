@@ -278,6 +278,44 @@
 
 
 
+/* ─── Dark auth: microinteracciones premium ─── */
+
+.auth-btn-lift {
+  transition: transform 200ms ease-out, box-shadow 200ms ease-out;
+}
+
+.auth-btn-lift:hover {
+  transform: translateY(-1px);
+}
+
+.auth-btn-lift:active {
+  transform: translateY(0);
+}
+
+.auth-glow-hover:hover {
+  box-shadow: 0 12px 32px -10px rgba(109, 93, 252, 0.45);
+}
+
+.auth-fade-in {
+  animation: authFadeIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-btn-lift,
+  .auth-btn-lift:hover,
+  .auth-btn-lift:active {
+    transform: none;
+  }
+
+  .auth-glow-hover:hover {
+    box-shadow: none;
+  }
+
+  .auth-fade-in {
+    animation: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
 
   .auth-panel-enter,

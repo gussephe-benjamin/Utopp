@@ -135,22 +135,22 @@ export default function LegalContentModal({
       aria-label={fallbackTitle}
     >
       <div
-        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200"
+        className="absolute inset-0 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
         onClick={onClose}
         aria-hidden
       />
 
-      <div className="relative z-10 flex w-full max-w-2xl max-h-[88vh] flex-col overflow-hidden rounded-3xl bg-white shadow-2xl animate-in fade-in zoom-in-95 slide-in-from-bottom-2 duration-300">
-        <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-4">
+      <div className="relative z-10 flex w-full max-w-2xl max-h-[88vh] flex-col overflow-hidden rounded-3xl border border-white/[0.08] bg-[#171A23] shadow-2xl animate-in fade-in zoom-in-95 slide-in-from-bottom-2 duration-300">
+        <div className="flex items-start justify-between gap-4 border-b border-white/[0.08] px-6 py-4">
           <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-wide text-[#9333EA]">
+            <p className="text-xs font-semibold uppercase tracking-wide text-[#8B5CF6]">
               UTOPP
             </p>
-            <h2 className="text-xl font-bold leading-tight text-slate-900 truncate">
+            <h2 className="text-xl font-bold leading-tight text-white truncate">
               {doc?.title?.trim() || fallbackTitle}
             </h2>
             {doc && (
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="text-xs text-[#8A93A2] mt-0.5">
                 Vigente desde {formatDate(doc.effective_at)}
               </p>
             )}
@@ -159,7 +159,7 @@ export default function LegalContentModal({
             type="button"
             onClick={onClose}
             aria-label="Cerrar"
-            className="shrink-0 rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+            className="shrink-0 rounded-full p-2 text-[#8A93A2] transition-colors duration-200 hover:bg-white/[0.06] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6D5DFC] focus-visible:ring-offset-2 focus-visible:ring-offset-[#171A23]"
           >
             <X className="w-5 h-5" />
           </button>
@@ -168,33 +168,33 @@ export default function LegalContentModal({
         <div
           ref={scrollRef}
           onScroll={isAcceptMode ? updateScrollState : undefined}
-          className="min-h-0 flex-1 overflow-y-auto px-6 py-5"
+          className="min-h-0 flex-1 overflow-y-auto px-6 py-5 text-[#B8C0CC]"
         >
           {error && (
-            <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            <p className="rounded-xl border border-[#EF4444]/30 bg-[#EF4444]/10 px-4 py-3 text-sm text-[#FCA5A5]">
               {error}
             </p>
           )}
           {doc && (
             <LegalMarkdownBody
               markdown={doc.content}
-              variant="light"
+              variant="dark"
               onReady={handleReady}
             />
           )}
           {!doc && !error && (
-            <p className="text-sm text-slate-500">Cargando texto legal…</p>
+            <p className="text-sm text-[#8A93A2]">Cargando texto legal…</p>
           )}
         </div>
 
         {isAcceptMode && ready && !scrolledToEnd && !error && (
-          <p className="border-t border-slate-100 bg-violet-50/60 px-6 py-2 text-center text-xs text-violet-700">
+          <p className="border-t border-white/[0.08] bg-[#6D5DFC]/10 px-6 py-2 text-center text-xs text-[#B8C0CC]">
             {AUTH_REGISTER.scrollToAcceptHint}
           </p>
         )}
 
         <div
-          className={`flex border-t border-slate-200 px-6 py-3 ${
+          className={`flex border-t border-white/[0.08] px-6 py-3 ${
             isAcceptMode ? "justify-end gap-3" : "justify-end"
           }`}
         >
@@ -203,7 +203,7 @@ export default function LegalContentModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="inline-flex items-center justify-center rounded-xl border border-slate-200 px-5 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+                className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-white/[0.08] px-5 py-2 text-sm font-semibold text-[#B8C0CC] transition-colors duration-200 hover:bg-white/[0.04]"
               >
                 {AUTH_REGISTER.modalClose}
               </button>
@@ -211,7 +211,7 @@ export default function LegalContentModal({
                 type="button"
                 onClick={handleAccept}
                 disabled={!canAccept}
-                className="inline-flex items-center justify-center rounded-xl bg-[#9333EA] px-5 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:brightness-105 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-gradient-to-r from-[#6D5DFC] to-[#8B5CF6] px-5 py-2 text-sm font-semibold text-white transition-all duration-200 hover:brightness-105 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {AUTH_REGISTER.acceptLegalInModal}
               </button>
@@ -221,7 +221,7 @@ export default function LegalContentModal({
               type="button"
               onClick={onClose}
               disabled={!ready && !error}
-              className="inline-flex items-center justify-center rounded-xl bg-[#9333EA] px-5 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:brightness-105 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-gradient-to-r from-[#6D5DFC] to-[#8B5CF6] px-5 py-2 text-sm font-semibold text-white transition-all duration-200 hover:brightness-105 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
             >
               Entendido
             </button>

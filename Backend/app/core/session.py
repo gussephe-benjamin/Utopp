@@ -1,4 +1,6 @@
 from datetime import datetime, timedelta, timezone
+import time
+import uuid
 
 from fastapi import Request, Response
 from jose import JWTError, jwt
@@ -8,6 +10,64 @@ from app.core.security import create_access_token
 
 _OAUTH_PENDING_TYP = "oauth_pending"
 _OAUTH_PENDING_TTL_MINUTES = 15
+_SESSION_EXCHANGE_TYP = "session_exchange"
+_NONCE_RETENTION_SECONDS = 600
+
+# In-memory nonce store (single-instance). For multi-replica deploys, use Redis.
+_used_nonces: dict[str, float] = {}
+
+
+def _purge_expired_nonces() -> None:
+    cutoff = time.time() - _NONCE_RETENTION_SECONDS
+    expired = [nonce for nonce, ts in _used_nonces.items() if ts < cutoff]
+    for nonce in expired:
+        _used_nonces.pop(nonce, None)
+
+
+def create_one_time_session_token(user_id: int) -> str:
+    """JWT de un solo uso para canjear sesión cross-origin (2 min por defecto)."""
+    expire = datetime.now(timezone.utc) + timedelta(
+        seconds=settings.SESSION_EXCHANGE_TOKEN_EXPIRE_SECONDS
+    )
+    payload = {
+        "typ": _SESSION_EXCHANGE_TYP,
+        "sub": str(user_id),
+        "nonce": uuid.uuid4().hex,
+        "exp": expire,
+    }
+    return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.ALGORITHM)
+
+
+def verify_one_time_session_token(token: str) -> int | None:
+    """Valida token de intercambio y marca el nonce como usado. Devuelve user_id o None."""
+    _purge_expired_nonces()
+    try:
+        payload = jwt.decode(
+            token,
+            settings.JWT_SECRET_KEY,
+            algorithms=[settings.ALGORITHM],
+        )
+    except JWTError:
+        return None
+
+    if payload.get("typ") != _SESSION_EXCHANGE_TYP:
+        return None
+
+    user_id_raw = payload.get("sub")
+    nonce = payload.get("nonce")
+    if not user_id_raw or not nonce:
+        return None
+
+    if nonce in _used_nonces:
+        return None
+
+    try:
+        user_id = int(user_id_raw)
+    except (TypeError, ValueError):
+        return None
+
+    _used_nonces[nonce] = time.time()
+    return user_id
 
 
 def set_session_cookie(response: Response, user_id: int) -> None:
@@ -49,6 +109,28 @@ def set_oauth_state_cookie(response: Response, state: str) -> None:
 def clear_oauth_state_cookie(response: Response) -> None:
     response.delete_cookie(
         key=settings.OAUTH_STATE_COOKIE_NAME,
+        path="/",
+        httponly=True,
+        secure=settings.COOKIE_SECURE,
+        samesite=settings.COOKIE_SAMESITE,
+    )
+
+
+def set_oauth_pkce_cookie(response: Response, code_verifier: str) -> None:
+    response.set_cookie(
+        key=settings.OAUTH_PKCE_COOKIE_NAME,
+        value=code_verifier,
+        httponly=True,
+        secure=settings.COOKIE_SECURE,
+        samesite=settings.COOKIE_SAMESITE,
+        max_age=600,
+        path="/",
+    )
+
+
+def clear_oauth_pkce_cookie(response: Response) -> None:
+    response.delete_cookie(
+        key=settings.OAUTH_PKCE_COOKIE_NAME,
         path="/",
         httponly=True,
         secure=settings.COOKIE_SECURE,

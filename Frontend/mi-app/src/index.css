@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --color-primary: #2563eb;
+  --color-primary-dark: #1341b0;
+  --color-surface: #ffffff;
+  --color-bg: #f8fafc;
+  --color-text: #111827;
+  --color-text-muted: #6b7280;
+  --color-border: #e5e7eb;
+}
+
 @layer utilities {
   .no-scrollbar {
     -ms-overflow-style: none;

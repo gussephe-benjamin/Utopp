@@ -322,6 +322,9 @@ docker compose down -v
 
 # Reconstruir solo un servicio
 docker compose up --build backend
+
+# Aplicar cambios del backend en local (si no usas --reload en docker-compose):
+docker compose build --no-cache backend && docker compose up backend
 ```
 
 ### Solo el backend (sin Docker)

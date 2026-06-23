@@ -20,6 +20,7 @@ from app.services.google_oauth_service import (  # noqa: E402
     GoogleOAuthUpsertResult,
     upsert_user_from_google,
 )
+from app.services.google_token_service import UTEC_ACCESS_DENIED_MESSAGE  # noqa: E402
 
 
 @pytest.fixture
@@ -79,6 +80,7 @@ class TestUnifiedGoogleOAuthEndpoints:
         assert response.status_code == 302
         assert response.headers["location"] == "https://google.test/auth"
         assert settings.OAUTH_STATE_COOKIE_NAME in response.cookies
+        assert settings.OAUTH_PKCE_COOKIE_NAME in response.cookies
 
     def test_logout_clears_session_cookie(self, client):
         response = client.post("/auth/logout")
@@ -93,6 +95,24 @@ class TestUnifiedGoogleOAuthEndpoints:
         )
         assert response.status_code == 302
         assert "/login?error=access_denied" in response.headers["location"]
+
+    def test_callback_utec_rejection_redirects_not_utec_email(self, client):
+        with patch(
+            "app.routers.auth.resolve_google_oauth_code",
+            side_effect=HTTPException(
+                status_code=403,
+                detail=UTEC_ACCESS_DENIED_MESSAGE,
+            ),
+        ):
+            response = client.get(
+                "/auth/google/callback?code=valid&state=csrf",
+                cookies={settings.OAUTH_STATE_COOKIE_NAME: "csrf"},
+                follow_redirects=False,
+            )
+
+        assert response.status_code == 302
+        assert "error=not_utec_email" in response.headers["location"]
+        assert "error=access_denied" not in response.headers["location"]
 
     def test_callback_success_sets_session_cookie(self, client):
         mock_user = MagicMock()
@@ -125,7 +145,8 @@ class TestUnifiedGoogleOAuthEndpoints:
 
         assert response.status_code == 302
         assert settings.SESSION_COOKIE_NAME in response.cookies
-        assert "/app/inicio" in response.headers["location"]
+        assert "/auth/callback" in response.headers["location"]
+        assert "session_token=" in response.headers["location"]
 
     def test_callback_new_user_redirects_to_register(self, client):
         mock_profile = MagicMock()

@@ -16,7 +16,7 @@ export function AuthRightPanel({ children, direction = "from-right" }: AuthRight
     direction === "from-left" ? "auth-panel-enter-from-login" : "auth-panel-enter";
 
   return (
-    <div className={`w-full max-w-[21rem] ${animationClass}`}>
+    <div className={`w-full max-w-[30rem] auth-fade-in ${animationClass}`}>
       {children}
     </div>
   );

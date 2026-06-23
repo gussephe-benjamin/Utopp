@@ -1,14 +1,14 @@
 export const AUTH_VALUE = {
-  headline: "No te pierdas de nada en Utopp.",
+  headline: "No te pierdas nada en tu campus.",
   subheadline:
-    "Descubre eventos, comparte y entérate de lo último de las organizaciones de tu universidad, y conecta con otros estudiantes.",
+    "Descubre eventos, conecta con estudiantes y mantente informado sobre todo lo que ocurre en tu comunidad universitaria.",
   benefits: [
     "Comparte experiencias",
-    "Entérate de los últimos eventos",
+    "Descubre eventos",
     "Conecta con estudiantes",
     "Encuentra oportunidades",
   ] as const,
-  mobileTagline: "Eventos y organizaciones de tu universidad.",
+  mobileTagline: "Tu comunidad universitaria, en un solo lugar.",
 } as const;
 
 export const AUTH_LOGIN = {
@@ -64,4 +64,29 @@ export const AUTH_ENTRY = {
 
 export const AUTH_UTEC = {
   accessDenied: "Solo se permiten cuentas institucionales UTEC (@utec.edu.pe).",
+  notUtecEmail: "Debes usar tu cuenta institucional @utec.edu.pe para ingresar.",
+  oauthFailed: "No se pudo completar el inicio con Google. Intenta de nuevo.",
+  sessionExpired: "Tu sesión de inicio expiró. Vuelve a continuar con Google.",
+  retry: "Reintentar",
+} as const;
+
+export const AUTH_CALLBACK = {
+  loading: "Iniciando sesión...",
+} as const;
+
+export const AUTH_ENTRY_NEW = {
+  title: "Bienvenido a Utopp",
+  subtitle: "La comunidad universitaria de tu campus",
+  continueWithGoogle: "Continuar con Google",
+  emailFallbackPrompt: "¿Problemas para ingresar? Usa email",
+  emailFallbackHide: "Ocultar formulario de email",
+  registerWelcome: (name: string) => `Hola ${name}, únete a la comunidad Utopp`,
+  registerWelcomeGeneric: "Únete a la comunidad Utopp",
+  termsCheckbox: "He leído y acepto los Términos de uso",
+  privacyCheckbox: "He leído y acepto la Política de privacidad",
+  readTerms: "Leer términos",
+  readPrivacy: "Leer privacidad",
+  createAccount: "Crear mi cuenta",
+  creatingAccount: "Creando cuenta...",
+  cancelRegister: "Cancelar y volver",
 } as const;

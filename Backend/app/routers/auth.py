@@ -1,3 +1,4 @@
+import logging
 import secrets
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
@@ -10,22 +11,27 @@ from urllib.parse import urlencode
 
 from app.core.session import (
     clear_oauth_pending_cookie,
+    clear_oauth_pkce_cookie,
     clear_oauth_state_cookie,
     clear_session_cookie,
+    create_one_time_session_token,
     encode_oauth_pending_token,
     resolve_oauth_pending_profile,
     set_oauth_pending_cookie,
+    set_oauth_pkce_cookie,
     set_oauth_state_cookie,
     set_session_cookie,
+    verify_one_time_session_token,
 )
 from app.database.session import get_db
 from app.dependencies.auth import get_current_user, get_optional_user
 from app.models.user import User
 from app.models.user_profile_image import UserProfileImage
-from app.schemas.user import GoogleOAuthRegisterIn, LoginRequest, TokenOut, UserCreate, UserOut
+from app.schemas.user import GoogleOAuthRegisterIn, LoginRequest, SessionExchangeIn, TokenOut, UserCreate, UserOut
 from app.services import legal_service
 from app.services.google_oauth_service import (
     build_google_auth_url,
+    generate_pkce_pair,
     register_user_from_google_profile,
     resolve_google_oauth_code,
 )
@@ -39,11 +45,17 @@ from app.services.users_service import (
 from app.core.security import create_access_token
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 def _frontend_register_redirect(pending_token: str) -> str:
     params = urlencode({"google_register": "1", "pending_token": pending_token})
     return f"{settings.FRONTEND_URL.rstrip('/')}/login?{params}"
+
+
+def _frontend_session_callback_redirect(session_token: str) -> str:
+    params = urlencode({"session_token": session_token})
+    return f"{settings.FRONTEND_URL.rstrip('/')}/auth/callback?{params}"
 
 
 def _request_meta(request: Request) -> tuple[str | None, str | None]:
@@ -57,6 +69,10 @@ def _request_meta(request: Request) -> tuple[str | None, str | None]:
 
 def _frontend_login_error_redirect() -> str:
     return f"{settings.FRONTEND_URL.rstrip('/')}/login?error=access_denied"
+
+
+def _frontend_not_utec_error_redirect() -> str:
+    return f"{settings.FRONTEND_URL.rstrip('/')}/login?error=not_utec_email"
 
 
 def _get_profile_image_url(db: Session, user_id: int) -> str | None:
@@ -177,8 +193,13 @@ def login(payload: LoginRequest, response: Response, db: Session = Depends(get_d
 @router.get("/google/login")
 def google_oauth_login():
     state = secrets.token_urlsafe(32)
-    redirect = RedirectResponse(build_google_auth_url(state), status_code=status.HTTP_302_FOUND)
+    code_verifier, code_challenge = generate_pkce_pair()
+    redirect = RedirectResponse(
+        build_google_auth_url(state, code_challenge=code_challenge),
+        status_code=status.HTTP_302_FOUND,
+    )
     set_oauth_state_cookie(redirect, state)
+    set_oauth_pkce_cookie(redirect, code_verifier)
     return redirect
 
 
@@ -195,25 +216,56 @@ def google_oauth_callback(
     db: Session = Depends(get_db),
 ):
     if error or not code or not state:
-        return RedirectResponse(_frontend_login_error_redirect(), status_code=status.HTTP_302_FOUND)
+        logger.warning(
+            "OAuth callback aborted: google_error=%s code=%s state=%s",
+            error,
+            bool(code),
+            bool(state),
+        )
+        response = RedirectResponse(_frontend_login_error_redirect(), status_code=status.HTTP_302_FOUND)
+        clear_oauth_state_cookie(response)
+        clear_oauth_pkce_cookie(response)
+        return response
 
     expected_state = request.cookies.get(settings.OAUTH_STATE_COOKIE_NAME)
     if not expected_state or expected_state != state:
+        logger.warning(
+            "OAuth state mismatch: cookie=%s param=%s",
+            expected_state[:8] + "..." if expected_state else None,
+            state[:8] + "..." if state else None,
+        )
         response = RedirectResponse(_frontend_login_error_redirect(), status_code=status.HTTP_302_FOUND)
         clear_oauth_state_cookie(response)
+        clear_oauth_pkce_cookie(response)
         return response
 
+    code_verifier = request.cookies.get(settings.OAUTH_PKCE_COOKIE_NAME)
+
     try:
-        resolved = resolve_google_oauth_code(db, code)
-    except HTTPException:
-        response = RedirectResponse(_frontend_login_error_redirect(), status_code=status.HTTP_302_FOUND)
+        resolved = resolve_google_oauth_code(db, code, code_verifier=code_verifier)
+    except HTTPException as e:
+        logger.warning(
+            "OAuth callback HTTPException: status=%s detail=%s",
+            e.status_code,
+            e.detail,
+        )
+        if e.status_code == status.HTTP_403_FORBIDDEN and e.detail == UTEC_ACCESS_DENIED_MESSAGE:
+            destination = _frontend_not_utec_error_redirect()
+        else:
+            destination = _frontend_login_error_redirect()
+        response = RedirectResponse(destination, status_code=status.HTTP_302_FOUND)
         clear_oauth_state_cookie(response)
+        clear_oauth_pkce_cookie(response)
         return response
 
     if resolved.user:
-        destination = _resolve_post_auth_redirect(db, resolved.user, is_new_user=False)
-        response = RedirectResponse(destination, status_code=status.HTTP_302_FOUND)
+        session_token = create_one_time_session_token(resolved.user.id)
+        response = RedirectResponse(
+            _frontend_session_callback_redirect(session_token),
+            status_code=status.HTTP_302_FOUND,
+        )
         clear_oauth_state_cookie(response)
+        clear_oauth_pkce_cookie(response)
         set_session_cookie(response, resolved.user.id)
         return response
 
@@ -229,6 +281,7 @@ def google_oauth_callback(
         status_code=status.HTTP_302_FOUND,
     )
     clear_oauth_state_cookie(response)
+    clear_oauth_pkce_cookie(response)
     set_oauth_pending_cookie(response, profile_payload)
     return response
 
@@ -246,6 +299,38 @@ def google_oauth_pending(request: Request, pending_token: str | None = None):
         "pending": True,
         "email": pending["email"],
         "full_name": pending.get("full_name") or "",
+        "picture_url": pending.get("picture"),
+    }
+
+
+# ============================================================
+# POST /auth/session/exchange
+# Canje de token de sesión de un solo uso (handoff cross-origin).
+# ============================================================
+@router.post("/session/exchange")
+def session_exchange(
+    payload: SessionExchangeIn,
+    response: Response,
+    db: Session = Depends(get_db),
+):
+    user_id = verify_one_time_session_token(payload.session_token)
+    if user_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token de sesión inválido o expirado",
+        )
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token de sesión inválido o expirado",
+        )
+
+    set_session_cookie(response, user.id)
+    return {
+        "authenticated": True,
+        "user": _serialize_auth_user(db, user),
     }
 
 

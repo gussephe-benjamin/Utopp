@@ -12,45 +12,50 @@ import { getCurrentPrivacy, getCurrentTerms, type TermsCurrent } from "../../api
 import { useAuth } from "../../auth/useAuth"
 import { redirectAfterAuthSession } from "../../auth/postAuthRedirect"
 import LegalContentModal, { type LegalDocKind } from "../../components/auth/LegalContentModal"
-import { Button } from "../../components/ui/button"
+import { EmailInput } from "../../features/auth/components/EmailInput"
+import { PasswordInput } from "../../features/auth/components/PasswordInput"
 import {
   AuthFormAlert,
-  AuthFormDivider,
-  AuthFormHeading,
-  AuthFormShell,
   GoogleMark,
 } from "../../features/auth/components/AuthFormShell"
 import {
   AUTH_ENTRY,
+  AUTH_ENTRY_NEW,
   AUTH_LOGIN,
   AUTH_REGISTER,
   AUTH_UTEC,
 } from "../../features/auth/constants/authCopy"
-import { EmailInput } from "../../features/auth/components/EmailInput"
-import { PasswordInput } from "../../features/auth/components/PasswordInput"
+import { ProfileAvatar } from "../../features/profile/components/ProfileAvatar"
 import { parseAuthApiError } from "../../shared/lib/apiErrors"
-import {
-  TW_AUTH_CHECKBOX,
-  TW_AUTH_FOOTER_LINK,
-  TW_AUTH_LEGAL_LINK,
-  TW_AUTH_FOCUS_RING,
-  TW_UTOPP_GRADIENT_R,
-} from "../../shared/constants/brand"
+import { TW_AUTH } from "../../features/auth/constants/authTheme"
+
+type AuthErrorCode = "access_denied" | "not_utec_email" | "session_expired"
+
+function resolveErrorMessage(errorCode: string | null): string | null {
+  if (errorCode === "not_utec_email") return AUTH_UTEC.notUtecEmail
+  if (errorCode === "access_denied") return AUTH_UTEC.oauthFailed
+  if (errorCode === "session_expired") return AUTH_UTEC.sessionExpired
+  return null
+}
 
 export default function AuthEntry() {
   const navigate = useNavigate()
   const { status, refreshSession } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
-  const accessDenied = searchParams.get("error") === "access_denied"
+
+  const errorCode = searchParams.get("error") as AuthErrorCode | null
   const googleRegisterParam = searchParams.get("google_register") === "1"
   const pendingToken = searchParams.get("pending_token")
 
   const [registerMode, setRegisterMode] = useState(false)
+  const [showEmailForm, setShowEmailForm] = useState(false)
   const [pendingEmail, setPendingEmail] = useState("")
   const [pendingName, setPendingName] = useState("")
+  const [pendingPictureUrl, setPendingPictureUrl] = useState<string | null>(null)
   const [termsDoc, setTermsDoc] = useState<TermsCurrent | null>(null)
   const [privacyDoc, setPrivacyDoc] = useState<TermsCurrent | null>(null)
-  const [legalAccepted, setLegalAccepted] = useState(false)
+  const [termsAccepted, setTermsAccepted] = useState(false)
+  const [privacyAccepted, setPrivacyAccepted] = useState(false)
   const [openLegalModal, setOpenLegalModal] = useState<LegalDocKind | null>(null)
   const [legalLoadError, setLegalLoadError] = useState<string | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -60,8 +65,10 @@ export default function AuthEntry() {
   const [password, setPassword] = useState("")
   const [checkingPending, setCheckingPending] = useState(true)
 
+  const errorMessage = resolveErrorMessage(errorCode)
   const legalReady = !!termsDoc && !!privacyDoc && !legalLoadError
-  const canCreateAccount = legalReady && legalAccepted && !isSubmitting
+  const canCreateAccount =
+    legalReady && termsAccepted && privacyAccepted && !isSubmitting
 
   const loadPendingState = useCallback(async () => {
     setCheckingPending(true)
@@ -71,6 +78,7 @@ export default function AuthEntry() {
         setRegisterMode(true)
         setPendingEmail(pending.email ?? "")
         setPendingName(pending.full_name ?? "")
+        setPendingPictureUrl(pending.picture_url ?? null)
       } else if (googleRegisterParam) {
         setRegisterMode(false)
         setSubmitError(
@@ -117,12 +125,16 @@ export default function AuthEntry() {
     }
   }, [registerMode])
 
-  useEffect(() => {
-    if (!accessDenied) return
+  const handleRetry = () => {
+    setSubmitError(null)
     const next = new URLSearchParams(searchParams)
     next.delete("error")
+    next.delete("google_register")
+    next.delete("pending_token")
     setSearchParams(next, { replace: true })
-  }, [accessDenied, searchParams, setSearchParams])
+    setRegisterMode(false)
+    setShowEmailForm(false)
+  }
 
   const handleCancelRegister = async () => {
     try {
@@ -131,7 +143,8 @@ export default function AuthEntry() {
       /* ignore */
     }
     setRegisterMode(false)
-    setLegalAccepted(false)
+    setTermsAccepted(false)
+    setPrivacyAccepted(false)
     setOpenLegalModal(null)
     setSubmitError(null)
     const next = new URLSearchParams(searchParams)
@@ -162,12 +175,11 @@ export default function AuthEntry() {
   }
 
   const handleCreateAccount = async () => {
-    if (!legalReady) return
-    if (!legalAccepted) {
+    if (!legalReady || !termsDoc || !privacyDoc) return
+    if (!termsAccepted || !privacyAccepted) {
       setSubmitError(AUTH_REGISTER.legalAcceptRequired)
       return
     }
-    if (!canCreateAccount || !termsDoc || !privacyDoc) return
 
     setIsSubmitting(true)
     setSubmitError(null)
@@ -187,24 +199,17 @@ export default function AuthEntry() {
     }
   }
 
-  const legalModal = (
-    <LegalContentModal
-      kind={openLegalModal}
-      mode="accept"
-      document={openLegalModal === "terms" ? termsDoc : openLegalModal === "privacy" ? privacyDoc : null}
-      onClose={() => setOpenLegalModal(null)}
-      onAccept={() => setLegalAccepted(true)}
-    />
-  )
-
   if (status === "initializing" || checkingPending) {
     return (
-      <AuthFormShell tall={false} footer={null}>
-        <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-violet-200 border-t-violet-600" />
-          <p className="text-sm text-slate-500">Verificando sesión...</p>
+      <AuthPanel>
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 py-16 text-center">
+          <div
+            className="h-8 w-8 animate-spin rounded-full border-2 border-white/10"
+            style={{ borderTopColor: "#6D5DFC" }}
+          />
+          <p className={`text-sm ${TW_AUTH.muted}`}>Verificando sesión...</p>
         </div>
-      </AuthFormShell>
+      </AuthPanel>
     )
   }
 
@@ -212,160 +217,200 @@ export default function AuthEntry() {
     return <Navigate to="/" replace />
   }
 
-  if (registerMode) {
+  if (errorMessage && !registerMode) {
     return (
-      <>
-        {legalModal}
-        <AuthFormShell
-          tall
-          footer={
-            <p className="text-center text-xs leading-relaxed text-slate-500">
-              {AUTH_REGISTER.footerQuestion}{" "}
-              <button type="button" onClick={() => void handleCancelRegister()} className={TW_AUTH_FOOTER_LINK}>
-                {AUTH_REGISTER.footerAction}
-              </button>
-            </p>
+      <AuthPanel>
+        <div className="space-y-6">
+          <AuthHeader
+            title="No pudimos iniciar tu sesión"
+            subtitle="Intenta de nuevo con tu cuenta institucional"
+          />
+          <AuthFormAlert message={errorMessage} />
+          <button
+            type="button"
+            onClick={handleRetry}
+            className={`w-full ${TW_AUTH.btnPrimary} ${TW_AUTH.focusRing}`}
+          >
+            {AUTH_UTEC.retry}
+          </button>
+        </div>
+      </AuthPanel>
+    )
+  }
+
+  if (registerMode) {
+    const displayName = pendingName || pendingEmail
+    return (
+      <AuthPanel>
+        <LegalContentModal
+          kind={openLegalModal}
+          mode="read"
+          document={
+            openLegalModal === "terms"
+              ? termsDoc
+              : openLegalModal === "privacy"
+                ? privacyDoc
+                : null
           }
-        >
-          <AuthFormHeading title={AUTH_REGISTER.title} subtitle={AUTH_REGISTER.subtitle} />
+          onClose={() => setOpenLegalModal(null)}
+        />
 
-          {(pendingName || pendingEmail) && (
-            <div className="mt-5 rounded-2xl border border-slate-100 bg-slate-50/80 px-4 py-3 text-center">
-              <p className="text-sm font-semibold text-slate-800">{pendingName || pendingEmail}</p>
-              {pendingName && pendingEmail ? (
-                <p className="mt-0.5 truncate text-xs text-slate-500">{pendingEmail}</p>
-              ) : null}
-            </div>
-          )}
-
-          <AuthFormDivider />
+        <div className="space-y-6">
+          <div className="flex flex-col items-center text-center">
+            <ProfileAvatar
+              name={displayName}
+              imageUrl={pendingPictureUrl}
+              size="md"
+              className="mb-4"
+            />
+            <h1 className={`text-[2rem] font-bold leading-tight ${TW_AUTH.heading}`}>
+              {pendingName
+                ? AUTH_ENTRY_NEW.registerWelcome(pendingName)
+                : AUTH_ENTRY_NEW.registerWelcomeGeneric}
+            </h1>
+            {pendingEmail ? (
+              <p className={`mt-1 text-sm ${TW_AUTH.muted}`}>{pendingEmail}</p>
+            ) : null}
+          </div>
 
           {legalLoadError ? <AuthFormAlert message={legalLoadError} /> : null}
 
-          <div className="rounded-2xl border border-slate-100 bg-slate-50/50 px-3 py-3">
-            <label className="flex cursor-pointer items-start gap-2.5">
+          <div className={TW_AUTH.legalBox}>
+            <label className="flex cursor-pointer items-start gap-3">
               <input
                 type="checkbox"
-                className={`mt-0.5 size-4 shrink-0 rounded border-gray-300 ${TW_AUTH_CHECKBOX}`}
-                checked={legalAccepted}
-                onChange={(e) => setLegalAccepted(e.target.checked)}
+                className={TW_AUTH.checkbox}
+                checked={termsAccepted}
+                onChange={(e) => setTermsAccepted(e.target.checked)}
                 disabled={!legalReady}
               />
-              <span className="text-xs leading-relaxed text-slate-600">
-                {AUTH_REGISTER.legalCheckboxCombined}
-              </span>
+              <span className={`text-sm ${TW_AUTH.subtitle}`}>{AUTH_ENTRY_NEW.termsCheckbox}</span>
             </label>
-            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 pl-6">
-              <button
-                type="button"
-                onClick={() => setOpenLegalModal("terms")}
-                disabled={!legalReady}
-                className={`text-xs font-semibold ${TW_AUTH_LEGAL_LINK}`}
-              >
-                {AUTH_REGISTER.readTerms}
-              </button>
-              <span className="text-xs text-slate-300" aria-hidden>
-                ·
-              </span>
-              <button
-                type="button"
-                onClick={() => setOpenLegalModal("privacy")}
-                disabled={!legalReady}
-                className={`text-xs font-semibold ${TW_AUTH_LEGAL_LINK}`}
-              >
-                {AUTH_REGISTER.readPrivacy}
-              </button>
-            </div>
-          </div>
-
-          <div className="mt-auto space-y-4 pt-8">
-            {submitError ? <AuthFormAlert message={submitError} /> : null}
-
-            <Button
+            <button
               type="button"
-              disabled={!canCreateAccount}
-              onClick={() => void handleCreateAccount()}
-              className={`h-12 w-full rounded-2xl ${TW_UTOPP_GRADIENT_R} text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition-all duration-300 hover:brightness-105 active:scale-[0.98]`}
+              onClick={() => setOpenLegalModal("terms")}
+              disabled={!legalReady}
+              className={`pl-7 text-left text-sm font-semibold ${TW_AUTH.link} ${TW_AUTH.focusRing}`}
             >
-              {isSubmitting ? (
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-              ) : (
-                AUTH_ENTRY.createAccount
-              )}
-            </Button>
+              {AUTH_ENTRY_NEW.readTerms}
+            </button>
+
+            <label className="flex cursor-pointer items-start gap-3 pt-1">
+              <input
+                type="checkbox"
+                className={TW_AUTH.checkbox}
+                checked={privacyAccepted}
+                onChange={(e) => setPrivacyAccepted(e.target.checked)}
+                disabled={!legalReady}
+              />
+              <span className={`text-sm ${TW_AUTH.subtitle}`}>{AUTH_ENTRY_NEW.privacyCheckbox}</span>
+            </label>
+            <button
+              type="button"
+              onClick={() => setOpenLegalModal("privacy")}
+              disabled={!legalReady}
+              className={`pl-7 text-left text-sm font-semibold ${TW_AUTH.link} ${TW_AUTH.focusRing}`}
+            >
+              {AUTH_ENTRY_NEW.readPrivacy}
+            </button>
           </div>
-        </AuthFormShell>
-      </>
+
+          {submitError ? <AuthFormAlert message={submitError} /> : null}
+
+          <button
+            type="button"
+            disabled={!canCreateAccount}
+            onClick={() => void handleCreateAccount()}
+            className={`w-full ${TW_AUTH.btnPrimary} ${TW_AUTH.focusRing}`}
+          >
+            {isSubmitting ? AUTH_ENTRY_NEW.creatingAccount : AUTH_ENTRY_NEW.createAccount}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => void handleCancelRegister()}
+            className={`w-full text-center text-sm font-medium ${TW_AUTH.muted} transition-colors duration-200 hover:text-white ${TW_AUTH.focusRing}`}
+          >
+            {AUTH_ENTRY_NEW.cancelRegister}
+          </button>
+        </div>
+      </AuthPanel>
     )
   }
 
   return (
-    <AuthFormShell
-      tall
-      footer={
-        <p className="text-center text-xs leading-relaxed text-slate-400">
-          ¿Primera vez en Utopp?
-          <br />
-          Continúa con Google para crear tu cuenta.
-        </p>
-      }
-    >
-      <AuthFormHeading
-        title={AUTH_ENTRY.title}
-        subtitle={AUTH_ENTRY.subtitle}
-      />
+    <AuthPanel>
+      <div className="space-y-6">
+        <AuthHeader title={AUTH_ENTRY_NEW.title} subtitle={AUTH_ENTRY_NEW.subtitle} />
 
-      {(accessDenied || submitError) && (
-        <div className="mt-5 space-y-3">
-          {accessDenied ? <AuthFormAlert message={AUTH_UTEC.accessDenied} /> : null}
-          {submitError ? <AuthFormAlert message={submitError} /> : null}
-        </div>
-      )}
+        {submitError ? <AuthFormAlert message={submitError} /> : null}
 
-      <div className="mt-6">
         <button
           type="button"
           onClick={() => {
             window.location.href = getGoogleOAuthLoginUrl()
           }}
-          className={`flex h-12 w-full items-center justify-center gap-2.5 rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-700 shadow-sm transition-all hover:border-slate-300 hover:shadow-md active:scale-[0.99] ${TW_AUTH_FOCUS_RING}`}
+          className={`${TW_AUTH.btnGoogle} ${TW_AUTH.focusRing}`}
         >
           <GoogleMark />
-          {AUTH_ENTRY.continueWithGoogle}
+          {AUTH_ENTRY_NEW.continueWithGoogle}
         </button>
-      </div>
 
-      <AuthFormDivider label={AUTH_ENTRY.dividerLabel} />
+        <div className="text-center">
+          <button
+            type="button"
+            onClick={() => setShowEmailForm((prev) => !prev)}
+            className={`text-sm font-medium ${TW_AUTH.link} ${TW_AUTH.focusRing}`}
+          >
+            {showEmailForm ? AUTH_ENTRY_NEW.emailFallbackHide : AUTH_ENTRY_NEW.emailFallbackPrompt}
+          </button>
+        </div>
 
-      <section className="flex flex-1 flex-col">
-        <form onSubmit={(event) => void handleEmailLogin(event)} className="space-y-4">
-          <EmailInput
-            value={email}
-            onChange={setEmail}
-            placeholder="alumno@utec.edu.pe"
-            autoComplete="username"
-          />
-          <PasswordInput
-            value={password}
-            onChange={setPassword}
-            autoComplete="current-password"
-          />
-
-          <div className="pt-1">
-            <Button
+        {showEmailForm ? (
+          <form
+            onSubmit={(event) => void handleEmailLogin(event)}
+            className="space-y-4 border-t border-white/[0.08] pt-6"
+          >
+            <EmailInput
+              value={email}
+              onChange={setEmail}
+              placeholder="alumno@utec.edu.pe"
+              autoComplete="username"
+            />
+            <PasswordInput
+              value={password}
+              onChange={setPassword}
+              autoComplete="current-password"
+            />
+            <button
               type="submit"
               disabled={isLoggingIn}
-              className={`h-12 w-full rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-700 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 active:scale-[0.99] disabled:opacity-60 ${TW_AUTH_FOCUS_RING}`}
+              className={`w-full ${TW_AUTH.btnSecondary} ${TW_AUTH.focusRing}`}
             >
-              {isLoggingIn ? (
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-slate-300 border-t-violet-600" />
-              ) : (
-                AUTH_LOGIN.submitLabel
-              )}
-            </Button>
-          </div>
-        </form>
-      </section>
-    </AuthFormShell>
+              {isLoggingIn ? "Iniciando sesión..." : AUTH_LOGIN.submitLabel}
+            </button>
+          </form>
+        ) : null}
+      </div>
+    </AuthPanel>
+  )
+}
+
+function AuthPanel({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      className={`w-full max-w-[30rem] p-6 sm:p-8 md:p-10 ${TW_AUTH.card} ${TW_AUTH.cardTransition} auth-fade-in`}
+    >
+      {children}
+    </div>
+  )
+}
+
+function AuthHeader({ title, subtitle }: { title: string; subtitle: string }) {
+  return (
+    <div className="text-center">
+      <h1 className={`text-[2rem] font-bold leading-tight ${TW_AUTH.heading}`}>{title}</h1>
+      <p className={`mt-2 text-base leading-relaxed ${TW_AUTH.subtitle}`}>{subtitle}</p>
+    </div>
   )
 }

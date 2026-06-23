@@ -40,6 +40,17 @@ def test_cookie_samesite_normalized(monkeypatch):
     assert cfg.COOKIE_SAMESITE == "none"
 
 
+def test_render_forces_samesite_none_even_when_strict(monkeypatch):
+    monkeypatch.setenv("RENDER_EXTERNAL_URL", "https://utopp.onrender.com")
+    monkeypatch.setenv("RENDER", "true")
+    monkeypatch.setenv("GOOGLE_REDIRECT_URI", "https://utopp.onrender.com/auth/google/callback")
+    monkeypatch.setenv("FRONTEND_URL", "https://utopp-fronted.onrender.com")
+    monkeypatch.setenv("COOKIE_SAMESITE", "strict")
+    cfg = Settings()
+    assert cfg.COOKIE_SAMESITE == "none"
+    assert cfg.COOKIE_SECURE is True
+
+
 def test_render_external_url_overrides_localhost_oauth(monkeypatch):
     monkeypatch.setenv("RENDER_EXTERNAL_URL", "https://utopp.onrender.com")
     monkeypatch.setenv("RENDER", "true")

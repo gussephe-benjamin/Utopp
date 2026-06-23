@@ -3,6 +3,7 @@ import { AuthProvider } from "./auth/AuthContext"
 import ProtectedRoute from "./auth/ProtectedRoute"
 import AppRoute from "./auth/AppRoute"
 import AuthEntry from "./pages/auth/AuthEntry"
+import AuthCallback from "./pages/auth/AuthCallback"
 import DashboardLayout from "./pages/Dashboard"
 import Onboarding from "./features/onboarding/Onboarding"
 import { AuthRouteLayout } from "./features/auth/components/AuthRouteLayout"
@@ -32,6 +33,7 @@ function App() {
 
           <Route path="/terms" element={<TermsPublic />} />
           <Route path="/privacy" element={<PrivacyPublic />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
 
           <Route
             path="/app/terms"

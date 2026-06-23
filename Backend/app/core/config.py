@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     JWT_SECRET_KEY: str = ""
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
+    SESSION_EXCHANGE_TOKEN_EXPIRE_SECONDS: int = 120
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
     GOOGLE_REDIRECT_URI: str = _DEFAULT_LOCAL_REDIRECT_URI
@@ -44,6 +45,7 @@ class Settings(BaseSettings):
     ALLOWED_ORIGINS: str = ""
     SESSION_COOKIE_NAME: str = "utopp_session"
     OAUTH_STATE_COOKIE_NAME: str = "utopp_oauth_state"
+    OAUTH_PKCE_COOKIE_NAME: str = "utopp_oauth_pkce"
     OAUTH_PENDING_COOKIE_NAME: str = "utopp_oauth_pending"
     COOKIE_SECURE: bool = False
     COOKIE_SAMESITE: str = "lax"
@@ -84,19 +86,20 @@ class Settings(BaseSettings):
                 or _KNOWN_PRODUCTION_FRONTEND_URL
             )
 
-        if backend_public.startswith("https://"):
-            if os.getenv("RENDER") or render_url:
-                self.COOKIE_SECURE = True
-
+        on_render = bool(render_url or os.getenv("RENDER"))
         redirect_host = urlparse(self.GOOGLE_REDIRECT_URI).netloc
         frontend_host = urlparse(self.FRONTEND_URL).netloc
-        if (
-            (render_url or os.getenv("RENDER"))
+        cross_origin_deploy = (
+            on_render
             and redirect_host
             and frontend_host
             and redirect_host != frontend_host
-            and self.COOKIE_SAMESITE == "lax"
-        ):
+        )
+
+        if cross_origin_deploy or (on_render and backend_public.startswith("https://")):
+            self.COOKIE_SECURE = True
+
+        if cross_origin_deploy:
             self.COOKIE_SAMESITE = "none"
 
         return self

@@ -57,6 +57,7 @@ export interface GoogleOAuthPendingResponse {
   pending: boolean
   email?: string
   full_name?: string
+  picture_url?: string | null
 }
 
 export async function fetchGoogleOAuthPending(pendingToken?: string | null) {
@@ -87,5 +88,13 @@ export function getGoogleOAuthLoginUrl(): string {
 
 export async function loginSession(payload: { email: string; password: string }) {
   const { data } = await api.post("/auth/login", payload)
+  return data
+}
+
+/** Canjea token de sesión de un solo uso tras OAuth cross-origin. */
+export async function exchangeSessionToken(sessionToken: string): Promise<AuthMeResponse> {
+  const { data } = await api.post<AuthMeResponse>("/auth/session/exchange", {
+    session_token: sessionToken,
+  })
   return data
 }
