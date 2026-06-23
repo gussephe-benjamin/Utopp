@@ -216,6 +216,7 @@ Cada usuario tiene un rol que determina qué puede publicar, qué nivel de visib
 ### Gestión de roles (admin)
 - Asignación y cambio de rol por usuario desde el panel de administración
 - Bootstrap del primer admin mediante endpoint protegido por token
+- Dashboard de **Métricas** en `/app/admin/metricas` (solo admin/root): KPIs, gráficos de actividad/engagement y tablas de alumnos con score de actividad. Los eventos se registran vía `POST /analytics/events` (solo estudiantes).
 
 ---
 

@@ -506,3 +506,76 @@ def run_migrations(engine: Engine) -> None:
             ON post_comments (user_id);
         """))
         conn.commit()
+
+        # 20. Analytics: eventos de actividad y sesiones de alumnos
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS activity_events (
+                id BIGSERIAL PRIMARY KEY,
+                user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                organization_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+                event_type VARCHAR(64) NOT NULL,
+                metadata JSONB,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            );
+        """))
+        conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS idx_activity_events_user_id
+            ON activity_events (user_id);
+        """))
+        conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS idx_activity_events_event_type
+            ON activity_events (event_type);
+        """))
+        conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS idx_activity_events_created_at
+            ON activity_events (created_at DESC);
+        """))
+        conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS idx_activity_events_org_id
+            ON activity_events (organization_id);
+        """))
+        conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS idx_activity_events_user_created
+            ON activity_events (user_id, created_at DESC);
+        """))
+        conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS idx_activity_events_type_created
+            ON activity_events (event_type, created_at DESC);
+        """))
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS user_sessions (
+                id BIGSERIAL PRIMARY KEY,
+                user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                organization_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+                started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                ended_at TIMESTAMPTZ,
+                duration_seconds INTEGER NOT NULL DEFAULT 0,
+                last_activity_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                device_type VARCHAR(64),
+                browser VARCHAR(128),
+                ip_address VARCHAR(64),
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            );
+        """))
+        conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id
+            ON user_sessions (user_id);
+        """))
+        conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS idx_user_sessions_started_at
+            ON user_sessions (started_at);
+        """))
+        conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS idx_user_sessions_last_activity_at
+            ON user_sessions (last_activity_at);
+        """))
+        conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS idx_user_sessions_org_id
+            ON user_sessions (organization_id);
+        """))
+        conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS idx_user_sessions_user_started
+            ON user_sessions (user_id, started_at DESC);
+        """))
+        conn.commit()

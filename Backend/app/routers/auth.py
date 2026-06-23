@@ -399,7 +399,29 @@ def google_oauth_cancel_pending(response: Response):
 # Invalida la sesión HttpOnly.
 # ============================================================
 @router.post("/logout")
-def logout(response: Response):
+def logout(
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_optional_user),
+):
+    if current_user is not None:
+        from app.services.analytics.tracking_service import RequestMeta, track_activity_event
+
+        fwd = request.headers.get("x-forwarded-for")
+        ip = (fwd.split(",")[0].strip() if fwd else None) or (
+            request.client.host if request.client else None
+        )
+        try:
+            track_activity_event(
+                db,
+                current_user,
+                "logout",
+                None,
+                RequestMeta(ip_address=ip, user_agent=request.headers.get("user-agent")),
+            )
+        except Exception:
+            db.rollback()
     clear_session_cookie(response)
     return {"ok": True}
 

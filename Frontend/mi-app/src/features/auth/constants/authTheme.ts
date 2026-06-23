@@ -54,6 +54,39 @@ export const TW_AUTH = {
   checkbox: "mt-0.5 size-4 shrink-0 rounded border-white/20 bg-[#1E2230] text-[#6D5DFC] focus:ring-[#6D5DFC]/40",
   benefitGlass:
     "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm transition-all duration-200 ease-out group-hover:-translate-y-0.5 group-hover:border-white/20 group-hover:shadow-[0_8px_24px_-8px_rgba(109,93,252,0.35)] motion-reduce:transform-none",
+  heroContent:
+    "flex w-full max-w-[35rem] flex-col gap-[clamp(1.25rem,2vw,2rem)]",
+  heroLogo: "inline-flex items-center gap-3",
+  heroLogoIcon:
+    "object-contain drop-shadow-[0_4px_12px_rgba(109,93,252,0.35)] size-[clamp(2rem,4vw,2.5rem)]",
+  heroLogoText:
+    "font-display font-bold tracking-tight text-white text-[clamp(1.1rem,1.6vw,1.35rem)]",
+  heroTitle:
+    "max-w-[520px] font-display text-[clamp(2.25rem,4vw,3.5rem)] font-extrabold leading-[0.98] tracking-[-0.04em] text-white",
+  heroTitleCompact:
+    "max-w-[520px] font-display text-[clamp(1.85rem,3.4vw,2.4rem)] font-extrabold leading-[1.02] tracking-[-0.03em] text-white",
+  heroDescription:
+    "mt-4 max-w-[500px] text-[clamp(1rem,1.25vw,1.125rem)] leading-[1.65] text-white/[0.78]",
+  heroBenefits: "grid max-w-[520px] grid-cols-1 gap-x-8 gap-y-3.5 md:grid-cols-2",
+  heroBenefitItem: "group flex min-h-10 items-center gap-3.5",
+  heroBenefitIcon:
+    "flex size-[38px] shrink-0 items-center justify-center rounded-full border border-white/[0.14] bg-white/[0.08] backdrop-blur-[12px] transition-all duration-200 ease-out group-hover:border-white/20 motion-reduce:transform-none",
+  heroBenefitText: "text-[0.95rem] font-semibold text-white/[0.92]",
+  heroSectionLabel:
+    "flex items-center gap-1.5 text-[0.76rem] font-bold uppercase tracking-[0.06em] text-white/55",
+  heroSectionLabelMobile:
+    "flex items-center gap-1.5 text-[0.76rem] font-bold uppercase tracking-[0.06em] text-[#8A93A2]",
+  heroShowcaseCard:
+    "min-h-16 overflow-hidden rounded-2xl border border-white/[0.13] bg-white/[0.075] p-[0.85rem] backdrop-blur-[14px] sm:p-3",
+  heroShowcaseCardCompact:
+    "min-h-14 overflow-hidden rounded-2xl border border-white/[0.13] bg-white/[0.075] p-3 backdrop-blur-[14px]",
+  heroEventDate:
+    "flex size-11 shrink-0 flex-col items-center justify-center rounded-[0.85rem] border border-white/[0.16] bg-white/[0.14] text-white",
+  heroCarouselDot:
+    "block size-1.5 shrink-0 rounded-full bg-white/35 transition-all duration-300 ease-out hover:bg-white/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60",
+  heroCarouselDotActive: "h-1.5 w-[18px] shrink-0 rounded-full bg-white/95",
   showcaseCard:
-    "rounded-2xl border border-white/10 bg-white/5 p-3 backdrop-blur-sm",
+    "min-h-16 overflow-hidden rounded-2xl border border-white/[0.13] bg-white/[0.075] p-[0.85rem] backdrop-blur-[14px]",
+  showcaseCardCompact:
+    "min-h-14 overflow-hidden rounded-2xl border border-white/[0.13] bg-white/[0.075] p-3 backdrop-blur-[14px]",
 } as const

@@ -17,6 +17,7 @@ import Step4GeneralInfo from './Step4_GeneralInfo'
 import StepFrameEditor from './StepFrameEditor'
 import Step5Preview from './Step5_Preview'
 import ModernStepper from './ModernStepper'
+import { trackEvent } from '../features/analytics/analyticsTracker'
 import { createPost, createSimplePost, publishPost } from '../api/posts.api'
 import { addImage } from '../api/post-images.api'
 import { addLink } from '../api/post-links.api'
@@ -311,6 +312,8 @@ export default function PublicationWizard({ isOpen, onClose, allowedTypes }: Pub
       // 4. Publicar el post → aparece en el feed
       setPublishProgress('Publicando...')
       await publishPost(postId)
+
+      trackEvent("post_created", { post_id: postId })
 
       // Éxito: resetear wizard y cerrar
       dispatch({ type: 'RESET' })

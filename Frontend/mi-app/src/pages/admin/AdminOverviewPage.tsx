@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
-import { Building2, FileText, GraduationCap, ScrollText, ShieldCheck } from "lucide-react"
+import { Building2, FileText, GraduationCap, ScrollText, ShieldCheck, BarChart3 } from "lucide-react"
 import { getAdminUsers } from "../../api/admin.api"
 import { getAdminPosts } from "../../api/posts.api"
 import { ROLE_ESTUDIANTE, ROLE_ORGANIZACION } from "../../hooks/useRole"
@@ -13,6 +13,7 @@ type Counts = {
 }
 
 const QUICK_LINKS = [
+  { to: "/app/admin/metricas", label: "Ver métricas", icon: BarChart3 },
   { to: "/app/admin/alumnos", label: "Gestionar alumnos", icon: GraduationCap },
   { to: "/app/admin/organizaciones", label: "Gestionar organizaciones", icon: Building2 },
   { to: "/app/admin/publicaciones", label: "Moderar publicaciones", icon: FileText },

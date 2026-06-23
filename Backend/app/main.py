@@ -13,6 +13,8 @@ from app.database.base import Base
 from app.database.migrations import run_migrations
 from app.database.session import SessionLocal, engine
 from app.models import legal as _legal_models  # noqa: F401 — registra tablas legales en metadata
+from app.models import activity_event as _activity_event_models  # noqa: F401
+from app.models import user_session as _user_session_models  # noqa: F401
 from app.services import role_service
 logger = logging.getLogger("utopp.api")
 _slow_request_ms = int(os.getenv("SLOW_REQUEST_MS", "1000"))
@@ -36,6 +38,8 @@ from app.routers import (
     post_comments,
     roles,
     admin,
+    analytics,
+    admin_analytics,
 )
 
 
@@ -142,4 +146,6 @@ app.include_router(participants.router, tags=["participants"])
 # ═══════════════════════════════════════════════════════════
 app.include_router(roles.router, prefix="/roles", tags=["roles"])
 app.include_router(admin.router, prefix="/admin", tags=["admin"])
+app.include_router(admin_analytics.router, prefix="/admin/analytics", tags=["admin-analytics"])
+app.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
 

@@ -1,13 +1,16 @@
 import { CalendarDays, Sparkles } from "lucide-react"
+import type { AuthLeftPanelLayout } from "../hooks/useAuthLeftPanelLayout"
+import { TW_AUTH } from "../constants/authTheme"
 import { useAuthShowcase } from "../hooks/useAuthShowcase"
 import { AuthLatestEvents } from "./AuthLatestEvents"
 import { OrgCarousel } from "./OrgCarousel"
 
 type AuthShowcaseSectionProps = {
   variant: "desktop" | "mobile"
+  layout?: AuthLeftPanelLayout
 }
 
-export function AuthShowcaseSection({ variant }: AuthShowcaseSectionProps) {
+export function AuthShowcaseSection({ variant, layout }: AuthShowcaseSectionProps) {
   const { events, organizations, loading, hasEvents, hasOrganizations } =
     useAuthShowcase()
 
@@ -19,54 +22,75 @@ export function AuthShowcaseSection({ variant }: AuthShowcaseSectionProps) {
         className="mx-auto w-full max-w-[30rem] px-4 pb-6 pt-4 md:hidden"
         aria-label="Actividad en Utopp"
       >
-        <div className="space-y-3">
+        <div className="flex flex-col gap-[clamp(0.75rem,1.5vw,1rem)]">
           {(loading || hasEvents) && (
-            <div className="flex items-center gap-2 px-1">
-              <CalendarDays className="h-4 w-4 shrink-0 text-[#8A93A2]" aria-hidden />
-              <p className="text-xs font-semibold uppercase tracking-wide text-[#8A93A2]">
-                Últimos eventos
-              </p>
-            </div>
+            <section
+              aria-label="Últimos eventos"
+              className="flex w-full flex-col gap-3"
+            >
+              <div className={TW_AUTH.heroSectionLabelMobile}>
+                <CalendarDays className="size-4 shrink-0" aria-hidden />
+                <span>Últimos eventos</span>
+              </div>
+              <AuthLatestEvents events={events} loading={loading} />
+            </section>
           )}
-          <AuthLatestEvents events={events} loading={loading} />
 
           {(loading || hasOrganizations) && (
-            <div className="space-y-3 [@media(max-height:679px)]:hidden">
-              <div className="flex items-center gap-2 px-1 pt-2">
-                <Sparkles className="h-4 w-4 shrink-0 text-[#8A93A2]" aria-hidden />
-                <p className="text-xs font-semibold uppercase tracking-wide text-[#8A93A2]">
-                  Organizaciones en Utopp
-                </p>
+            <section
+              aria-label="Organizaciones en Utopp"
+              className="flex w-full flex-col gap-3 [@media(max-height:679px)]:hidden"
+            >
+              <div className={TW_AUTH.heroSectionLabelMobile}>
+                <Sparkles className="size-4 shrink-0" aria-hidden />
+                <span>Organizaciones en Utopp</span>
               </div>
               <OrgCarousel organizations={organizations} loading={loading} />
-            </div>
+            </section>
           )}
         </div>
       </section>
     )
   }
 
-  return (
-    <div className="mt-10 space-y-3 [@media(max-height:860px)]:mt-6 [@media(max-height:660px)]:hidden">
-      {(loading || hasEvents) && (
-        <div className="flex items-center gap-2 px-1">
-          <CalendarDays className="h-4 w-4 shrink-0 text-white/60" aria-hidden />
-          <p className="text-xs font-semibold uppercase tracking-wide text-white/50">
-            Últimos eventos
-          </p>
-        </div>
-      )}
-      <AuthLatestEvents events={events} loading={loading} />
+  if (!layout || (layout.maxEvents === 0 && !layout.showOrganizations)) return null
 
-      {(loading || hasOrganizations) && (
-        <div className="flex items-center gap-2 px-1 pt-2">
-          <Sparkles className="h-4 w-4 shrink-0 text-white/60" aria-hidden />
-          <p className="text-xs font-semibold uppercase tracking-wide text-white/50">
-            Organizaciones en Utopp
-          </p>
-        </div>
+  return (
+    <div className="flex flex-col gap-[clamp(1rem,2vw,1.5rem)]">
+      {(loading || hasEvents) && (
+        <section
+          aria-label="Últimos eventos"
+          className="flex w-full max-w-[33.75rem] flex-col gap-3"
+        >
+          <div className={TW_AUTH.heroSectionLabel}>
+            <CalendarDays className="size-4 shrink-0 text-white/60" aria-hidden />
+            <span>Últimos eventos</span>
+          </div>
+          <AuthLatestEvents
+            events={events}
+            loading={loading}
+            maxVisible={layout.maxEvents}
+            compact={layout.compactSpacing}
+          />
+        </section>
       )}
-      <OrgCarousel organizations={organizations} loading={loading} />
+
+      {layout.showOrganizations && (loading || hasOrganizations) && (
+        <section
+          aria-label="Organizaciones en Utopp"
+          className="flex w-full max-w-[33.75rem] flex-col gap-3 pt-1"
+        >
+          <div className={TW_AUTH.heroSectionLabel}>
+            <Sparkles className="size-4 shrink-0 text-white/60" aria-hidden />
+            <span>Organizaciones en Utopp</span>
+          </div>
+          <OrgCarousel
+            organizations={organizations}
+            loading={loading}
+            compact={layout.compactSpacing}
+          />
+        </section>
+      )}
     </div>
   )
 }

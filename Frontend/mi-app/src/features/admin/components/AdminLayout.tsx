@@ -7,12 +7,14 @@ import {
   ShieldCheck,
   ScrollText,
   ArrowLeft,
+  BarChart3,
 } from "lucide-react"
 import { AppLink } from "../../../shared/navigation/AppLink"
 import { TW_UTOPP_GRADIENT_R, TW_UTOPP_GRADIENT_TEXT } from "../../../shared/constants/brand"
 
 const NAV_ITEMS = [
   { to: "/app/admin", label: "Resumen", icon: LayoutDashboard, end: true },
+  { to: "/app/admin/metricas", label: "Métricas", icon: BarChart3, end: false },
   { to: "/app/admin/alumnos", label: "Alumnos", icon: GraduationCap, end: false },
   { to: "/app/admin/organizaciones", label: "Organizaciones", icon: Building2, end: false },
   { to: "/app/admin/publicaciones", label: "Publicaciones", icon: FileText, end: false },

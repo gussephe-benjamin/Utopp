@@ -2,10 +2,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { OrganizationSummary } from "../../../api/users.api";
 import { getOrgAvatarStyle } from "../../feed/lib/weeklyHighlightUtils";
 import { resolveOrgImageUrl } from "../../../shared/lib/cloudinaryUrl";
+import { TW_AUTH } from "../constants/authTheme";
 
 type OrgCarouselProps = {
   organizations: OrganizationSummary[];
   loading: boolean;
+  compact?: boolean;
 };
 
 type AnimState = "idle" | "exiting" | "entering";
@@ -42,19 +44,20 @@ function getAnimClass(state: AnimState): string {
   }
 }
 
-function OrgSkeleton() {
+function OrgSkeleton({ compact }: { compact?: boolean }) {
+  const cardClass = compact ? TW_AUTH.heroShowcaseCardCompact : TW_AUTH.heroShowcaseCard;
+
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 backdrop-blur-sm">
-      <div className="h-11 w-11 shrink-0 animate-pulse rounded-full bg-white/10" />
-      <div className="min-w-0 flex-1 space-y-2">
-        <div className="h-3 w-2/3 animate-pulse rounded bg-white/10" />
-        <div className="h-2.5 w-1/3 animate-pulse rounded bg-white/[0.06]" />
+    <div className={`flex items-center justify-between gap-4 ${cardClass}`}>
+      <div className="flex min-w-0 items-center gap-3.5">
+        <div className="size-[42px] shrink-0 animate-pulse rounded-full bg-white/10" />
+        <div className="h-3 w-32 animate-pulse rounded bg-white/10" />
       </div>
     </div>
   );
 }
 
-export function OrgCarousel({ organizations, loading }: OrgCarouselProps) {
+export function OrgCarousel({ organizations, loading, compact = false }: OrgCarouselProps) {
   const orgs = organizations;
   const [currentIndex, setCurrentIndex] = useState(0);
   const [animState, setAnimState] = useState<AnimState>("idle");
@@ -64,6 +67,10 @@ export function OrgCarousel({ organizations, loading }: OrgCarouselProps) {
   const transitionTimeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const animStateRef = useRef<AnimState>("idle");
   const currentIndexRef = useRef(0);
+
+  const cardClass = compact ? TW_AUTH.heroShowcaseCardCompact : TW_AUTH.heroShowcaseCard;
+  const avatarClass = compact ? "size-9" : "size-[42px]";
+  const avatarTextClass = compact ? "text-sm" : "text-base";
 
   const clearTransitionTimeouts = useCallback(() => {
     transitionTimeoutsRef.current.forEach(clearTimeout);
@@ -153,17 +160,13 @@ export function OrgCarousel({ organizations, loading }: OrgCarouselProps) {
     };
   }, [isHovered, orgs.length, goToNext]);
 
-  if (loading) return <OrgSkeleton />;
+  if (loading) return <OrgSkeleton compact={compact} />;
   if (orgs.length === 0) return null;
 
   const safeIndex = currentIndex % orgs.length;
   const org = orgs[safeIndex];
   const name = org.full_name?.trim() || "Organización";
   const initial = name.charAt(0).toUpperCase();
-  const metric =
-    org.followers_count > 0
-      ? `${org.followers_count} ${org.followers_count === 1 ? "seguidor" : "seguidores"}`
-      : `${org.posts_count ?? 0} ${org.posts_count === 1 ? "publicación" : "publicaciones"}`;
 
   const visibleDotIndices = getDotOrgIndices(orgs.length, safeIndex);
   const showDots = orgs.length > 1;
@@ -175,33 +178,35 @@ export function OrgCarousel({ organizations, loading }: OrgCarouselProps) {
       aria-live="polite"
       aria-atomic="true"
     >
-      <div className="overflow-hidden rounded-xl">
+      <div className="overflow-hidden rounded-2xl">
         <div
-          className={`flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 backdrop-blur-sm ${getAnimClass(animState)}`}
+          className={`flex items-center justify-between gap-4 max-sm:flex-col max-sm:items-start ${cardClass} ${getAnimClass(animState)}`}
         >
-          {org.profile_image_url ? (
-            <img
-              src={resolveOrgImageUrl(org.profile_image_url) ?? org.profile_image_url}
-              alt=""
-              aria-hidden
-              className="h-11 w-11 shrink-0 rounded-full object-cover ring-2 ring-white/25"
-            />
-          ) : (
-            <div
-              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-base font-bold ring-2 ring-white/20 ${getOrgAvatarStyle(org.id)}`}
-              aria-hidden
-            >
-              {initial}
-            </div>
-          )}
+          <div className="flex min-w-0 items-center gap-3.5">
+            {org.profile_image_url ? (
+              <img
+                src={resolveOrgImageUrl(org.profile_image_url) ?? org.profile_image_url}
+                alt=""
+                aria-hidden
+                className={`${avatarClass} shrink-0 rounded-full object-cover ring-2 ring-white/25`}
+              />
+            ) : (
+              <div
+                className={`flex ${avatarClass} shrink-0 items-center justify-center rounded-full ${avatarTextClass} font-extrabold text-white ring-2 ring-white/20 ${getOrgAvatarStyle(org.id)}`}
+                aria-hidden
+              >
+                {initial}
+              </div>
+            )}
 
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-white/90">{name}</p>
-            <p className="truncate text-xs text-white/60">{metric}</p>
+            <p className="truncate text-[0.92rem] font-bold text-white">{name}</p>
           </div>
 
           {showDots && (
-            <div className="ml-auto flex shrink-0 items-center gap-1" role="tablist">
+            <div
+              className="flex shrink-0 items-center gap-1.5 max-sm:self-start max-sm:pl-[3.3rem]"
+              role="tablist"
+            >
               {visibleDotIndices.map((orgIndex) => (
                 <button
                   key={orgs[orgIndex].id}
@@ -209,11 +214,11 @@ export function OrgCarousel({ organizations, loading }: OrgCarouselProps) {
                   onClick={() => goToIndex(orgIndex)}
                   aria-label={`Ver organización ${orgIndex + 1}`}
                   aria-current={orgIndex === safeIndex ? "true" : undefined}
-                  className={`block h-1.5 rounded-full transition-all duration-300 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 ${
+                  className={
                     orgIndex === safeIndex
-                      ? "w-3 bg-white/90"
-                      : "w-1.5 bg-white/30 hover:bg-white/50"
-                  }`}
+                      ? TW_AUTH.heroCarouselDotActive
+                      : TW_AUTH.heroCarouselDot
+                  }
                 />
               ))}
             </div>

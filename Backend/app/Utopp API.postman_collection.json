@@ -2977,6 +2977,140 @@
       "description": "Panel de administración: identificación del admin (`GET /admin/me`, `GET /admin/admins`) y CRUD de usuarios (`/admin/users`). Incluye **Eliminar usuario** (`DELETE /admin/users/{user_id}`). Salvo `GET /admin/me` (cualquier usuario autenticado), todos requieren rol **administrador o root**."
     },
     {
+      "name": "Analytics",
+      "item": [
+        {
+          "name": "Track activity event (estudiante)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event_type\": \"app_opened\",\n  \"metadata\": {\"page\": \"/app/inicio\"}\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/analytics/events",
+              "host": ["{{base_url}}"],
+              "path": ["analytics", "events"]
+            },
+            "description": "POST /analytics/events — Registra actividad de alumnos (app_opened, page_view, feed_viewed, post_created, etc.). Usuarios admin/org reciben 204 sin persistir. Requiere Bearer de estudiante con términos aceptados."
+          },
+          "response": []
+        },
+        {
+          "name": "Analytics summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/analytics/summary?from=&to=&organizationId=",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "analytics", "summary"],
+              "query": [
+                {"key": "from", "value": "", "description": "ISO datetime inicio (opcional)"},
+                {"key": "to", "value": "", "description": "ISO datetime fin (opcional)"},
+                {"key": "organizationId", "value": "", "description": "Filtrar por org (user id)"}
+              ]
+            },
+            "description": "GET /admin/analytics/summary — KPIs agregados y tendencias vs período anterior. Requiere admin/root."
+          },
+          "response": []
+        },
+        {
+          "name": "Activity timeseries",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/analytics/activity-timeseries?groupBy=day",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "analytics", "activity-timeseries"],
+              "query": [
+                {"key": "groupBy", "value": "day", "description": "day | week | month"}
+              ]
+            },
+            "description": "GET /admin/analytics/activity-timeseries — Serie temporal de alumnos activos y sesiones."
+          },
+          "response": []
+        },
+        {
+          "name": "Engagement timeseries",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/analytics/engagement-timeseries?groupBy=day",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "analytics", "engagement-timeseries"],
+              "query": [
+                {"key": "groupBy", "value": "day"}
+              ]
+            },
+            "description": "GET /admin/analytics/engagement-timeseries — Posts, comentarios y reacciones por período."
+          },
+          "response": []
+        },
+        {
+          "name": "Organizations activity",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/analytics/organizations",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "analytics", "organizations"]
+            },
+            "description": "GET /admin/analytics/organizations — Actividad agregada por organización estudiantil."
+          },
+          "response": []
+        },
+        {
+          "name": "Students metrics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/analytics/students?page=1&limit=20&sort=activityScore&search=",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "analytics", "students"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "limit", "value": "20"},
+                {"key": "sort", "value": "activityScore"},
+                {"key": "search", "value": ""},
+                {"key": "status", "value": "", "disabled": true}
+              ]
+            },
+            "description": "GET /admin/analytics/students — Tabla paginada con score de actividad y estado."
+          },
+          "response": []
+        },
+        {
+          "name": "At-risk students",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/analytics/at-risk-students?inactiveDays=7",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "analytics", "at-risk-students"],
+              "query": [
+                {"key": "inactiveDays", "value": "7"}
+              ]
+            },
+            "description": "GET /admin/analytics/at-risk-students — Alumnos inactivos con nivel de riesgo."
+          },
+          "response": []
+        }
+      ],
+      "description": "Tracking de actividad de alumnos (`POST /analytics/events`) y dashboard administrativo de métricas (`GET /admin/analytics/*`). Solo admin/root en endpoints de lectura."
+    },
+    {
       "name": "Setup",
       "item": [
         {

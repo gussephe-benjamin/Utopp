@@ -22,16 +22,16 @@ export function AuthSplitLayout({ children }: AuthSplitLayoutProps) {
     <div className="flex min-h-screen flex-col bg-[#0F1117] md:h-screen md:flex-row md:overflow-hidden">
       <AuthMobileLogo />
 
-      <div className="relative hidden h-screen w-[55%] md:block">
+      <div className="relative hidden h-screen w-[55%] md:min-h-0 md:block md:w-[52%] lg:w-[55%]">
         <AuthLeftPanel />
       </div>
 
       <div
         ref={rightPanelRef}
-        className="relative flex flex-1 flex-col md:h-screen md:w-[45%] md:overflow-y-auto"
+        className="relative flex flex-1 flex-col md:h-screen md:min-h-0 md:w-[48%] md:overflow-y-auto lg:w-[45%]"
       >
         <AuthAmbientBackground containerRef={rightPanelRef} />
-        <div className="relative z-10 flex flex-1 items-start justify-center px-4 py-6 md:items-center md:px-6 md:py-10 lg:px-10 md:[align-items:safe_center]">
+        <div className="relative z-10 flex flex-1 items-start justify-center px-4 py-6 md:items-center md:px-6 md:py-10 md:[@media(max-height:900px)]:py-6 lg:px-10 md:[align-items:safe_center]">
           {children}
         </div>
         <AuthMobileShowcase />

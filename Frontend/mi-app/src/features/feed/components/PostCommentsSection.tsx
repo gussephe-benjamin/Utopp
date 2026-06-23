@@ -6,6 +6,7 @@ import {
   deleteComment,
   type CommentOut,
 } from "../../../api/comments.api"
+import { trackEvent } from "../../../features/analytics/analyticsTracker"
 import { timeAgo } from "../../../shared/lib/date"
 import { ProfileAvatar } from "../../profile/components/ProfileAvatar"
 import { TW_UTOPP_GRADIENT_BR } from "../../../shared/constants/brand"
@@ -70,6 +71,7 @@ export function PostCommentsSection({ postId, currentUserId, onCountChange }: Po
         return next
       })
       setText("")
+      trackEvent("post_commented", { post_id: postId })
     } catch {
       setError("No se pudo publicar el comentario.")
     } finally {

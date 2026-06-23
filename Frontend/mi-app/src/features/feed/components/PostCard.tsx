@@ -39,6 +39,7 @@ import { PostImageViewerModal } from "./PostImageViewerModal";
 import { UserAvatar } from "./UserAvatar";
 import { resolvePostImageUrl } from "../../../shared/lib/postImageUrl";
 import { ProfileLink } from "../../profile/components/ProfileLink";
+import { trackEvent, trackPostViewedThrottled } from "../../../features/analytics/analyticsTracker";
 import { PostCommentsSection } from "./PostCommentsSection";
 
 type PostCardProps = {
@@ -276,6 +277,9 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
       const result = await toggleReaction(post.id);
       setReacted(result.reacted);
       setReactionCount(result.count);
+      if (result.reacted) {
+        trackEvent("post_liked", { post_id: post.id });
+      }
     } catch (e) {
       console.error(e);
       setReacted(prevReacted);
@@ -520,6 +524,7 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
         initial="hidden"
         whileInView="show"
         viewport={{ once: true, margin: "-50px" }}
+        onViewportEnter={() => trackPostViewedThrottled(post.id)}
         className={`relative mx-auto h-auto w-full overflow-hidden rounded-[22px] border bg-white shadow-[0_4px_20px_rgba(0,0,0,0.015)] transition-all duration-300 hover:-translate-y-[1px] hover:shadow-[0_8px_30px_rgba(0,0,0,0.03)] ${
           post.is_pinned
             ? "border-amber-200/75 shadow-[0_4px_24px_rgba(245,158,11,0.04)] ring-1 ring-amber-100/30"

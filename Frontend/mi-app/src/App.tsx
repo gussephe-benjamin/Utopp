@@ -18,11 +18,14 @@ import AdminOrganizationsPage from "./pages/admin/AdminOrganizationsPage"
 import AdminRolesPage from "./pages/admin/AdminRolesPage"
 import AdminTermsPage from "./pages/admin/AdminTermsPage"
 import AdminPostsPage from "./pages/AdminPostsPage"
+import AdminMetricsPage from "./pages/admin/AdminMetricsPage"
+import { AnalyticsProvider } from "./features/analytics/AnalyticsProvider"
 
 function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+      <AnalyticsProvider>
         <Routes>
           <Route path="/" element={<AppRoute />} />
 
@@ -61,6 +64,7 @@ function App() {
               }
             >
               <Route index element={<AdminOverviewPage />} />
+              <Route path="metricas" element={<AdminMetricsPage />} />
               <Route path="alumnos" element={<AdminStudentsPage />} />
               <Route path="organizaciones" element={<AdminOrganizationsPage />} />
               <Route path="publicaciones" element={<AdminPostsPage />} />
@@ -81,6 +85,7 @@ function App() {
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+      </AnalyticsProvider>
       </BrowserRouter>
     </AuthProvider>
   )

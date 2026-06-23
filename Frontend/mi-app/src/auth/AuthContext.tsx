@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react"
 import type { ReactNode } from "react"
+import { trackEvent } from "../features/analytics/analyticsTracker"
 import { fetchAuthMe, logoutSession, type AuthMeUser } from "../api/auth.api"
 import { registerAuthLogoutHandler } from "../api/axios"
 import { clearStoredAccessToken } from "../shared/lib/authToken"
@@ -32,6 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     try {
+      trackEvent("logout")
       await logoutSession()
     } catch {
       /* cookie may already be cleared */

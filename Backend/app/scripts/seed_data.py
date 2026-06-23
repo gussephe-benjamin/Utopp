@@ -165,6 +165,15 @@ def main() -> int:
                 "avatar_seed": "IEEE UTEC",
             },
             {
+                "email": "ieee.aess@utec.edu.pe",
+                "full_name": "IEEE AESS UTEC",
+                "contacts": {
+                    "web": "https://ieee.utec.edu.pe/aess",
+                },
+                "description": "Capítulo estudiantil de IEEE Aerospace and Electronic Systems Society en UTEC.",
+                "avatar_seed": "IEEE AESS UTEC",
+            },
+            {
                 "email": "careercenter@utec.edu.pe",
                 "full_name": "UTEC Career Center",
                 "contacts": {
@@ -312,6 +321,15 @@ def main() -> int:
         # 5. Seeding de Posts/Eventos por organizaciones
         posts_data = [
             {
+                "org_email": "ieee.aess@utec.edu.pe",
+                "title": "Charla: Sistemas Aeroespaciales y Drones",
+                "description": "Conoce las últimas tendencias en sistemas aeroespaciales, sensores remotos y aplicaciones con drones en la industria.",
+                "post_type": "event",
+                "subtype": "conferencia",
+                "tags": ["Aeroespacial", "Drones", "IEEE"],
+                "deadline_days": 7,
+            },
+            {
                 "org_email": "ieee@utec.edu.pe",
                 "title": "Hackathon UTEC 2026",
                 "description": "Participa en la hackathon más grande de la universidad. Desarrolla soluciones reales para problemáticas locales en 36 horas continuas de programación.",
@@ -412,6 +430,7 @@ def main() -> int:
         # 6. Poblando Relaciones de Follow (Seguimiento)
         follows_data = [
             ("esteban@utec.edu.pe", "ieee@utec.edu.pe"),
+            ("esteban@utec.edu.pe", "ieee.aess@utec.edu.pe"),
             ("esteban@utec.edu.pe", "techoperu@utec.edu.pe"),
             ("esteban@utec.edu.pe", "emprende@utec.edu.pe"),
             ("juan.perez@utec.edu.pe", "ieee@utec.edu.pe"),
