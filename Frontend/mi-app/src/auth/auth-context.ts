@@ -7,6 +7,7 @@ export interface AuthContextType {
   status: AuthStatus
   user: AuthMeUser | null
   refreshSession: () => Promise<void>
+  applySession: (user: AuthMeUser) => void
   logout: () => Promise<void>
 }
 

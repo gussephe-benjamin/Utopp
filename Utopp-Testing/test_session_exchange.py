@@ -63,6 +63,7 @@ class TestSessionExchange:
         data = response.json()
         assert data["authenticated"] is True
         assert data["user"]["email"] == "alumno@utec.edu.pe"
+        assert data.get("access_token")
         assert settings.SESSION_COOKIE_NAME in response.cookies
 
     def test_exchange_rejects_reused_token(self, client):

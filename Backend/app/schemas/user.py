@@ -234,6 +234,26 @@ class SessionExchangeIn(BaseModel):
     session_token: str = Field(..., min_length=10)
 
 
+class SessionExchangeOut(BaseModel):
+    """Respuesta tras canjear session_token: cookie + Bearer para Safari/cross-site."""
+    authenticated: bool = True
+    access_token: str
+    token_type: str = "bearer"
+    user: "AuthMeUserOut"
+
+
+class AuthMeUserOut(BaseModel):
+    """Usuario en respuestas de /auth/me y session exchange."""
+    id: int
+    email: EmailStr
+    full_name: str | None = None
+    onboarding_completed: bool
+    needs_terms: bool = False
+    needs_terms_consent: bool = False
+    needs_privacy_consent: bool = False
+    profile_image_url: str | None = None
+
+
 class GoogleOAuthRegisterIn(BaseModel):
     """Completa registro Google tras aceptar términos (perfil en cookie o token)."""
     terms_document_id: int = Field(..., ge=1)

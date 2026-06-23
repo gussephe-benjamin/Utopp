@@ -27,7 +27,15 @@ from app.database.session import get_db
 from app.dependencies.auth import get_current_user, get_optional_user
 from app.models.user import User
 from app.models.user_profile_image import UserProfileImage
-from app.schemas.user import GoogleOAuthRegisterIn, LoginRequest, SessionExchangeIn, TokenOut, UserCreate, UserOut
+from app.schemas.user import (
+    GoogleOAuthRegisterIn,
+    LoginRequest,
+    SessionExchangeIn,
+    SessionExchangeOut,
+    TokenOut,
+    UserCreate,
+    UserOut,
+)
 from app.services import legal_service
 from app.services.google_oauth_service import (
     build_google_auth_url,
@@ -307,7 +315,7 @@ def google_oauth_pending(request: Request, pending_token: str | None = None):
 # POST /auth/session/exchange
 # Canje de token de sesión de un solo uso (handoff cross-origin).
 # ============================================================
-@router.post("/session/exchange")
+@router.post("/session/exchange", response_model=SessionExchangeOut)
 def session_exchange(
     payload: SessionExchangeIn,
     response: Response,
@@ -327,11 +335,12 @@ def session_exchange(
             detail="Token de sesión inválido o expirado",
         )
 
+    access_token = create_access_token(subject=str(user.id))
     set_session_cookie(response, user.id)
-    return {
-        "authenticated": True,
-        "user": _serialize_auth_user(db, user),
-    }
+    return SessionExchangeOut(
+        access_token=access_token,
+        user=_serialize_auth_user(db, user),
+    )
 
 
 # ============================================================

@@ -2,11 +2,17 @@ import { useCallback, useEffect, useState } from "react"
 import type { ReactNode } from "react"
 import { fetchAuthMe, logoutSession, type AuthMeUser } from "../api/auth.api"
 import { registerAuthLogoutHandler } from "../api/axios"
+import { clearStoredAccessToken } from "../shared/lib/authToken"
 import { AuthContext, type AuthStatus } from "./auth-context"
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>("initializing")
   const [user, setUser] = useState<AuthMeUser | null>(null)
+
+  const applySession = useCallback((sessionUser: AuthMeUser) => {
+    setUser(sessionUser)
+    setStatus("authenticated")
+  }, [])
 
   const refreshSession = useCallback(async () => {
     try {
@@ -30,6 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       /* cookie may already be cleared */
     }
+    clearStoredAccessToken()
     setUser(null)
     setStatus("unauthenticated")
   }, [])
@@ -43,7 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [refreshSession])
 
   return (
-    <AuthContext.Provider value={{ status, user, refreshSession, logout }}>
+    <AuthContext.Provider value={{ status, user, refreshSession, applySession, logout }}>
       {children}
     </AuthContext.Provider>
   )

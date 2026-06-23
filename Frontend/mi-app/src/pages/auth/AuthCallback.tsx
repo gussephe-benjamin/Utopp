@@ -1,16 +1,17 @@
 import { useEffect, useRef } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
-import { exchangeSessionToken, getMe } from "../../api/auth.api"
+import { exchangeSessionToken } from "../../api/auth.api"
 import { useAuth } from "../../auth/useAuth"
 import { redirectAfterAuthSession } from "../../auth/postAuthRedirect"
 import { AUTH_CALLBACK } from "../../features/auth/constants/authCopy"
 import { TW_AUTH } from "../../features/auth/constants/authTheme"
 import { UTOPP_LOGO_SRC } from "../../shared/constants/brand"
+import { setStoredAccessToken } from "../../shared/lib/authToken"
 
 export default function AuthCallback() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const { refreshSession } = useAuth()
+  const { applySession } = useAuth()
   const startedRef = useRef(false)
 
   useEffect(() => {
@@ -30,15 +31,20 @@ export default function AuthCallback() {
 
     ;(async () => {
       try {
-        await exchangeSessionToken(sessionToken)
-        await refreshSession()
-        const me = await getMe()
-        redirectAfterAuthSession(navigate, me)
+        const session = await exchangeSessionToken(sessionToken)
+        if (!session.authenticated || !session.user) {
+          throw new Error("Sesión no autenticada")
+        }
+        if (session.access_token) {
+          setStoredAccessToken(session.access_token)
+        }
+        applySession(session.user)
+        redirectAfterAuthSession(navigate, session.user)
       } catch {
         navigate("/login?error=session_expired", { replace: true })
       }
     })()
-  }, [navigate, refreshSession, searchParams])
+  }, [applySession, navigate, searchParams])
 
   return (
     <div className={`flex min-h-screen flex-col items-center justify-center ${TW_AUTH.pageBg} px-4`}>

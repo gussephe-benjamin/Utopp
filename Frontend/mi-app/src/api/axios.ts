@@ -1,5 +1,6 @@
 import axios from "axios"
 import { resolveApiBaseUrl } from "../shared/lib/apiBaseUrl"
+import { getStoredAccessToken } from "../shared/lib/authToken"
 
 const api = axios.create({
   baseURL: resolveApiBaseUrl(),
@@ -16,6 +17,14 @@ export function registerAuthLogoutHandler(handler: () => Promise<void>) {
 export default api
 
 api.defaults.withCredentials = true
+
+api.interceptors.request.use((config) => {
+  const token = getStoredAccessToken()
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
 
 api.interceptors.response.use(
   (response) => response,

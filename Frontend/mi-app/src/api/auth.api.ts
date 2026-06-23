@@ -92,8 +92,15 @@ export async function loginSession(payload: { email: string; password: string })
 }
 
 /** Canjea token de sesión de un solo uso tras OAuth cross-origin. */
-export async function exchangeSessionToken(sessionToken: string): Promise<AuthMeResponse> {
-  const { data } = await api.post<AuthMeResponse>("/auth/session/exchange", {
+export interface SessionExchangeResponse {
+  authenticated: boolean
+  access_token: string
+  token_type: string
+  user: AuthMeUser
+}
+
+export async function exchangeSessionToken(sessionToken: string): Promise<SessionExchangeResponse> {
+  const { data } = await api.post<SessionExchangeResponse>("/auth/session/exchange", {
     session_token: sessionToken,
   })
   return data
