@@ -350,6 +350,252 @@
     transition: opacity 200ms ease;
   }
 
+  .auth-ambient-float,
+  .auth-ambient-drift,
+  .auth-ambient-drift-alt,
+  .auth-ambient-drift-slow,
+  .auth-ambient-pulse,
+  .auth-scanline-pattern-animate {
+    animation: none;
+  }
+
 }
 
+
+/* ─── Auth ambient background (right panel) ─── */
+
+@keyframes authAmbientFloat {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  33% {
+    transform: translate3d(18px, -26px, 0);
+  }
+  66% {
+    transform: translate3d(-14px, 20px, 0);
+  }
+}
+
+@keyframes authAmbientFloatAlt {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  40% {
+    transform: translate3d(-22px, 16px, 0);
+  }
+  70% {
+    transform: translate3d(16px, -32px, 0);
+  }
+}
+
+@keyframes authAmbientDrift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  25% {
+    transform: translate3d(26px, -18px, 0) rotate(1.8deg);
+  }
+  50% {
+    transform: translate3d(-16px, 28px, 0) rotate(-1.2deg);
+  }
+  75% {
+    transform: translate3d(20px, 12px, 0) rotate(0.8deg);
+  }
+}
+
+@keyframes authAmbientDriftAlt {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  30% {
+    transform: translate3d(-28px, 22px, 0) rotate(-2deg);
+  }
+  60% {
+    transform: translate3d(18px, -20px, 0) rotate(1.4deg);
+  }
+}
+
+@keyframes authAmbientPulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
+@keyframes authScanlineFlow {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(0, 7px, 0);
+  }
+}
+
+.auth-ambient-root {
+  contain: layout style paint;
+  --parallax-x: 0px;
+  --parallax-y: 0px;
+}
+
+.auth-ambient-layer-base {
+  background-color: #0f1117;
+  background-image:
+    radial-gradient(ellipse 80% 60% at 70% 40%, rgba(109, 93, 252, 0.1) 0%, transparent 70%),
+    radial-gradient(ellipse 70% 50% at 30% 85%, rgba(139, 92, 246, 0.07) 0%, transparent 65%),
+    radial-gradient(ellipse 50% 40% at 90% 10%, rgba(21, 25, 37, 0.8) 0%, transparent 70%);
+}
+
+.auth-ambient-layer-overlay {
+  background: radial-gradient(
+    ellipse 90% 70% at 50% 80%,
+    transparent 35%,
+    rgba(15, 17, 23, 0.45) 100%
+  );
+  opacity: 0.3;
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .auth-ambient-layer-overlay {
+    opacity: 0.5;
+  }
+}
+
+.auth-ambient-float {
+  will-change: transform;
+  animation: authAmbientFloat 12s ease-in-out infinite;
+}
+
+.auth-ambient-float-alt {
+  will-change: transform;
+  animation: authAmbientFloatAlt 14s ease-in-out infinite;
+}
+
+.auth-ambient-drift {
+  will-change: transform;
+  animation: authAmbientDrift 18s ease-in-out infinite;
+}
+
+.auth-ambient-drift-alt {
+  will-change: transform;
+  animation: authAmbientDriftAlt 20s ease-in-out infinite;
+}
+
+.auth-ambient-drift-slow {
+  will-change: transform;
+  animation: authAmbientDrift 24s ease-in-out infinite;
+}
+
+.auth-ambient-pulse {
+  will-change: opacity;
+  animation: authAmbientPulse 8s ease-in-out infinite;
+}
+
+.auth-scanline-pattern-animate {
+  animation: authScanlineFlow 6s linear infinite;
+}
+
+.auth-ambient-parallax-orbs {
+  transform: translate3d(
+    calc(var(--parallax-x) * 0.3),
+    calc(var(--parallax-y) * 0.3),
+    0
+  );
+}
+
+.auth-ambient-parallax-particles {
+  transform: translate3d(
+    calc(var(--parallax-x) * 0.5),
+    calc(var(--parallax-y) * 0.5),
+    0
+  );
+}
+
+.auth-ambient-parallax-shapes {
+  transform: translate3d(
+    calc(var(--parallax-x) * 0.72),
+    calc(var(--parallax-y) * 0.72),
+    0
+  );
+}
+
+.auth-scanline-shape {
+  pointer-events: none;
+}
+
+.auth-ambient-particle {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.auth-scanline-fill {
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 5px,
+    rgba(109, 93, 252, 0.3) 5px,
+    rgba(109, 93, 252, 0.5) 6px
+  );
+  box-shadow: 0 0 40px rgba(109, 93, 252, 0.15);
+}
+
+.auth-scanline-shape--glow-secondary .auth-scanline-fill {
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 4px,
+    rgba(139, 92, 246, 0.25) 4px,
+    rgba(139, 92, 246, 0.45) 5px
+  );
+  box-shadow: 0 0 32px rgba(139, 92, 246, 0.12);
+}
+
+.auth-ambient-shape-mobile,
+.auth-ambient-orb-mobile {
+  display: block;
+}
+
+@media (min-width: 768px) {
+  .auth-ambient-shape-mobile,
+  .auth-ambient-orb-mobile {
+    display: none;
+  }
+}
+
+/* Mobile: fewer elements, same visual intensity */
+@media (max-width: 767px) {
+  .auth-ambient-orb-mobile {
+    filter: blur(40px);
+  }
+
+  .auth-ambient-shape-tablet,
+  .auth-ambient-shape-desktop,
+  .auth-ambient-orb-tablet,
+  .auth-ambient-orb-desktop {
+    display: none;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .auth-ambient-shape-desktop,
+  .auth-ambient-orb-desktop {
+    display: none;
+  }
+}
+
+@media (min-width: 1024px) {
+  .auth-ambient-shape-tablet {
+    display: none;
+  }
+}
 

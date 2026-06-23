@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Briefcase, CalendarDays, MessageCircle, Sparkles, Users } from "lucide-react"
+import { Briefcase, CalendarDays, MessageCircle, Users } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import {
   AUTH_BACKGROUND_IMAGE_URL,
@@ -7,10 +7,8 @@ import {
 } from "../../../shared/constants/brand"
 import { AUTH_VALUE } from "../constants/authCopy"
 import { TW_AUTH } from "../constants/authTheme"
-import { useAuthShowcase } from "../hooks/useAuthShowcase"
 import { AuthDecorativeShapes } from "./AuthDecorativeShapes"
-import { AuthLatestEvents } from "./AuthLatestEvents"
-import { OrgCarousel } from "./OrgCarousel"
+import { AuthShowcaseSection } from "./AuthShowcaseSection"
 
 const benefitIcons: LucideIcon[] = [MessageCircle, CalendarDays, Users, Briefcase]
 
@@ -41,37 +39,6 @@ function useIsMdUp(): boolean {
   }, [])
 
   return isMdUp
-}
-
-function AuthShowcaseSection() {
-  const { events, organizations, loading, hasEvents, hasOrganizations } =
-    useAuthShowcase()
-
-  if (!loading && !hasEvents && !hasOrganizations) return null
-
-  return (
-    <div className="mt-10 space-y-3 [@media(max-height:860px)]:mt-6 [@media(max-height:660px)]:hidden">
-      {(loading || hasEvents) && (
-        <div className="flex items-center gap-2 px-1">
-          <CalendarDays className="h-4 w-4 shrink-0 text-white/60" aria-hidden />
-          <p className="text-xs font-semibold uppercase tracking-wide text-white/50">
-            Últimos eventos
-          </p>
-        </div>
-      )}
-      <AuthLatestEvents events={events} loading={loading} />
-
-      {(loading || hasOrganizations) && (
-        <div className="flex items-center gap-2 px-1 pt-2">
-          <Sparkles className="h-4 w-4 shrink-0 text-white/60" aria-hidden />
-          <p className="text-xs font-semibold uppercase tracking-wide text-white/50">
-            Organizaciones en Utopp
-          </p>
-        </div>
-      )}
-      <OrgCarousel organizations={organizations} loading={loading} />
-    </div>
-  )
 }
 
 export function AuthLeftPanel() {
@@ -120,7 +87,7 @@ export function AuthLeftPanel() {
           })}
         </ul>
 
-        {isMdUp && <AuthShowcaseSection />}
+        {isMdUp && <AuthShowcaseSection variant="desktop" />}
       </div>
     </div>
   )

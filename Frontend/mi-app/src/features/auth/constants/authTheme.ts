@@ -14,10 +14,25 @@ export const AUTH_THEME = {
   error: "#EF4444",
 } as const
 
+/** Tokens del fondo ambiental del panel derecho. */
+export const AUTH_AMBIENT = {
+  base: "#0F1117",
+  surface: "#151925",
+  glowPrimary: "#6D5DFC",
+  glowSecondary: "#8B5CF6",
+  glowAccent: "#A855F7",
+  orbOpacity: { all: 0.16 },
+  shapeOpacity: { all: 0.42 },
+  particleOpacity: { min: 0.25, max: 0.7 },
+  particleCount: { desktop: 22, mobile: 14 },
+  particleSize: { min: 3, max: 6 },
+  particleSpeed: 24,
+} as const
+
 /** Clases Tailwind reutilizables (literales para JIT). */
 export const TW_AUTH = {
   pageBg: "bg-[#0F1117]",
-  card: "rounded-3xl border border-white/[0.08] bg-[#171A23]/90 backdrop-blur-xl shadow-[0_24px_80px_-24px_rgba(0,0,0,0.6)]",
+  card: "relative z-10 rounded-3xl border border-white/[0.08] bg-[rgba(23,26,35,0.82)] backdrop-blur-[20px] shadow-[0_24px_80px_-24px_rgba(0,0,0,0.6)]",
   cardTransition: "transition-[box-shadow,transform] duration-[250ms] ease-out motion-reduce:transition-none",
   heading: "font-display text-white",
   subtitle: "text-[#B8C0CC]",
