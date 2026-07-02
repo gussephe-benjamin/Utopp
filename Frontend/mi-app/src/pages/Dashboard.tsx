@@ -12,7 +12,6 @@ import FeedModeResolver from '../features/feed/FeedModeResolver'
 import { AppLink } from '../shared/navigation/AppLink'
 import { TW_UTOPP_GRADIENT_BR } from '../shared/constants/brand'
 import { ProfileAvatar } from '../features/profile/components/ProfileAvatar'
-import { buildUtoppFormularioSsoUrl } from '../shared/lib/utoppFormularioUrl'
 
 const FALLBACK_MENU_ANCHOR: MenuPopoverAnchor = { top: 64, right: 12, minWidth: 40 }
 
@@ -25,11 +24,6 @@ export default function DashboardLayout() {
   const location  = useLocation()
 
   const { canCreate, allowedTypes, roleName } = useRole()
-  const canCreateEvent = allowedTypes.includes('event')
-  const handleOpenUtoppFormulario = () => {
-    const url = buildUtoppFormularioSsoUrl()
-    if (url) window.open(url, '_blank', 'noopener,noreferrer')
-  }
 
   useEffect(() => {
     getMe()
@@ -199,8 +193,6 @@ export default function DashboardLayout() {
         feedCategoryFiltersActive={isFeedActive && feedCategoryFiltersActive}
         onOpenCreate={() => setShowWizard(true)}
         canCreate={canCreate}
-        canCreateEvent={canCreateEvent}
-        onOpenUtoppFormulario={handleOpenUtoppFormulario}
         avatarUrl={avatarUrl}
         userId={currentUserId}
         displayName={displayName}

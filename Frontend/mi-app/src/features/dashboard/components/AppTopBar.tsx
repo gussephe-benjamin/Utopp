@@ -1,5 +1,5 @@
 import type { RefObject } from "react";
-import { ListFilter, Plus, Shield, Ticket } from "lucide-react";
+import { ListFilter, Plus, Shield } from "lucide-react";
 import { UtoppBrandMark } from "../../../shared/brand/UtoppBrandMark";
 import { AppLink } from "../../../shared/navigation/AppLink";
 import { EventSearchBar } from "../../feed/components/EventSearchBar";
@@ -31,10 +31,6 @@ type AppTopBarProps = {
   canAccessAdmin?: boolean;
   /** Anclaje del popover de filtros del feed. */
   feedFiltersTriggerRef?: RefObject<HTMLButtonElement | null>;
-  /** Muestra el acceso a Utopp Formulario (roles que pueden crear eventos). */
-  canCreateEvent?: boolean;
-  /** Abre Utopp Formulario en una pestaña nueva con SSO. */
-  onOpenUtoppFormulario?: () => void;
 };
 
 export function AppTopBar({
@@ -49,8 +45,6 @@ export function AppTopBar({
   isProfileRoute,
   canAccessAdmin = false,
   feedFiltersTriggerRef,
-  canCreateEvent = false,
-  onOpenUtoppFormulario,
 }: AppTopBarProps) {
   return (
     <header className="hidden md:block fixed top-0 left-0 right-0 z-50 h-14 bg-white/95 backdrop-blur-md border-b border-gray-200/80 shadow-[0_1px_12px_rgba(0,0,0,0.06)]">
@@ -83,18 +77,6 @@ export function AppTopBar({
             >
               <Plus className="w-4 h-4 shrink-0 stroke-[3]" stroke="currentColor" aria-hidden />
               <span className="hidden sm:inline">Crear oportunidad</span>
-            </button>
-          )}
-
-          {canCreateEvent && onOpenUtoppFormulario && (
-            <button
-              type="button"
-              onClick={onOpenUtoppFormulario}
-              title="Crear evento con boletos en Utopp Formulario"
-              className="w-10 h-10 p-0 rounded-full sm:w-auto sm:h-auto sm:px-4 sm:py-2 flex items-center justify-center gap-1.5 sm:gap-2 text-gray-700 bg-gray-50 border border-gray-200 text-xs sm:text-sm font-semibold hover:bg-gray-100 active:scale-[0.98] transition-all whitespace-nowrap"
-            >
-              <Ticket className="w-4 h-4 shrink-0" strokeWidth={2} aria-hidden />
-              <span className="hidden sm:inline">Crear evento</span>
             </button>
           )}
 

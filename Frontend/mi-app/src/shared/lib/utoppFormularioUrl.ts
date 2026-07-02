@@ -1,4 +1,4 @@
-import { getStoredAccessToken } from "./authToken"
+import api from "../../api/axios"
 
 /** URL pública de Utopp Formulario en producción. */
 export const PRODUCTION_UF_URL = "https://www.formulario.utopp.app"
@@ -23,11 +23,32 @@ function resolveUfBaseUrl(): string {
 }
 
 /**
- * URL para que un organizador entre a Utopp Formulario con su sesión de
- * Utopp ya iniciada (SSO). Null si no hay token de Utopp en esta sesión.
+ * Abre Utopp Formulario en una pestaña nueva con la sesión de Utopp ya
+ * iniciada (SSO). La sesión de Utopp vive en una cookie HttpOnly, así que
+ * el token se pide al backend en el momento del clic (POST /auth/refresh,
+ * autenticado por esa misma cookie) en vez de leerlo del cliente.
+ *
+ * La pestaña se abre de forma síncrona (antes del await) para que los
+ * navegadores no la bloqueen como popup, y se navega una vez llega el token.
  */
-export function buildUtoppFormularioSsoUrl(): string | null {
-  const token = getStoredAccessToken()
-  if (!token) return null
-  return `${resolveUfBaseUrl()}/dashboard?sso_token=${encodeURIComponent(token)}`
+export async function openUtoppFormularioSso(): Promise<void> {
+  // Sin "noopener" en las features: con noopener window.open devuelve null
+  // y perderíamos el handle para navegar la pestaña. El vínculo con el
+  // opener se corta manualmente justo después.
+  const newTab = window.open("", "_blank")
+  if (newTab) newTab.opener = null
+  try {
+    const { data } = await api.post("/auth/refresh")
+    const token = data?.access_token as string | undefined
+    if (!token) {
+      throw new Error("No se recibió un token de sesión válido")
+    }
+    if (!newTab) {
+      throw new Error("El navegador bloqueó la pestaña nueva. Habilita las ventanas emergentes e inténtalo de nuevo.")
+    }
+    newTab.location.href = `${resolveUfBaseUrl()}/dashboard?sso_token=${encodeURIComponent(token)}`
+  } catch (err) {
+    newTab?.close()
+    throw err
+  }
 }

@@ -28,7 +28,7 @@ import {
 } from '../shared/lib/wordCount'
 import { DEFAULT_POST_ASPECT_RATIO, normalizeAspectRatio, type PostAspectRatio } from '../shared/lib/aspectRatio'
 import { formatApiError } from '../shared/lib/apiError'
-import { buildUtoppFormularioSsoUrl } from '../shared/lib/utoppFormularioUrl'
+import { openUtoppFormularioSso } from '../shared/lib/utoppFormularioUrl'
 
 // Estado inicial vacío del formulario
 const initialFormData: WizardFormData = {
@@ -114,9 +114,12 @@ export default function PublicationWizard({ isOpen, onClose, allowedTypes }: Pub
   const [showConfirmClose, setShowConfirmClose] = useState(false)
 
   const handleOpenUtoppFormulario = () => {
-    const url = buildUtoppFormularioSsoUrl()
-    if (url) window.open(url, '_blank', 'noopener,noreferrer')
-    onClose()
+    setPublishError(null)
+    openUtoppFormularioSso()
+      .then(() => onClose())
+      .catch(() => {
+        setPublishError('No se pudo abrir Utopp Formulario. Intenta de nuevo.')
+      })
   }
 
   // Bloquear el scroll del body mientras el modal está abierto
