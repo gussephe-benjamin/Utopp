@@ -43,7 +43,7 @@ class TestParticipantsAPI:
             assert token, f"Missing access_token: {login_response.text}"
 
             headers = {"Authorization": f"Bearer {token}"}
-            me_response = client.get("/auth/me", headers=headers)
+            me_response = client.get("/users/me", headers=headers)
             assert me_response.status_code == 200, me_response.text
             user_data = me_response.json()
 
@@ -207,7 +207,10 @@ class TestParticipantsAPI:
         )
         assert patch_resp.status_code == 200
         assert list_resp.status_code == 200
-        assert any(p["user_id"] == created_participation_context["participant"]["id"] for p in list_resp.json())
+        assert any(
+            p["full_name"] == "Test Participants User" and p["source"] == "utopp"
+            for p in list_resp.json()
+        )
 
     # ==================== Authentication / Authorization Tests (12) ====================
 
@@ -513,7 +516,7 @@ class TestParticipantsAPI:
         data = response.json()
         if len(data) > 0:
             first = data[0]
-            for field in ["id", "post_id", "user_id", "status", "joined_at"]:
+            for field in ["status", "full_name", "avatar_url", "is_guest", "source", "joined_at"]:
                 assert field in first, f"Missing field: {field}"
 
     def test_count_participants_response_schema(self, client, created_participation_context):

@@ -69,6 +69,16 @@ export function WeeklyEventsWidget({
                     <p className="mt-0.5 truncate text-[10px] text-gray-400">
                       Organizado por: {post.user_name || "Organización"}
                     </p>
+                    {post.registration_url && (
+                      <a
+                        href={post.registration_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-1 inline-block text-[10px] font-bold text-violet-600 hover:text-violet-800"
+                      >
+                        Inscribirse →
+                      </a>
+                    )}
                   </div>
                 </div>
               )

@@ -302,6 +302,8 @@ export interface FeedPostOut {
   pin_priority: number
   is_saved: boolean
   participation_status?: string
+  /** URL pública de inscripción en Utopp Formulario (solo eventos vinculados). */
+  registration_url?: string
   status?: string
   /** Número de reacciones (me gusta) de la publicación. */
   reaction_count?: number

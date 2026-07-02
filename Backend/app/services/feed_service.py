@@ -5,6 +5,7 @@ from typing import Optional, List
 from sqlalchemy import select, func, or_, and_, case, literal_column, text as sa_text
 from sqlalchemy.orm import Session, selectinload
 
+from app.core.config import settings
 from app.models.post import Post, PostStatus, PostType, SubPostType, TimeStatus as TSEnum
 from app.models.saved_post import SavedPost
 from app.models.event_participant import PostParticipant
@@ -176,6 +177,25 @@ def build_feed(
         ).all()
         profile_image_map = {img.user_id: img.url for img in profile_images}
 
+    # URLs de inscripción de Utopp Formulario (lectura cross-schema)
+    registration_url_map: dict[int, str] = {}
+    if post_ids and db.get_bind().dialect.name == "postgresql":
+        try:
+            rows = db.execute(
+                sa_text(
+                    "SELECT utopp_post_id, id FROM formulario.events "
+                    "WHERE utopp_post_id = ANY(:ids)"
+                ),
+                {"ids": post_ids},
+            ).all()
+            base_url = settings.UF_FRONTEND_URL.rstrip("/")
+            registration_url_map = {
+                int(row[0]): f"{base_url}/e/{row[1]}" for row in rows
+            }
+        except Exception:
+            # El esquema formulario puede no existir en este entorno
+            db.rollback()
+
     # Construir respuesta
     items = []
     for post in posts:
@@ -216,6 +236,7 @@ def build_feed(
                 aspect_ratio=getattr(post, "aspect_ratio", None) or "4:5",
                 is_saved=post.id in saved_post_ids,
                 participation_status=participation_map.get(post.id),
+                registration_url=registration_url_map.get(post.id),
                 reaction_count=reaction_count_map.get(post.id, 0),
                 user_reacted=post.id in user_reacted_ids,
                 comment_count=comment_count_map.get(post.id, 0),

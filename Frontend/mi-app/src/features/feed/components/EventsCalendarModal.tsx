@@ -450,6 +450,16 @@ export function EventsCalendarModal({
                                 {post.user_name || "Organización"}
                               </span>
                             </div>
+                            {post.registration_url && (
+                              <a
+                                href={post.registration_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="mt-2.5 inline-flex items-center rounded-full bg-gradient-to-r from-blue-600 to-fuchsia-500 px-3 py-1 text-[11px] font-bold text-white shadow-sm transition-all hover:brightness-105 active:scale-95"
+                              >
+                                Inscribirse
+                              </a>
+                            )}
                           </div>
                         </div>
                       )

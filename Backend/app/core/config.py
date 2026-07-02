@@ -10,14 +10,18 @@ logger = logging.getLogger("utopp.api")
 _LOCAL_CORS_ORIGINS = [
     "http://localhost:3000",
     "http://localhost:5173",
+    "http://localhost:5174",
     "http://127.0.0.1:3000",
     "http://127.0.0.1:5173",
+    "http://127.0.0.1:5174",
 ]
 
 _KNOWN_PRODUCTION_CORS_ORIGINS = [
     "https://utopp-fronted.onrender.com",
     "https://www.utopp.app",
     "https://utopp.app",
+    "https://formulario.utopp.app",
+    "https://www.formulario.utopp.app",
 ]
 
 _DEFAULT_LOCAL_REDIRECT_URI = "http://localhost:8000/auth/google/callback"
@@ -40,6 +44,7 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: str = ""
     GOOGLE_REDIRECT_URI: str = _DEFAULT_LOCAL_REDIRECT_URI
     FRONTEND_URL: str = _DEFAULT_LOCAL_FRONTEND_URL
+    UF_FRONTEND_URL: str = "http://localhost:5174"
     BACKEND_PUBLIC_URL: str = ""
     FRONTEND_PUBLIC_URL: str = ""
     ALLOWED_ORIGINS: str = ""

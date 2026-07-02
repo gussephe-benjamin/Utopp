@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Ticket } from 'lucide-react'
 import {
   type PostType,
   POST_TYPE_LABELS,
@@ -22,14 +23,19 @@ interface Step1TypeSelectionProps {
   onSelectType: (type: PostType) => void
   /** Tipos permitidos según el rol del usuario. Si no se pasa, se muestran todos. */
   allowedTypes?: PostType[]
+  /** Abre Utopp Formulario (crear evento con boletos/QR) en una pestaña nueva. */
+  onOpenUtoppFormulario?: () => void
 }
 
-export default function Step1TypeSelection({ onSelectType, selectedType, allowedTypes }: Step1TypeSelectionProps) {
+export default function Step1TypeSelection({ onSelectType, selectedType, allowedTypes, onOpenUtoppFormulario }: Step1TypeSelectionProps) {
   const [hoveredType, setHoveredType] = useState<PostType | null>(null)
 
   const visibleTypes = allowedTypes && allowedTypes.length > 0
     ? ALL_POST_TYPES.filter(t => allowedTypes.includes(t))
     : ALL_POST_TYPES
+
+  // Solo se ofrece crear evento con boletos si el rol ya puede crear "Evento".
+  const showUtoppFormularioCard = Boolean(onOpenUtoppFormulario) && visibleTypes.includes('event')
 
   return (
     <div>
@@ -77,6 +83,28 @@ export default function Step1TypeSelection({ onSelectType, selectedType, allowed
             )}
           </button>
         ))}
+
+        {showUtoppFormularioCard && (
+          <button
+            type="button"
+            onClick={onOpenUtoppFormulario}
+            className="p-6 border-2 border-dashed border-violet-300 rounded-xl transition-all duration-200 text-left group relative overflow-hidden hover:border-violet-500 hover:bg-violet-50 hover:shadow-md"
+          >
+            <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-violet-100 to-fuchsia-100 rounded-full -mr-10 -mt-10 opacity-50 group-hover:opacity-75 transition-opacity" />
+
+            <div className="text-[#9333EA] mb-3 relative z-10 group-hover:scale-110 transition-transform duration-200">
+              <Ticket className="w-10 h-10 stroke-[1.8]" />
+            </div>
+
+            <h4 className="font-semibold text-gray-900 mb-2 relative z-10">
+              Evento con boletos
+            </h4>
+
+            <p className="text-sm text-gray-600 leading-relaxed relative z-10">
+              Crea el evento en Utopp Formulario: registro con QR y control de asistencia. Se abre en una pestaña nueva.
+            </p>
+          </button>
+        )}
       </div>
     </div>
   )
