@@ -27,6 +27,10 @@ import {
 } from "../../features/auth/constants/authCopy"
 import { ProfileAvatar } from "../../features/profile/components/ProfileAvatar"
 import { parseAuthApiError } from "../../shared/lib/apiErrors"
+import {
+  isAllowedUtoppFormularioUrl,
+  redirectToUtoppFormularioSso,
+} from "../../shared/lib/utoppFormularioUrl"
 import { TW_AUTH } from "../../features/auth/constants/authTheme"
 
 type AuthErrorCode = "access_denied" | "not_utec_email" | "session_expired"
@@ -40,12 +44,14 @@ function resolveErrorMessage(errorCode: string | null): string | null {
 
 export default function AuthEntry() {
   const navigate = useNavigate()
-  const { status, refreshSession } = useAuth()
+  const { status, user, refreshSession } = useAuth()
   const [searchParams, setSearchParams] = useSearchParams()
 
   const errorCode = searchParams.get("error") as AuthErrorCode | null
   const googleRegisterParam = searchParams.get("google_register") === "1"
   const pendingToken = searchParams.get("pending_token")
+  const formularioRedirect = searchParams.get("redirect")
+  const canReturnToFormulario = isAllowedUtoppFormularioUrl(formularioRedirect)
 
   const [registerMode, setRegisterMode] = useState(false)
   const [showEmailForm, setShowEmailForm] = useState(false)
@@ -64,6 +70,8 @@ export default function AuthEntry() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [checkingPending, setCheckingPending] = useState(true)
+  const [returningToFormulario, setReturningToFormulario] = useState(false)
+  const [formularioReturnFailed, setFormularioReturnFailed] = useState(false)
 
   const errorMessage = resolveErrorMessage(errorCode)
   const legalReady = !!termsDoc && !!privacyDoc && !legalLoadError
@@ -166,9 +174,17 @@ export default function AuthEntry() {
       await loginSession({ email: email.trim(), password })
       await refreshSession()
       const me = await getMe()
+      if (canReturnToFormulario && !me.needs_terms && me.onboarding_completed) {
+        setFormularioReturnFailed(false)
+        setReturningToFormulario(true)
+        await redirectToUtoppFormularioSso(formularioRedirect)
+        return
+      }
       redirectAfterAuthSession(navigate, me)
     } catch (err) {
       setSubmitError(parseAuthApiError(err))
+      setReturningToFormulario(false)
+      setFormularioReturnFailed(canReturnToFormulario)
     } finally {
       setIsLoggingIn(false)
     }
@@ -191,15 +207,45 @@ export default function AuthEntry() {
       })
       await refreshSession()
       const me = await getMe()
+      if (canReturnToFormulario && !me.needs_terms && me.onboarding_completed) {
+        setFormularioReturnFailed(false)
+        setReturningToFormulario(true)
+        await redirectToUtoppFormularioSso(formularioRedirect)
+        return
+      }
       redirectAfterAuthSession(navigate, me)
     } catch (err) {
       setSubmitError(parseAuthApiError(err))
+      setReturningToFormulario(false)
+      setFormularioReturnFailed(canReturnToFormulario)
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  if (status === "initializing" || checkingPending) {
+  useEffect(() => {
+    if (
+      status !== "authenticated" ||
+      !user ||
+      !canReturnToFormulario ||
+      returningToFormulario ||
+      formularioReturnFailed ||
+      user.needs_terms ||
+      !user.onboarding_completed
+    ) {
+      return
+    }
+
+    setReturningToFormulario(true)
+    setFormularioReturnFailed(false)
+    redirectToUtoppFormularioSso(formularioRedirect).catch((err) => {
+      setSubmitError(parseAuthApiError(err))
+      setFormularioReturnFailed(true)
+      setReturningToFormulario(false)
+    })
+  }, [canReturnToFormulario, formularioRedirect, formularioReturnFailed, returningToFormulario, status, user])
+
+  if (status === "initializing" || checkingPending || returningToFormulario) {
     return (
       <AuthPanel>
         <div className="flex flex-1 flex-col items-center justify-center gap-3 py-16 text-center">
@@ -214,6 +260,40 @@ export default function AuthEntry() {
   }
 
   if (status === "authenticated") {
+    if (canReturnToFormulario && user && !user.needs_terms && user.onboarding_completed && !formularioReturnFailed) {
+      return (
+        <AuthPanel>
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 py-16 text-center">
+            <div
+              className="h-8 w-8 animate-spin rounded-full border-2 border-white/10"
+              style={{ borderTopColor: "#6D5DFC" }}
+            />
+            <p className={`text-sm ${TW_AUTH.muted}`}>Volviendo a Utopp Formulario...</p>
+          </div>
+        </AuthPanel>
+      )
+    }
+
+    if (canReturnToFormulario && user && formularioReturnFailed) {
+      return (
+        <AuthPanel>
+          <div className="space-y-6">
+            <AuthHeader
+              title="No pudimos volver a Utopp Formulario"
+              subtitle="Tu sesión en Utopp está iniciada, pero el retorno automático falló."
+            />
+            {submitError && <AuthFormAlert message={submitError} />}
+            <button
+              type="button"
+              onClick={() => redirectAfterAuthSession(navigate, user)}
+              className={`w-full ${TW_AUTH.btnPrimary} ${TW_AUTH.focusRing}`}
+            >
+              Continuar en Utopp
+            </button>
+          </div>
+        </AuthPanel>
+      )
+    }
     return <Navigate to="/" replace />
   }
 
