@@ -7,6 +7,10 @@ import { AUTH_CALLBACK } from "../../features/auth/constants/authCopy"
 import { TW_AUTH } from "../../features/auth/constants/authTheme"
 import { UTOPP_LOGO_SRC } from "../../shared/constants/brand"
 import { setStoredAccessToken } from "../../shared/lib/authToken"
+import {
+  consumeRememberedUtoppFormularioReturnUrl,
+  redirectToUtoppFormularioSso,
+} from "../../shared/lib/utoppFormularioUrl"
 
 export default function AuthCallback() {
   const navigate = useNavigate()
@@ -39,6 +43,15 @@ export default function AuthCallback() {
           setStoredAccessToken(session.access_token)
         }
         applySession(session.user)
+        const formularioRedirect = consumeRememberedUtoppFormularioReturnUrl()
+        if (formularioRedirect && !session.user.needs_terms && session.user.onboarding_completed) {
+          try {
+            await redirectToUtoppFormularioSso(formularioRedirect)
+            return
+          } catch {
+            /* La sesión en Utopp quedó iniciada; si falla el retorno, seguimos al flujo normal. */
+          }
+        }
         redirectAfterAuthSession(navigate, session.user)
       } catch {
         navigate("/login?error=session_expired", { replace: true })

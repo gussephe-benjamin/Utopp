@@ -2,6 +2,7 @@ import api from "../../api/axios"
 
 /** URL pública de Utopp Formulario en producción. */
 export const PRODUCTION_UF_URL = "https://www.formulario.utopp.app"
+const FORMULARIO_RETURN_STORAGE_KEY = "utopp_formulario_return_url"
 
 const PRODUCTION_UF_BY_HOST: Record<string, string> = {
   "utopp-fronted.onrender.com": PRODUCTION_UF_URL,
@@ -28,6 +29,7 @@ function allowedUfOrigins(): Set<string> {
       resolveUfBaseUrl(),
       PRODUCTION_UF_URL,
       "https://formulario.utopp.app",
+      "https://utopp-formulario.onrender.com",
       "http://localhost:5174",
     ].map((value) => new URL(value).origin),
   )
@@ -40,6 +42,36 @@ export function isAllowedUtoppFormularioUrl(value: string | null | undefined): v
     return allowedUfOrigins().has(target.origin)
   } catch {
     return false
+  }
+}
+
+export function rememberUtoppFormularioReturnUrl(value: string | null | undefined): void {
+  if (!isAllowedUtoppFormularioUrl(value) || typeof window === "undefined") return
+  try {
+    window.sessionStorage.setItem(FORMULARIO_RETURN_STORAGE_KEY, value)
+  } catch {
+    /* sessionStorage can fail in private browsing; the direct redirect path still works. */
+  }
+}
+
+export function getRememberedUtoppFormularioReturnUrl(): string | null {
+  if (typeof window === "undefined") return null
+  try {
+    const value = window.sessionStorage.getItem(FORMULARIO_RETURN_STORAGE_KEY)
+    return isAllowedUtoppFormularioUrl(value) ? value : null
+  } catch {
+    return null
+  }
+}
+
+export function consumeRememberedUtoppFormularioReturnUrl(): string | null {
+  if (typeof window === "undefined") return null
+  try {
+    const value = window.sessionStorage.getItem(FORMULARIO_RETURN_STORAGE_KEY)
+    window.sessionStorage.removeItem(FORMULARIO_RETURN_STORAGE_KEY)
+    return isAllowedUtoppFormularioUrl(value) ? value : null
+  } catch {
+    return null
   }
 }
 

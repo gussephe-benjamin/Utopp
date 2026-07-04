@@ -28,7 +28,9 @@ import {
 import { ProfileAvatar } from "../../features/profile/components/ProfileAvatar"
 import { parseAuthApiError } from "../../shared/lib/apiErrors"
 import {
+  getRememberedUtoppFormularioReturnUrl,
   isAllowedUtoppFormularioUrl,
+  rememberUtoppFormularioReturnUrl,
   redirectToUtoppFormularioSso,
 } from "../../shared/lib/utoppFormularioUrl"
 import { TW_AUTH } from "../../features/auth/constants/authTheme"
@@ -51,10 +53,10 @@ export default function AuthEntry() {
   const googleRegisterParam = searchParams.get("google_register") === "1"
   const pendingToken = searchParams.get("pending_token")
   const formularioRedirect = searchParams.get("redirect")
-  const canReturnToFormulario = isAllowedUtoppFormularioUrl(formularioRedirect)
 
   const [registerMode, setRegisterMode] = useState(false)
   const [showEmailForm, setShowEmailForm] = useState(false)
+  const [rememberedFormularioRedirect, setRememberedFormularioRedirect] = useState<string | null>(null)
   const [pendingEmail, setPendingEmail] = useState("")
   const [pendingName, setPendingName] = useState("")
   const [pendingPictureUrl, setPendingPictureUrl] = useState<string | null>(null)
@@ -74,9 +76,24 @@ export default function AuthEntry() {
   const [formularioReturnFailed, setFormularioReturnFailed] = useState(false)
 
   const errorMessage = resolveErrorMessage(errorCode)
+  const formularioReturnTarget = isAllowedUtoppFormularioUrl(formularioRedirect)
+    ? formularioRedirect
+    : googleRegisterParam
+      ? rememberedFormularioRedirect
+      : null
+  const canReturnToFormulario = isAllowedUtoppFormularioUrl(formularioReturnTarget)
   const legalReady = !!termsDoc && !!privacyDoc && !legalLoadError
   const canCreateAccount =
     legalReady && termsAccepted && privacyAccepted && !isSubmitting
+
+  useEffect(() => {
+    if (isAllowedUtoppFormularioUrl(formularioRedirect)) {
+      rememberUtoppFormularioReturnUrl(formularioRedirect)
+      setRememberedFormularioRedirect(formularioRedirect)
+      return
+    }
+    setRememberedFormularioRedirect(getRememberedUtoppFormularioReturnUrl())
+  }, [formularioRedirect])
 
   const loadPendingState = useCallback(async () => {
     setCheckingPending(true)
@@ -177,7 +194,7 @@ export default function AuthEntry() {
       if (canReturnToFormulario && !me.needs_terms && me.onboarding_completed) {
         setFormularioReturnFailed(false)
         setReturningToFormulario(true)
-        await redirectToUtoppFormularioSso(formularioRedirect)
+        await redirectToUtoppFormularioSso(formularioReturnTarget)
         return
       }
       redirectAfterAuthSession(navigate, me)
@@ -210,7 +227,7 @@ export default function AuthEntry() {
       if (canReturnToFormulario && !me.needs_terms && me.onboarding_completed) {
         setFormularioReturnFailed(false)
         setReturningToFormulario(true)
-        await redirectToUtoppFormularioSso(formularioRedirect)
+        await redirectToUtoppFormularioSso(formularioReturnTarget)
         return
       }
       redirectAfterAuthSession(navigate, me)
@@ -238,12 +255,12 @@ export default function AuthEntry() {
 
     setReturningToFormulario(true)
     setFormularioReturnFailed(false)
-    redirectToUtoppFormularioSso(formularioRedirect).catch((err) => {
+    redirectToUtoppFormularioSso(formularioReturnTarget).catch((err) => {
       setSubmitError(parseAuthApiError(err))
       setFormularioReturnFailed(true)
       setReturningToFormulario(false)
     })
-  }, [canReturnToFormulario, formularioRedirect, formularioReturnFailed, returningToFormulario, status, user])
+  }, [canReturnToFormulario, formularioReturnTarget, formularioReturnFailed, returningToFormulario, status, user])
 
   if (status === "initializing" || checkingPending || returningToFormulario) {
     return (
@@ -428,6 +445,9 @@ export default function AuthEntry() {
         <button
           type="button"
           onClick={() => {
+            if (canReturnToFormulario) {
+              rememberUtoppFormularioReturnUrl(formularioReturnTarget)
+            }
             window.location.href = getGoogleOAuthLoginUrl()
           }}
           className={`${TW_AUTH.btnGoogle} ${TW_AUTH.focusRing}`}

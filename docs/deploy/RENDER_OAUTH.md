@@ -9,7 +9,8 @@ Guía para que Google OAuth funcione con frontend y backend en dos servicios de 
 | `GOOGLE_CLIENT_ID` | Client ID de Google Cloud |
 | `GOOGLE_CLIENT_SECRET` | Client secret |
 | `GOOGLE_REDIRECT_URI` | `https://utopp.onrender.com/auth/google/callback` |
-| `FRONTEND_URL` | `https://utopp-fronted.onrender.com` |
+| `FRONTEND_URL` | `https://www.utopp.app` |
+| `UF_FRONTEND_URL` | `https://www.formulario.utopp.app` |
 | `COOKIE_SECURE` | `true` |
 | `COOKIE_SAMESITE` | `none` |
 | `SECRET_KEY` | Valor aleatorio fuerte (distinto a local) |
@@ -25,8 +26,9 @@ Frontend y backend en Render tienen hosts distintos (`*.onrender.com`). Con `Sam
 | Variable | Valor |
 |----------|--------|
 | `VITE_API_URL` | `https://utopp.onrender.com` |
+| `VITE_UF_FRONTEND_URL` | `https://www.formulario.utopp.app` |
 
-**Rebuild obligatorio:** Vite incluye `VITE_*` en el bundle al compilar. Después de cambiar `VITE_API_URL`, lanza un nuevo deploy (idealmente con *Clear build cache*).
+**Rebuild obligatorio:** Vite incluye `VITE_*` en el bundle al compilar. Después de cambiar estas variables, lanza un nuevo deploy (idealmente con *Clear build cache*).
 
 ## 3. Google Cloud Console
 
@@ -36,7 +38,7 @@ Frontend y backend en Render tienen hosts distintos (`*.onrender.com`). Con `Sam
    - `http://localhost:8000/auth/google/callback` (desarrollo)
    - `https://utopp.onrender.com/auth/google/callback` (producción)
 4. **Authorized JavaScript origins** (opcional):
-   - `https://utopp-fronted.onrender.com`
+   - `https://www.utopp.app`
 
 El valor de `GOOGLE_REDIRECT_URI` en Render debe coincidir **exactamente** con una URI autorizada.
 
@@ -44,7 +46,7 @@ El backend usa **PKCE (S256)** en el flujo OAuth: al iniciar sesión se envían 
 
 ## 4. CORS
 
-El backend añade automáticamente `FRONTEND_URL` y `ALLOWED_ORIGINS` (lista separada por comas) a los orígenes CORS permitidos. Orígenes conocidos (`utopp-fronted.onrender.com`, `utopp.app`, localhost) ya están incluidos.
+El backend añade automáticamente `FRONTEND_URL` y `ALLOWED_ORIGINS` (lista separada por comas) a los orígenes CORS permitidos. Orígenes conocidos (`utopp.app`, `formulario.utopp.app`, localhost y el frontend antiguo de Render) ya están incluidos.
 
 ## 5. Session handoff (login de usuarios existentes)
 
@@ -52,7 +54,7 @@ En producción, frontend y backend están en dominios distintos. Aunque la cooki
 
 **Solución:** tras OAuth, el backend redirige a:
 
-`https://utopp-fronted.onrender.com/auth/callback?session_token=...`
+`https://www.utopp.app/auth/callback?session_token=...`
 
 El frontend (`AuthCallback.tsx`) canjea el token con:
 
@@ -65,10 +67,10 @@ El registro de usuarios nuevos sigue usando `pending_token` en la URL (`/login?g
 ## 6. Verificación
 
 1. `curl https://utopp.onrender.com/health/` → respuesta OK de la API
-2. Abre la app en `https://utopp-fronted.onrender.com/login`
+2. Abre la app en `https://www.utopp.app/login`
 3. Clic en **Continuar con Google** → la URL debe ser `https://utopp.onrender.com/auth/google/login` (no `localhost`)
 4. Tras Google → `https://utopp.onrender.com/auth/google/callback?...`
-5. Redirect a `https://utopp-fronted.onrender.com/auth/callback?session_token=...`
+5. Redirect a `https://www.utopp.app/auth/callback?session_token=...`
 6. Pantalla "Iniciando sesión..." → exchange → feed o términos sin volver a login
 
 ### Comprobar exchange manualmente
@@ -107,7 +109,9 @@ El backend en Render fuerza automáticamente `COOKIE_SAMESITE=none` y `COOKIE_SE
 | | Local (Docker) | Render |
 |---|----------------|--------|
 | `GOOGLE_REDIRECT_URI` | `http://localhost:8000/auth/google/callback` | `https://utopp.onrender.com/auth/google/callback` |
-| `FRONTEND_URL` | `http://localhost:5173` | `https://utopp-fronted.onrender.com` |
+| `FRONTEND_URL` | `http://localhost:5173` | `https://www.utopp.app` |
+| `UF_FRONTEND_URL` | `http://localhost:5174` | `https://www.formulario.utopp.app` |
 | `VITE_API_URL` | `http://localhost:8000` | `https://utopp.onrender.com` |
+| `VITE_UF_FRONTEND_URL` | `http://localhost:5174` | `https://www.formulario.utopp.app` |
 | `COOKIE_SECURE` | `false` | `true` |
 | `COOKIE_SAMESITE` | `lax` | `none` |
