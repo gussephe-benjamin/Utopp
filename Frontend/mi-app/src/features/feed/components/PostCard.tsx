@@ -41,6 +41,7 @@ import { resolvePostImageUrl } from "../../../shared/lib/postImageUrl";
 import { ProfileLink } from "../../profile/components/ProfileLink";
 import { trackEvent, trackPostViewedThrottled } from "../../../features/analytics/analyticsTracker";
 import { PostCommentsSection } from "./PostCommentsSection";
+import { ParticipantBubbles } from "./ParticipantBubbles";
 
 type PostCardProps = {
   post: FeedPostOut;
@@ -688,6 +689,24 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
             </button>
           ) : null}
         </div>
+
+        {post.post_type === "event" && (
+          <>
+            <ParticipantBubbles postId={post.id} />
+            {post.registration_url ? (
+              <div className="px-4 pb-3">
+                <a
+                  href={post.registration_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#2f55f6] to-[#ba4ef8] px-4 py-1.5 text-xs font-bold text-white shadow-sm transition-transform hover:scale-[1.03]"
+                >
+                  Inscribirse
+                </a>
+              </div>
+            ) : null}
+          </>
+        )}
 
         {post.images_count > 0 && images.length === 0 && (
           <div className="px-4 pb-3">

@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel
 
@@ -46,3 +46,17 @@ class ParticipantCountOut(BaseModel):
     going: int = 0
     attended: int = 0
     total: int = 0
+
+
+class ParticipantPublicOut(BaseModel):
+    """Participante unificado para la vista pública (globitos).
+
+    Une participantes de Utopp (post_participants) e inscritos de
+    Utopp Formulario (formulario.attendees). No expone emails.
+    """
+    status: PostParticipantStatus
+    full_name: Optional[str] = None
+    avatar_url: Optional[str] = None
+    is_guest: bool = False
+    source: Literal["utopp", "formulario"] = "utopp"
+    joined_at: datetime

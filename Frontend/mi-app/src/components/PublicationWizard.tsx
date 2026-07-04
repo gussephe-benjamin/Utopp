@@ -28,6 +28,7 @@ import {
 } from '../shared/lib/wordCount'
 import { DEFAULT_POST_ASPECT_RATIO, normalizeAspectRatio, type PostAspectRatio } from '../shared/lib/aspectRatio'
 import { formatApiError } from '../shared/lib/apiError'
+import { openUtoppFormularioSso } from '../shared/lib/utoppFormularioUrl'
 
 // Estado inicial vacío del formulario
 const initialFormData: WizardFormData = {
@@ -111,6 +112,15 @@ export default function PublicationWizard({ isOpen, onClose, allowedTypes }: Pub
   const [publishProgress, setPublishProgress] = useState<string | null>(null)
   const [publishError, setPublishError] = useState<string | null>(null)
   const [showConfirmClose, setShowConfirmClose] = useState(false)
+
+  const handleOpenUtoppFormulario = () => {
+    setPublishError(null)
+    openUtoppFormularioSso()
+      .then(() => onClose())
+      .catch(() => {
+        setPublishError('No se pudo abrir Utopp Formulario. Intenta de nuevo.')
+      })
+  }
 
   // Bloquear el scroll del body mientras el modal está abierto
   useEffect(() => {
@@ -341,6 +351,7 @@ export default function PublicationWizard({ isOpen, onClose, allowedTypes }: Pub
             selectedType={formData.post_type}
             onSelectType={type => dispatch({ type: 'SET_POST_TYPE', payload: type })}
             allowedTypes={allowedTypes}
+            onOpenUtoppFormulario={handleOpenUtoppFormulario}
           />
         )
       case 2:

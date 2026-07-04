@@ -13,6 +13,7 @@ from app.schemas.participant import (
     ParticipantUpdate,
     ParticipantOut,
     ParticipantCountOut,
+    ParticipantPublicOut,
 )
 from app.services import participant_service
 
@@ -85,21 +86,20 @@ def delete_participation(
 # Se puede filtrar por estado (interested, going, attended).
 # Auth: No requerida
 # ============================================================
-@router.get("/posts/{post_id}/participants", response_model=List[ParticipantOut])
+@router.get("/posts/{post_id}/participants", response_model=List[ParticipantPublicOut])
 def list_participants(
     post_id: int,
     status: Optional[PostParticipantStatus] = Query(None, description="Filtrar por estado"),
     pagination: PaginationParams = Depends(),
     db: Session = Depends(get_db),
 ):
-    participants, _ = participant_service.list_participants(
+    return participant_service.list_public_participants(
         db,
         post_id=post_id,
         status=status,
         limit=pagination.size,
         offset=pagination.offset,
     )
-    return participants
 
 
 # ============================================================

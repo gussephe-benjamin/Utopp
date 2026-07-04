@@ -13,6 +13,23 @@ import api from "./axios"
 
 export type ParticipantStatus = "interested" | "going" | "attended"
 
+/** Participante unificado (UP + Utopp Formulario) que devuelve GET /participants. */
+export interface ParticipantPublicOut {
+  status: ParticipantStatus
+  full_name: string | null
+  avatar_url: string | null
+  is_guest: boolean
+  source: "utopp" | "formulario"
+  joined_at: string
+}
+
+export interface ParticipantCounts {
+  interested: number
+  going: number
+  attended: number
+  total: number
+}
+
 /**
  * POST /posts/{postId}/participate
  * Registra la participación del usuario autenticado en el post.
@@ -55,7 +72,7 @@ export async function cancelParticipation(postId: number) {
 export async function listParticipants(
   postId: number,
   params?: { status?: ParticipantStatus; page?: number; size?: number }
-) {
+): Promise<ParticipantPublicOut[]> {
   const { data } = await api.get(`/posts/${postId}/participants`, { params })
   return data
 }
@@ -66,7 +83,7 @@ export async function listParticipants(
  * { interested, going, attended, total }.
  * Auth: No requerida.
  */
-export async function getParticipantCounts(postId: number) {
+export async function getParticipantCounts(postId: number): Promise<ParticipantCounts> {
   const { data } = await api.get(`/posts/${postId}/participants/count`)
   return data
 }

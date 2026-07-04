@@ -39,6 +39,7 @@ class FeedPostOut(BaseModel):
     pin_priority: int = 0
     is_saved: bool = False
     participation_status: Optional[str] = None
+    registration_url: Optional[str] = None
 
     reaction_count: int = 0
     user_reacted: bool = False
