@@ -18,7 +18,7 @@ import { uploadToCloudinary } from "../api/cloudinary"
 import { getMyRoles } from "../api/roles.api"
 import { getSavedPosts } from "../api/saved-posts.api"
 import PublicationWizard from "../components/PublicationWizard"
-import { useRole } from "../hooks/useRole"
+import { useRole, ROLE_ADMIN, ROLE_ROOT } from "../hooks/useRole"
 import { StudentProfileSelf } from "../features/profile/views/StudentProfileSelf"
 import { StudentProfilePublic } from "../features/profile/views/StudentProfilePublic"
 import { mapPostOutToFeedPost, type PostOutRaw } from "../features/profile/lib/postMapper"
@@ -40,7 +40,8 @@ export default function StudentProfilePage({ viewedUserId }: StudentProfilePageP
   const [searchParams, setSearchParams] = useSearchParams()
   const openSettingsOnMount = searchParams.get("settings") === "1"
   const openCreateOnMount = searchParams.get("create") === "1"
-  const { allowedTypes, canCreate } = useRole()
+  const { allowedTypes, canCreate, roleName } = useRole()
+  const canAccessAdmin = roleName === ROLE_ADMIN || roleName === ROLE_ROOT
   const [showCreateWizard, setShowCreateWizard] = useState(false)
   const [isOwnProfile, setIsOwnProfile] = useState<boolean | null>(viewedUserId == null ? true : null)
 
@@ -327,6 +328,7 @@ export default function StudentProfilePage({ viewedUserId }: StudentProfilePageP
           onPostEdited={handlePostEdited}
           onPostDeleted={handlePostDeleted}
           onOpenCreate={canCreate ? () => setShowCreateWizard(true) : undefined}
+          canAccessAdmin={canAccessAdmin}
         />
       )
     }
@@ -366,6 +368,7 @@ export default function StudentProfilePage({ viewedUserId }: StudentProfilePageP
     handlePostEdited,
     handlePostDeleted,
     canCreate,
+    canAccessAdmin,
   ])
 
   return (

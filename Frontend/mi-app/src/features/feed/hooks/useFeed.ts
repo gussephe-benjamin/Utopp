@@ -5,9 +5,13 @@ import type { FeedPostOut, FeedResponse } from "../../../types/post.types"
 
 type UseFeedOptions = {
   pageSize?: number
+  /** Filtra el feed a un solo post_type (p. ej. "event"). */
+  type?: string
+  /** Excluye un post_type del feed (p. ej. "event" en Publicaciones). */
+  excludeType?: string
 }
 
-export function useFeed({ pageSize = 10 }: UseFeedOptions = {}) {
+export function useFeed({ pageSize = 10, type, excludeType }: UseFeedOptions = {}) {
   const [posts, setPosts] = useState<FeedPostOut[]>([])
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
@@ -50,7 +54,7 @@ export function useFeed({ pageSize = 10 }: UseFeedOptions = {}) {
     setPosts([])
     setPage(1)
     setHasMore(true)
-  }, [statusFilter, selectedTags, sortOrder])
+  }, [statusFilter, selectedTags, sortOrder, type, excludeType])
 
   const fetchPage = useCallback(
     async (pageNum: number) => {
@@ -61,6 +65,8 @@ export function useFeed({ pageSize = 10 }: UseFeedOptions = {}) {
         const data: FeedResponse = await getFeed({
           page: pageNum,
           size: pageSize,
+          type,
+          exclude_type: excludeType,
           time_status: statusFilter,
           tags: selectedTags.length > 0 ? selectedTags : undefined,
           sort: sortOrder === "recent" ? "recent" : undefined,
@@ -75,7 +81,7 @@ export function useFeed({ pageSize = 10 }: UseFeedOptions = {}) {
         setLoading(false)
       }
     },
-    [pageSize, selectedTags, sortOrder, statusFilter],
+    [pageSize, selectedTags, sortOrder, statusFilter, type, excludeType],
   )
 
   useEffect(() => {

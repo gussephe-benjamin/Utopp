@@ -132,20 +132,15 @@ export function GradientMesh({
   style,
 }: GradientMeshProps) {
   const ctnDom = useRef<HTMLDivElement>(null)
+  const colorsKey = colors.slice(0, 3).join(",")
 
   useEffect(() => {
     if (!ctnDom.current) return
 
     const ctn = ctnDom.current
-    const renderer = new Renderer()
+    const renderer = new Renderer({ alpha: false, antialias: true })
     const gl = renderer.gl
     gl.clearColor(0, 0, 0, 1)
-
-    function resize() {
-      renderer.setSize(ctn.offsetWidth, ctn.offsetHeight)
-    }
-    window.addEventListener("resize", resize, false)
-    resize()
 
     const geometry = new Triangle(gl)
 
@@ -163,11 +158,7 @@ export function GradientMesh({
       uWaveFreq: { value: waveFreq },
       uWaveSpeed: { value: waveSpeed },
       uResolution: {
-        value: new Color(
-          gl.canvas.width,
-          gl.canvas.height,
-          gl.canvas.width / gl.canvas.height,
-        ),
+        value: new Color(1, 1, 1),
       },
       uGrain: { value: grain },
     }
@@ -185,6 +176,28 @@ export function GradientMesh({
 
     const mesh = new Mesh(gl, { geometry, program })
 
+    function syncResolution() {
+      const w = gl.canvas.width
+      const h = gl.canvas.height
+      uniforms.uResolution.value.set(w, h, w / Math.max(h, 1))
+    }
+
+    function resize() {
+      const width = ctn.offsetWidth
+      const height = ctn.offsetHeight
+      if (width < 1 || height < 1) return
+
+      renderer.setSize(width, height)
+      syncResolution()
+    }
+
+    const resizeObserver = new ResizeObserver(() => {
+      resize()
+    })
+    resizeObserver.observe(ctn)
+    window.addEventListener("resize", resize, false)
+    resize()
+
     let animateId: number
     function update(t: number) {
       animateId = requestAnimationFrame(update)
@@ -197,12 +210,13 @@ export function GradientMesh({
 
     return () => {
       cancelAnimationFrame(animateId)
+      resizeObserver.disconnect()
       window.removeEventListener("resize", resize)
       if (gl.canvas.parentNode === ctn) ctn.removeChild(gl.canvas)
       gl.getExtension("WEBGL_lose_context")?.loseContext()
     }
   }, [
-    colors,
+    colorsKey,
     distortion,
     swirl,
     speed,

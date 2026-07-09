@@ -1,7 +1,9 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { Home, Plus, Shield } from 'lucide-react'
+import { CalendarDays, Home, Plus, User, Users } from 'lucide-react'
 import PublicationWizard from '../components/PublicationWizard'
+import EventsPage from '../pages/EventsPage'
+import OrganizationsPage from '../pages/OrganizationsPage'
 import { getMe } from '../api/auth.api'
 import { getMyProfile, type UserProfileResponse } from '../api/users.api'
 import { useRole, ROLE_ADMIN, ROLE_ROOT } from '../hooks/useRole'
@@ -10,10 +12,11 @@ import { AppTopBar } from '../features/dashboard/components/AppTopBar'
 import { measureMenuAnchor, type MenuPopoverAnchor } from '../features/dashboard/popoverAnchor'
 import FeedModeResolver from '../features/feed/FeedModeResolver'
 import { AppLink } from '../shared/navigation/AppLink'
-import { TW_UTOPP_GRADIENT_BR } from '../shared/constants/brand'
-import { ProfileAvatar } from '../features/profile/components/ProfileAvatar'
 
 const FALLBACK_MENU_ANCHOR: MenuPopoverAnchor = { top: 64, right: 12, minWidth: 40 }
+
+const NAV_ACTIVE = 'text-[#5f38ff]'
+const NAV_IDLE = 'text-gray-400'
 
 /**
  * Layout principal tras el login.
@@ -116,8 +119,9 @@ export default function DashboardLayout() {
   }, [showWizard])
 
   const isFeedActive    = location.pathname === '/app/inicio'
+  const isEventsActive  = location.pathname === '/app/eventos'
+  const isOrgsActive    = location.pathname === '/app/organizaciones'
   const isProfileActive = location.pathname.startsWith('/app/perfil')
-  const isAdminActive   = location.pathname.startsWith('/app/admin')
   const profileViewIdMatch = location.pathname.match(/^\/app\/perfil\/(\d+)$/)
   const profileViewId = profileViewIdMatch ? Number(profileViewIdMatch[1]) : undefined
 
@@ -175,11 +179,19 @@ export default function DashboardLayout() {
 
   const displayName = userName || userEmail || 'Usuario'
   const canAccessAdmin = roleName === ROLE_ADMIN || roleName === ROLE_ROOT
+  const feedSectionActive: "posts" | "events" | null = isEventsActive
+    ? "events"
+    : isFeedActive
+      ? "posts"
+      : null
+
+  const hasPrimaryPanel = isFeedActive || isEventsActive || isOrgsActive || isProfileActive
 
   return (
     <div className={`min-h-screen flex flex-col bg-gray-50 ${showWizard ? 'overflow-hidden' : ''}`}>
       <AppTopBar
         isFeedActive={isFeedActive}
+        feedSection={feedSectionActive ?? undefined}
         onOpenFeedFilters={
           isFeedActive
             ? () => {
@@ -214,19 +226,28 @@ export default function DashboardLayout() {
             onOpenCreate={() => setShowWizard(true)}
           />
         </div>
+        <div className={`absolute inset-x-0 bottom-0 top-0 md:top-14 overflow-y-auto no-scrollbar pb-24 md:pb-6 bg-gray-50${isEventsActive ? '' : ' hidden'}`}>
+          {isEventsActive && <EventsPage />}
+        </div>
+        <div className={`absolute inset-x-0 bottom-0 top-0 md:top-14 overflow-y-auto no-scrollbar pb-24 md:pb-6 bg-gray-50${isOrgsActive ? '' : ' hidden'}`}>
+          {isOrgsActive && <OrganizationsPage />}
+        </div>
         <div className={`absolute inset-x-0 bottom-0 top-0 md:top-14 overflow-y-auto no-scrollbar pb-24 md:pb-6 bg-gray-50${isProfileActive ? '' : ' hidden'}`}>
           <Profile viewUserId={profileViewId} />
         </div>
-        {!isFeedActive && !isProfileActive && (
+        {!hasPrimaryPanel && (
           <div className="absolute inset-x-0 bottom-0 top-0 md:top-14 overflow-y-auto no-scrollbar pb-24 md:pb-6 bg-gray-50">
             <Outlet />
           </div>
         )}
       </main>
 
-      {/* Barra de Navegación Inferior (Móvil) */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/95 backdrop-blur-md border-t border-gray-100/80 shadow-[0_-4px_20px_rgba(0,0,0,0.03)] z-50 px-4">
-        <div className={`grid h-full items-center mx-auto justify-items-center ${canAccessAdmin ? 'grid-cols-4 max-w-[420px]' : 'grid-cols-3 max-w-[320px]'}`}>
+      {/* Barra inferior móvil: Inicio · Eventos · + · Grupos · Perfil */}
+      <nav
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50 h-[68px] border-t border-gray-100/70 bg-white px-2 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_28px_rgba(47,85,246,0.08)]"
+        aria-label="Navegación principal"
+      >
+        <div className="grid h-full w-full grid-cols-5 items-center">
           <AppLink
             to="/app/inicio"
             onClick={(event) => {
@@ -235,65 +256,74 @@ export default function DashboardLayout() {
                 window.scrollTo({ top: 0, behavior: 'smooth' })
               }
             }}
-            className="flex flex-col items-center justify-center w-12 h-12 active:scale-95 transition-transform"
-            aria-label="Ir al inicio"
+            className={`flex flex-col items-center justify-center gap-1 active:scale-95 transition-transform ${
+              isFeedActive ? NAV_ACTIVE : NAV_IDLE
+            }`}
+            aria-label="Inicio"
+            aria-current={isFeedActive ? 'page' : undefined}
           >
-            <div className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${isFeedActive ? 'bg-[#f3efff] text-[#5f38ff] shadow-sm' : 'bg-transparent text-gray-400'}`}>
-              <Home className="w-5.5 h-5.5 stroke-[2]" />
-            </div>
+            <Home className="h-[22px] w-[22px] stroke-[1.75]" />
+            <span className={`text-[11px] leading-none ${isFeedActive ? 'font-bold' : 'font-medium'}`}>
+              Inicio
+            </span>
           </AppLink>
 
-          {canCreate ? (
-            <div className="relative flex items-center justify-center w-12 h-12">
+          <AppLink
+            to="/app/eventos"
+            className={`flex flex-col items-center justify-center gap-1 active:scale-95 transition-transform ${
+              isEventsActive ? NAV_ACTIVE : NAV_IDLE
+            }`}
+            aria-label="Eventos"
+            aria-current={isEventsActive ? 'page' : undefined}
+          >
+            <CalendarDays className="h-[22px] w-[22px] stroke-[1.75]" />
+            <span className={`text-[11px] leading-none ${isEventsActive ? 'font-bold' : 'font-medium'}`}>
+              Eventos
+            </span>
+          </AppLink>
+
+          <div className="relative flex h-12 items-center justify-center">
+            {canCreate ? (
               <button
                 type="button"
                 onClick={() => setShowWizard(true)}
-                className={`absolute -top-[22px] w-[54px] h-[54px] rounded-full ${TW_UTOPP_GRADIENT_BR} text-white flex items-center justify-center shadow-[0_6px_20px_rgba(47,85,246,0.35)] border-4 border-white active:scale-95 transition-all`}
+                aria-label="Crear oportunidad"
+                className="absolute -top-6 flex h-14 w-14 items-center justify-center rounded-[18px] bg-gradient-to-b from-[#9b7bff] to-[#6d3ff5] text-white shadow-[0_8px_22px_rgba(109,63,245,0.45)] transition-all active:scale-95"
               >
-                <Plus className="w-5.5 h-5.5 stroke-[3.5]" />
+                <Plus className="h-7 w-7 stroke-[2.75]" />
               </button>
-            </div>
-          ) : (
-            <div className="w-12 h-12" aria-hidden />
-          )}
+            ) : null}
+          </div>
+
+          <AppLink
+            to="/app/organizaciones"
+            className={`flex flex-col items-center justify-center gap-1 active:scale-95 transition-transform ${
+              isOrgsActive ? NAV_ACTIVE : NAV_IDLE
+            }`}
+            aria-label="Grupos"
+            aria-current={isOrgsActive ? 'page' : undefined}
+          >
+            <Users className="h-[22px] w-[22px] stroke-[1.75]" />
+            <span className={`text-[11px] leading-none ${isOrgsActive ? 'font-bold' : 'font-medium'}`}>
+              Grupos
+            </span>
+          </AppLink>
 
           <AppLink
             to="/app/perfil"
-            className="flex flex-col items-center justify-center w-12 h-12 active:scale-95 transition-transform"
+            className={`flex flex-col items-center justify-center gap-1 active:scale-95 transition-transform ${
+              isProfileActive ? NAV_ACTIVE : NAV_IDLE
+            }`}
             aria-label="Ir a mi perfil"
+            aria-current={isProfileActive ? 'page' : undefined}
           >
-            <div className="w-11 h-11 rounded-2xl flex items-center justify-center transition-all">
-              <div
-                className={`rounded-full bg-gradient-to-br from-blue-600 to-fuchsia-500 p-[2px] shadow-sm ${
-                  isProfileActive ? 'ring-2 ring-violet-200' : ''
-                }`}
-              >
-                <div className="rounded-full border-2 border-white bg-white p-0.5">
-                  <ProfileAvatar
-                    name={displayName}
-                    userId={currentUserId}
-                    imageUrl={avatarUrl}
-                    size="sm"
-                    fallbackClassName={TW_UTOPP_GRADIENT_BR}
-                  />
-                </div>
-              </div>
-            </div>
+            <User className="h-[22px] w-[22px] stroke-[1.75]" />
+            <span className={`text-[11px] leading-none ${isProfileActive ? 'font-bold' : 'font-medium'}`}>
+              Perfil
+            </span>
           </AppLink>
-
-          {canAccessAdmin && (
-            <AppLink
-              to="/app/admin"
-              className="flex flex-col items-center justify-center w-12 h-12 active:scale-95 transition-transform"
-              aria-label="Panel de administración"
-            >
-              <div className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all ${isAdminActive ? 'bg-[#f3efff] text-[#5f38ff] shadow-sm' : 'bg-transparent text-gray-400'}`}>
-                <Shield className="w-5.5 h-5.5 stroke-[2]" />
-              </div>
-            </AppLink>
-          )}
         </div>
-      </div>
+      </nav>
 
       <PublicationWizard isOpen={showWizard} onClose={() => setShowWizard(false)} allowedTypes={allowedTypes} />
     </div>

@@ -24,14 +24,14 @@ import { toggleReaction } from "../../../api/reactions.api";
 import { archivePost, deletePost, unarchivePost } from "../../../api/posts.api";
 import EditPostWizard from "../../../components/EditPostWizard";
 import { ConfirmModal } from "../../profile/components/ConfirmModal";
-import { POST_TYPE_LABELS, SUBTYPE_LABELS, type FeedPostOut } from "../../../types/post.types";
+import { type FeedPostOut } from "../../../types/post.types";
 import { getWordTruncatedText } from "../../../shared/lib/wordCount";
 import {
   aspectRatioValue,
   FEED_POST_CARD_MAX_WIDTH,
   normalizeAspectRatio,
 } from "../../../shared/lib/aspectRatio";
-import { formatDate, isExpired, timeAgo, timeRemaining } from "../../../shared/lib/date";
+import { timeAgo } from "../../../shared/lib/date";
 import { UTOPP_BRAND } from "../../../shared/constants/brand";
 import { TYPE_GRADIENTS } from "../constants/typeGradients";
 import { getDisplayName } from "../lib/display";
@@ -48,6 +48,8 @@ type PostCardProps = {
   currentUserId: number | null;
   onEdited: (updated: FeedPostOut) => void;
   onDeleted?: (id: number) => void;
+  /** Edge-to-edge en mobile (estilo Instagram): sin bordes laterales ni esquinas redondeadas. */
+  edgeToEdge?: boolean;
 };
 
 type PostActionLink = {
@@ -58,7 +60,7 @@ type PostActionLink = {
   position: number;
 };
 
-export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardProps) {
+export function PostCard({ post, currentUserId, onEdited, onDeleted, edgeToEdge = false }: PostCardProps) {
   const SS_IDX = `utopp:carousel:idx:${post.id}`;
   const SS_IMGS = `utopp:carousel:imgs:${post.id}`;
   const ULTRA_WIDE_RATIO = 2.5;
@@ -121,6 +123,16 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
   const overflowLinks = useMemo(() => actionLinks.slice(3), [actionLinks]);
   const canEdit = currentUserId !== null && post.user_id === currentUserId;
   const showMoreLinksButton = overflowLinks.length > 0;
+
+  /** Clases para media full-bleed en móvil (< md). */
+  const bleedPad = edgeToEdge ? "px-4 pb-3 max-md:px-0 max-md:pb-0" : "px-4 pb-3";
+  const bleedMedia =
+    edgeToEdge
+      ? "rounded-2xl border border-gray-100/70 shadow-sm max-md:rounded-none max-md:border-0 max-md:shadow-none"
+      : "rounded-2xl border border-gray-100/70 shadow-sm";
+  const bleedCard = edgeToEdge
+    ? "max-md:max-w-none max-md:rounded-none max-md:border-x-0 max-md:shadow-none"
+    : "";
 
   const { truncatedText, needsToggle: needsDescriptionToggle } = useMemo(() => {
     return getWordTruncatedText(post.description, 30);
@@ -481,10 +493,6 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
     };
   }, [currentImageRatio, post.aspect_ratio]);
 
-  const hasDeadline = Boolean(post.deadline_at);
-  const deadlineExpired = post.deadline_at ? isExpired(post.deadline_at) : false;
-  const deadlineRemaining = post.deadline_at ? timeRemaining(post.deadline_at) : null;
-
   return (
     <>
       <AnimatePresence>
@@ -526,12 +534,12 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
         whileInView="show"
         viewport={{ once: true, margin: "-50px" }}
         onViewportEnter={() => trackPostViewedThrottled(post.id)}
-        className={`relative mx-auto h-auto w-full overflow-hidden rounded-[22px] border bg-white shadow-[0_4px_20px_rgba(0,0,0,0.015)] transition-all duration-300 hover:-translate-y-[1px] hover:shadow-[0_8px_30px_rgba(0,0,0,0.03)] ${
+        className={`relative mx-auto h-auto w-full overflow-hidden rounded-[22px] border bg-white shadow-[0_4px_20px_rgba(0,0,0,0.015)] transition-all duration-300 hover:-translate-y-[1px] hover:shadow-[0_8px_30px_rgba(0,0,0,0.03)] md:max-w-[680px] ${
           post.is_pinned
             ? "border-amber-200/75 shadow-[0_4px_24px_rgba(245,158,11,0.04)] ring-1 ring-amber-100/30"
             : "border-gray-100"
-        } ${post.status === "archived" ? "opacity-75" : ""}`}
-        style={{ maxWidth: `${FEED_POST_CARD_MAX_WIDTH}px` }}
+        } ${post.status === "archived" ? "opacity-75" : ""} ${bleedCard}`}
+        style={{ maxWidth: edgeToEdge ? undefined : `${FEED_POST_CARD_MAX_WIDTH}px` }}
       >
         {canEdit && (
           <div className="flex items-center justify-end gap-2 border-b border-gray-100/80 bg-gray-50/70 px-4 py-2">
@@ -628,41 +636,15 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
             </div>
           </div>
 
+          {post.status === "archived" && (
           <div className="max-w-[48%] shrink-0 text-right">
-            <div className="flex flex-wrap justify-end gap-1.5">
-              {post.status === "archived" && (
+              <div className="flex flex-wrap justify-end gap-1.5">
                 <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-bold text-amber-700">
                   Archivado
                 </span>
-              )}
-              <span className="rounded-full border border-gray-100 bg-gray-50 px-2.5 py-0.5 text-xs font-semibold text-gray-600">
-                {POST_TYPE_LABELS[post.post_type]}
-              </span>
-              {post.subtype ? (
-                <span className="rounded-full border border-purple-100 bg-purple-50 px-2.5 py-0.5 text-xs font-semibold text-purple-700">
-                  {SUBTYPE_LABELS[post.subtype]}
-                </span>
-              ) : null}
-            </div>
-            {hasDeadline ? (
-              <div className="mt-6 flex flex-col items-end gap-1">
-                {deadlineExpired ? (
-                  <span className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-semibold text-red-600">
-                    Venció el {formatDate(post.deadline_at!)}
-                  </span>
-                ) : deadlineRemaining ? (
-                  <span className="inline-flex items-center gap-1 rounded-full border border-fuchsia-100 bg-fuchsia-50 px-2.5 py-1 text-[11px] font-semibold text-fuchsia-600">
-                    <Clock className="h-3 w-3" />
-                    <span>{formatDate(post.deadline_at!)} · {deadlineRemaining}</span>
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-[11px] font-semibold text-gray-600">
-                    Límite: {formatDate(post.deadline_at!)}
-                  </span>
-                )}
               </div>
-            ) : null}
           </div>
+          )}
         </div>
 
         <div className="px-4 pb-3 pt-1.5">
@@ -709,15 +691,18 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
         )}
 
         {post.images_count > 0 && images.length === 0 && (
-          <div className="px-4 pb-3">
-            <div className="w-full animate-pulse rounded-2xl border border-gray-100 bg-gray-100" style={{ aspectRatio: "16 / 9" }} />
+          <div className={bleedPad}>
+            <div
+              className={`w-full animate-pulse bg-gray-100 ${bleedMedia}`}
+              style={{ aspectRatio: "16 / 9" }}
+            />
           </div>
         )}
 
         {totalImages > 0 && (
-          <div className="px-4 pb-3">
+          <div className={bleedPad}>
             <div
-              className="group relative w-full overflow-hidden rounded-2xl border border-gray-100/70 bg-gray-50 shadow-sm"
+              className={`group relative w-full overflow-hidden bg-gray-50 ${bleedMedia}`}
               style={{
                 aspectRatio: String(mediaPresentation.mediaAspectRatio),
                 ...(mediaPresentation.minMediaHeight > 0
@@ -816,7 +801,7 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
         )}
 
         {post.tags && post.tags.length > 0 ? (
-          <div className="px-4 pb-3">
+          <div className="px-4 pt-3 pb-3">
             <div className="flex flex-wrap gap-1.5">
               {post.tags.map((tag) => (
                 <span key={tag} className={getTagStyles(tag)}>
@@ -829,7 +814,7 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted }: PostCardP
 
         <div className="border-t border-gray-100/80 w-full" />
 
-        <div className="flex items-center justify-between gap-4 rounded-b-[22px] bg-white px-4 py-3.5">
+        <div className={`flex items-center justify-between gap-4 bg-white px-4 py-3.5 ${edgeToEdge ? "max-md:rounded-none rounded-b-[22px]" : "rounded-b-[22px]"}`}>
           <div className="flex items-center gap-1">
             <button
               type="button"

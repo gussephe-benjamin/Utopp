@@ -6,17 +6,19 @@
  *              Sin auth: datos básicos. Con auth: incluye is_saved y participation_status.
  *
  * Filtros disponibles (query params):
- *   type    — post_type (international_opportunity, event, academic_project, announcement, simple_post)
- *   subtype — subtype del post
- *   tags    — múltiples tags (OR)
- *   page    — número de página (1-indexed)
- *   size    — tamaño de página
+ *   type         — post_type (international_opportunity, event, academic_project, announcement, simple_post)
+ *   exclude_type — excluir un post_type (p. ej. eventos del feed de publicaciones)
+ *   subtype      — subtype del post
+ *   tags         — múltiples tags (OR)
+ *   page         — número de página (1-indexed)
+ *   size         — tamaño de página
  */
 
 import api from "./axios"
 
 export interface FeedParams {
   type?: string
+  exclude_type?: string
   subtype?: string
   tags?: string[]
   time_status?: string

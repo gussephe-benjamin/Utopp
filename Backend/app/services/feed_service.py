@@ -20,6 +20,7 @@ def build_feed(
     db: Session,
     current_user: Optional[User],
     post_type: Optional[PostType] = None,
+    exclude_post_type: Optional[PostType] = None,
     subtype: Optional[SubPostType] = None,
     tags: Optional[List[str]] = None,
     time_status: Optional[str] = None,
@@ -58,7 +59,10 @@ def build_feed(
     # Filtros opcionales
     if post_type:
         base_conditions.append(Post.post_type == post_type)
-    
+
+    if exclude_post_type:
+        base_conditions.append(Post.post_type != exclude_post_type)
+
     if subtype:
         base_conditions.append(Post.subtype == subtype)
     

@@ -17,6 +17,7 @@ import {
   Trophy,
   Bookmark,
   LogOut,
+  Shield,
   Sparkles,
   FileText,
   Archive,
@@ -30,6 +31,7 @@ import type { ProfileUserData } from "./types"
 import { ProfileMetricCard } from "../components/ProfileMetricCard"
 import { ProfilePostItem } from "../components/ProfilePostItem"
 import { TW_UTOPP_GRADIENT_R } from "../../../shared/constants/brand"
+import { AppLink } from "../../../shared/navigation/AppLink"
 import { formatShortDisplayName } from "../../feed/lib/display"
 import {
   ProfileSettingsModal,
@@ -68,6 +70,7 @@ interface StudentProfileSelfProps {
   onPostEdited: (post: FeedPostOut) => void
   onPostDeleted: (postId: number) => void
   onOpenCreate?: () => void
+  canAccessAdmin?: boolean
 }
 
 export function StudentProfileSelf({
@@ -96,6 +99,7 @@ export function StudentProfileSelf({
   onPostEdited,
   onPostDeleted,
   onOpenCreate,
+  canAccessAdmin = false,
 }: StudentProfileSelfProps) {
   const navigate = useNavigate()
   const { logout } = useAuth()
@@ -310,6 +314,16 @@ export function StudentProfileSelf({
                 <Pencil className="h-3.5 w-3.5" />
                 Editar perfil
               </button>
+              {canAccessAdmin ? (
+                <AppLink
+                  to="/app/admin"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-violet-200 bg-white px-3.5 py-1.5 text-xs font-bold text-violet-700 shadow-sm hover:bg-violet-50 transition-all active:scale-95"
+                  aria-label="Panel de administración"
+                >
+                  <Shield className="h-3.5 w-3.5" />
+                  Administración
+                </AppLink>
+              ) : null}
               <button
                 type="button"
                 onClick={() => {

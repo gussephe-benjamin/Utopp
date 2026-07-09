@@ -2,7 +2,8 @@ import type { RefObject } from "react";
 import { ListFilter, Plus, Shield } from "lucide-react";
 import { UtoppBrandMark } from "../../../shared/brand/UtoppBrandMark";
 import { AppLink } from "../../../shared/navigation/AppLink";
-import { EventSearchBar } from "../../feed/components/EventSearchBar";
+import { FeedSearchBar } from "../../feed/components/FeedSearchBar";
+import { FeedSectionSwitch } from "../../feed/components/FeedSectionSwitch";
 import {
   TW_UTOPP_GRADIENT_BR,
   TW_UTOPP_GRADIENT_R,
@@ -18,6 +19,8 @@ type AppTopBarProps = {
   onOpenFeedFilters?: () => void;
   /** Resalta el botón de filtros cuando hay filtros por categoría activos. */
   feedCategoryFiltersActive?: boolean;
+  /** Sección activa del feed (Publicaciones / Eventos); si no se pasa, no se muestra el switch. */
+  feedSection?: "posts" | "events";
   /** Abrir wizard de publicación */
   onOpenCreate: () => void;
   canCreate: boolean;
@@ -37,6 +40,7 @@ export function AppTopBar({
   isFeedActive = false,
   onOpenFeedFilters,
   feedCategoryFiltersActive = false,
+  feedSection,
   onOpenCreate,
   canCreate,
   avatarUrl,
@@ -61,11 +65,11 @@ export function AppTopBar({
           aria-label="Ir a inicio y recargar"
         />
 
-        {isFeedActive && (
+        {feedSection ? (
           <div className="hidden md:flex min-w-0 flex-1 justify-center px-2 lg:px-6">
-            <EventSearchBar compact className="w-full max-w-[420px]" />
+            <FeedSearchBar mode={feedSection} compact className="w-full max-w-[420px]" />
           </div>
-        )}
+        ) : null}
 
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           {canCreate && (
@@ -79,6 +83,8 @@ export function AppTopBar({
               <span className="hidden sm:inline">Crear oportunidad</span>
             </button>
           )}
+
+          {feedSection ? <FeedSectionSwitch active={feedSection} /> : null}
 
           {onOpenFeedFilters && (
             <button

@@ -27,6 +27,7 @@ router = APIRouter()
 @router.get("/feed", response_model=FeedResponse)
 def get_feed(
     type: Optional[PostType] = Query(None, description="Filtrar por tipo de post"),
+    exclude_type: Optional[PostType] = Query(None, description="Excluir un tipo de post (p. ej. eventos del feed de publicaciones)"),
     subtype: Optional[SubPostType] = Query(None, description="Filtrar por subtipo"),
     tags: Optional[List[str]] = Query(None, description="Filtrar por tags"),
     time_status: Optional[str] = Query(None, description="Filtrar por vigencia: 'vigente' o 'vencida'"),
@@ -39,6 +40,7 @@ def get_feed(
         db=db,
         current_user=current_user,
         post_type=type,
+        exclude_post_type=exclude_type,
         subtype=subtype,
         tags=tags,
         time_status=time_status,

@@ -9,6 +9,7 @@ from app.models.post import PostType, SubPostType, TimeStatus
 class FeedFilters(BaseModel):
     """Filtros para el feed."""
     type: Optional[PostType] = None
+    exclude_type: Optional[PostType] = None
     subtype: Optional[SubPostType] = None
     tags: Optional[List[str]] = None
 

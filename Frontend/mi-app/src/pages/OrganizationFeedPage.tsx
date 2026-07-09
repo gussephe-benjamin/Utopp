@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import { Inbox, X } from "lucide-react"
 import { PostCard } from "../features/feed/components/PostCard"
 import { LeftSidebar } from "../features/feed/components/LeftSidebar"
@@ -14,7 +14,6 @@ import {
   type MenuPopoverAnchor,
 } from "../features/dashboard/popoverAnchor"
 import type { FeedViewProps } from "../features/feed/types"
-import ExplorePage from "./ExplorePage"
 
 const FILTER_POPOVER_FALLBACK: MenuPopoverAnchor = { top: 64, right: 12, minWidth: 40 }
 
@@ -29,8 +28,6 @@ export default function OrganizationFeedPage({
   filterPopoverAnchor = null,
   onCategoryFiltersActiveChange,
 }: FeedViewProps) {
-  const [activeTab, setActiveTab] = useState<"posts" | "explore">("posts")
-
   const {
     posts,
     setPosts,
@@ -45,7 +42,7 @@ export default function OrganizationFeedPage({
     setSelectedTags,
     sortOrder,
     setSortOrder,
-  } = useFeed({ pageSize: 10 })
+  } = useFeed({ pageSize: 10, excludeType: "event" })
 
   useEffect(() => {
     onCategoryFiltersActiveChange?.(selectedTags.length > 0)
@@ -62,44 +59,9 @@ export default function OrganizationFeedPage({
         />
 
         <div className="w-full min-w-0 max-w-[700px] flex-1 space-y-0 md:space-y-5">
-          <div className="mb-3 block w-full rounded-b-[32px] bg-gradient-to-b from-[#2f55f6] via-[#614bf8] to-[#803ef8] px-6 pb-7 pt-7 text-white shadow-lg md:hidden">
-            <h1 className="text-2xl font-bold tracking-tight">Hola, {userName}</h1>
-            <p className="mt-0.5 text-xs font-medium text-white/80">Bienvenido a Utopp</p>
-          </div>
+          <FeedWelcomeBanner userName={userName} variant="mobile" />
 
-          {/* Selector de pestañas para cambiar entre feed y explorador (solo móvil) */}
-          <div className="px-4 md:px-0 pt-2 md:pt-0 md:hidden">
-            <div className="flex border-b border-gray-200">
-              <button
-                onClick={() => setActiveTab("posts")}
-                className={`flex-1 pb-3 px-6 text-sm font-bold border-b-2 transition-all ${
-                  activeTab === "posts"
-                    ? "border-violet-600 text-violet-600"
-                    : "border-transparent text-gray-400 hover:text-gray-600"
-                }`}
-              >
-                Publicaciones
-              </button>
-              <button
-                onClick={() => setActiveTab("explore")}
-                className={`flex-1 pb-3 px-6 text-sm font-bold border-b-2 transition-all ${
-                  activeTab === "explore"
-                    ? "border-violet-600 text-violet-600"
-                    : "border-transparent text-gray-400 hover:text-gray-600"
-                }`}
-              >
-                Explorar
-              </button>
-            </div>
-          </div>
-
-          {activeTab === "explore" && (
-            <div className="md:hidden">
-              <ExplorePage />
-            </div>
-          )}
-
-          <div className={activeTab === "explore" ? "hidden md:block space-y-0 md:space-y-5" : "space-y-0 md:space-y-5"}>
+          <div className="space-y-0 md:space-y-5">
             <div className="block px-4 pb-2 pt-3 md:pt-0 md:hidden">
               <FeedHorizontalFilters
                 statusFilter={statusFilter}
@@ -110,6 +72,11 @@ export default function OrganizationFeedPage({
                 setSelectedTags={setSelectedTags}
               />
             </div>
+
+            <h2 className="font-display px-4 pb-2 pt-1 text-xl font-extrabold text-gray-900 md:hidden">
+              Publicaciones
+            </h2>
+
             <FeedWeeklyHighlightsCarousel />
             <FeedTabletHighlights userName={userName} />
 
@@ -117,12 +84,13 @@ export default function OrganizationFeedPage({
               <FeedWelcomeBanner userName={userName} />
             </div>
 
-            <div className="w-full space-y-4 px-4 pt-2 md:px-0 md:pt-0 lg:pt-4">
+            <div className="w-full space-y-4 px-0 pt-2 md:px-0 md:pt-0 lg:pt-4">
               {posts.map((post) => (
                 <div key={post.id} className="mb-4 last:mb-0 flex justify-center">
                   <PostCard
                     post={post}
                     currentUserId={currentUserId}
+                    edgeToEdge
                     onEdited={(updated) =>
                       setPosts((prev) => prev.map((item) => (item.id === updated.id ? updated : item)))
                     }
