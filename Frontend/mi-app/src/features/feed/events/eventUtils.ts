@@ -1,4 +1,4 @@
-import type { FeedPostOut } from "../../../types/post.types"
+import type { SharedEvent } from "../../../api/events.api"
 
 export type CountdownTone = "urgent" | "soon" | "neutral" | "expired"
 
@@ -16,17 +16,16 @@ export const COUNTDOWN_TONE_CLASSES: Record<CountdownTone, string> = {
 }
 
 /**
- * Deriva el estado de cuenta regresiva de un evento a partir de `deadline_at`.
- * Reglas de color: rojo <24h, ámbar 24h–7d, neutro >7d, gris si venció.
- * Devuelve null cuando el evento no tiene fecha límite.
+ * Deriva el estado de cuenta regresiva a partir de `date_time`.
+ * Reglas de color: rojo <24h, ámbar 24h–7d, neutro >7d, gris si ya pasó.
  */
-export function getEventCountdown(event: FeedPostOut, now: Date = new Date()): CountdownInfo | null {
-  if (!event.deadline_at) return null
+export function getEventCountdown(event: SharedEvent, now: Date = new Date()): CountdownInfo | null {
+  if (!event.date_time) return null
 
-  const deadline = new Date(event.deadline_at)
-  const diffMs = deadline.getTime() - now.getTime()
+  const startsAt = new Date(event.date_time)
+  const diffMs = startsAt.getTime() - now.getTime()
 
-  if (diffMs <= 0 || event.time_status === "out_of_time") {
+  if (diffMs <= 0) {
     return { label: "Finalizado", tone: "expired" }
   }
 
@@ -51,7 +50,7 @@ export function getEventCountdown(event: FeedPostOut, now: Date = new Date()): C
 }
 
 /** Fecha legible corta para eventos (ej: "mar 12 ago, 18:30"). */
-export function formatEventDate(dateStr?: string): string {
+export function formatEventDate(dateStr?: string | null): string {
   if (!dateStr) return "Fecha por confirmar"
   const date = new Date(dateStr)
   return date.toLocaleDateString("es-ES", {
@@ -64,7 +63,7 @@ export function formatEventDate(dateStr?: string): string {
 }
 
 /** Mezcla aleatoria (Fisher–Yates). Incluye todos los eventos, con o sin imagen. */
-export function shuffleEvents(events: FeedPostOut[]): FeedPostOut[] {
+export function shuffleEvents(events: SharedEvent[]): SharedEvent[] {
   const shuffled = [...events]
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1))
@@ -74,14 +73,13 @@ export function shuffleEvents(events: FeedPostOut[]): FeedPostOut[] {
 }
 
 /**
- * Orden estable para el carrusel destacado: conserva el orden ya mostrado
- * y solo baraja los eventos nuevos (p. ej. al paginar el feed).
- * Incluye todos los eventos, tengan imagen o no.
+ * Orden estable para el carrusel destacado: conserva el orden ya mostrado y
+ * solo baraja los eventos nuevos (p. ej. al paginar).
  */
 export function mergeFeaturedEvents(
-  previous: FeedPostOut[],
-  incoming: FeedPostOut[],
-): FeedPostOut[] {
+  previous: SharedEvent[],
+  incoming: SharedEvent[],
+): SharedEvent[] {
   if (incoming.length === 0) return []
 
   const byId = new Map(incoming.map((event) => [event.id, event]))
@@ -96,7 +94,9 @@ export function mergeFeaturedEvents(
   return [...keptIds.map((id) => byId.get(id)!), ...newcomers]
 }
 
-/** @deprecated Preferir mergeFeaturedEvents / shuffleEvents. */
-export function pickFeaturedEvents(events: FeedPostOut[], limit = 6): FeedPostOut[] {
-  return shuffleEvents(events).slice(0, Math.min(limit, events.length))
+/** Abre el formulario de inscripción de Utopp Formulario para este evento. */
+export function getRegistrationUrl(event: SharedEvent): string {
+  if (event.registration_url) return event.registration_url
+  const base = (import.meta.env.VITE_UF_FRONTEND_URL as string | undefined) ?? "http://localhost:5174"
+  return `${base.replace(/\/$/, "")}/e/${event.id}`
 }

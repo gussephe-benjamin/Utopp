@@ -10,12 +10,17 @@
 
 import api from "./axios"
 
+/** 'upload' = subida a Cloudinary (default, comportamiento histórico). 'external_url' = link pegado por el usuario. */
+export type ImageSourceType = "upload" | "external_url"
+
 export interface ImageCreate {
-  cloudinary_id: string
+  /** Requerido solo si source_type === 'upload'. Para 'external_url' el backend genera uno sintético si se omite. */
+  cloudinary_id?: string
   url: string
   position: number
   object_position?: string
   scale?: number
+  source_type?: ImageSourceType
 }
 
 export interface PostImage {
@@ -25,6 +30,7 @@ export interface PostImage {
   position: number
   object_position?: string | null
   scale?: number | null
+  source_type?: ImageSourceType
 }
 
 export interface ImageReorderItem {

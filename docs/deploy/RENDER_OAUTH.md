@@ -23,12 +23,20 @@ Frontend y backend en Render tienen hosts distintos (`*.onrender.com`). Con `Sam
 
 ## 2. Variables del frontend (Render → tu servicio frontend → Environment)
 
+Solo `VITE_*` (no secretos de Google ni Cloudinary API secret):
+
 | Variable | Valor |
 |----------|--------|
-| `VITE_API_URL` | `https://utopp.onrender.com` |
+| `VITE_API_URL` | `https://www.api.utopp.app` |
 | `VITE_UF_FRONTEND_URL` | `https://www.formulario.utopp.app` |
+| `VITE_CLOUDINARY_CLOUD_NAME` | tu cloud name |
+| `VITE_CLOUDINARY_UPLOAD_PRESET` | tu unsigned preset |
+
+**No uses** `https://api.utopp.app` (sin `www`): Cloudflare responde **307** hacia `www.api` y el navegador bloquea el `POST /auth/session/exchange` (CORS) → pantalla blanca en `/auth/callback`.
 
 **Rebuild obligatorio:** Vite incluye `VITE_*` en el bundle al compilar. Después de cambiar estas variables, lanza un nuevo deploy (idealmente con *Clear build cache*).
+
+**SPA rewrite** en el Static Site: `/*` → `/index.html` (Action: **Rewrite**), para que `/auth/callback` no dé Not Found.
 
 ## 3. Google Cloud Console
 
@@ -108,10 +116,10 @@ El backend en Render fuerza automáticamente `COOKIE_SAMESITE=none` y `COOKIE_SE
 
 | | Local (Docker) | Render |
 |---|----------------|--------|
-| `GOOGLE_REDIRECT_URI` | `http://localhost:8000/auth/google/callback` | `https://utopp.onrender.com/auth/google/callback` |
+| `GOOGLE_REDIRECT_URI` | `http://localhost:8000/auth/google/callback` | `https://www.api.utopp.app/auth/google/callback` |
 | `FRONTEND_URL` | `http://localhost:5173` | `https://www.utopp.app` |
 | `UF_FRONTEND_URL` | `http://localhost:5174` | `https://www.formulario.utopp.app` |
-| `VITE_API_URL` | `http://localhost:8000` | `https://utopp.onrender.com` |
+| `VITE_API_URL` | `http://localhost:8000` | `https://www.api.utopp.app` |
 | `VITE_UF_FRONTEND_URL` | `http://localhost:5174` | `https://www.formulario.utopp.app` |
 | `COOKIE_SECURE` | `false` | `true` |
 | `COOKIE_SAMESITE` | `lax` | `none` |

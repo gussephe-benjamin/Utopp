@@ -1,13 +1,14 @@
 import type { Dispatch, SetStateAction } from "react";
-import { Clock, Timer } from "lucide-react";
+import { Clock, Sparkles, Timer } from "lucide-react";
 import { INTERESTS } from "../../../constants/interests";
 import { TW_UTOPP_GRADIENT_R } from "../../../shared/constants/brand";
+import type { FeedSortOrder } from "../types";
 
 type FeedHorizontalFiltersProps = {
   statusFilter: string | undefined;
   setStatusFilter: (v: string | undefined) => void;
-  sortOrder: "urgency" | "recent";
-  setSortOrder: (v: "urgency" | "recent") => void;
+  sortOrder: FeedSortOrder;
+  setSortOrder: (v: FeedSortOrder) => void;
   selectedTags: string[];
   setSelectedTags: Dispatch<SetStateAction<string[]>>;
 };
@@ -58,6 +59,7 @@ export function FeedHorizontalFilters({
           [
             { value: "urgency" as const, label: "Urgencia", Icon: Timer },
             { value: "recent"  as const, label: "Recientes", Icon: Clock },
+            { value: "recommended" as const, label: "Para ti", Icon: Sparkles },
           ] as const
         ).map((opt) => {
           const active = sortOrder === opt.value;

@@ -301,9 +301,24 @@ cd Utopp
 cp .env.example .env
 # Editar .env con tus valores reales
 
-# 3. Levantar todos los servicios
+# 3. Crear la red compartida con Utopp Formulario una sola vez (si no existe)
+docker network create utopp_default
+
+# 4. Levantar todos los servicios
 docker compose up --build
 ```
+
+Este proyecto es **dueño del contenedor de PostgreSQL**, que comparte con Utopp
+Formulario a través del network externo `utopp_default` bajo el hostname `db`,
+replicando el despliegue de Render: una sola instancia, dos schemas. Plataforma
+es dueña del schema `public`; Formulario, del schema `formulario`, donde vive la
+tabla de eventos que ambos productos comparten. Con la red ya creada, los dos
+proyectos pueden levantarse en cualquier orden.
+
+Cada backend se conecta con su propio rol (`utopp_plataforma` y
+`utopp_formulario`), creados por la migración Alembic `0003` del repo
+`utopp-formulario`. Sobre el schema `formulario`, Plataforma solo tiene lectura
+y alta de eventos; no puede tocar inscritos ni boletos.
 
 Una vez iniciado:
 

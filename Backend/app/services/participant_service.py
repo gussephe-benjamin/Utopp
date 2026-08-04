@@ -13,6 +13,7 @@ from app.schemas.participant import (
     ParticipantPublicOut,
 )
 from app.core.exceptions import NotFoundException, BadRequestException, ConflictException
+from app.services import weight_adjustment_service
 
 
 def create_participation(
@@ -51,7 +52,11 @@ def create_participation(
     db.add(participant)
     db.commit()
     db.refresh(participant)
-    
+
+    weight_adjustment_service.record_interaction(
+        db, user_id=user_id, post=post, event_type=participant.status.value
+    )
+
     return participant
 
 
@@ -74,11 +79,19 @@ def update_participation(
     
     if not participant:
         raise NotFoundException("Participación")
-    
+
+    previous_status = participant.status
     participant.status = data.status
     db.commit()
     db.refresh(participant)
-    
+
+    if weight_adjustment_service.should_record_participation_change(previous_status, data.status):
+        post = db.get(Post, post_id)
+        if post is not None:
+            weight_adjustment_service.record_interaction(
+                db, user_id=user_id, post=post, event_type=data.status.value
+            )
+
     return participant
 
 

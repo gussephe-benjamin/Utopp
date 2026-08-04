@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react"
-import { getFeed } from "../../../api/feed.api"
-import { getMyProfile, type UserProfileResponse } from "../../../api/users.api"
-import type { FeedPostOut, FeedResponse } from "../../../types/post.types"
+import { listEvents, type SharedEvent, type SharedEventsPage } from "../../../api/events.api"
 
 type UseEventsFeedOptions = {
   /** Tamaño de página; en grid conviene múltiplo de columnas. */
@@ -9,26 +7,16 @@ type UseEventsFeedOptions = {
 }
 
 /**
- * Feed de eventos (post_type === "event") con scroll infinito.
- * Reutiliza getFeed con el filtro `type: "event"` y ordena por urgencia.
+ * Eventos de la tabla compartida con Utopp Formulario, con scroll infinito.
+ * Trae los eventos de TODOS los creadores, no solo los del usuario actual.
  */
 export function useEventsFeed({ pageSize = 12 }: UseEventsFeedOptions = {}) {
-  const [events, setEvents] = useState<FeedPostOut[]>([])
+  const [events, setEvents] = useState<SharedEvent[]>([])
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
   const [loading, setLoading] = useState(false)
   const loadingRef = useRef(false)
   const loaderRef = useRef<HTMLDivElement | null>(null)
-
-  const [currentUserId, setCurrentUserId] = useState<number | null>(null)
-
-  useEffect(() => {
-    getMyProfile()
-      .then((d: UserProfileResponse) => setCurrentUserId(d.id))
-      .catch(() => {
-        return
-      })
-  }, [])
 
   const fetchPage = useCallback(
     async (pageNum: number) => {
@@ -36,16 +24,13 @@ export function useEventsFeed({ pageSize = 12 }: UseEventsFeedOptions = {}) {
       loadingRef.current = true
       setLoading(true)
       try {
-        const data: FeedResponse = await getFeed({
-          page: pageNum,
-          size: pageSize,
-          type: "event",
-        })
+        const data: SharedEventsPage = await listEvents({ page: pageNum, size: pageSize })
         setEvents((prev) => (pageNum === 1 ? data.items : [...prev, ...data.items]))
         setHasMore(data.has_next)
         if (data.has_next) setPage(pageNum + 1)
       } catch (err) {
         console.error("Error cargando eventos:", err)
+        setHasMore(false)
       } finally {
         loadingRef.current = false
         setLoading(false)
@@ -54,15 +39,17 @@ export function useEventsFeed({ pageSize = 12 }: UseEventsFeedOptions = {}) {
     [pageSize],
   )
 
-  useEffect(() => {
-    const handlePublished = () => {
-      setPage(1)
-      setHasMore(true)
-      fetchPage(1)
-    }
-    window.addEventListener("postPublished", handlePublished)
-    return () => window.removeEventListener("postPublished", handlePublished)
+  const refresh = useCallback(() => {
+    setPage(1)
+    setHasMore(true)
+    fetchPage(1)
   }, [fetchPage])
+
+  useEffect(() => {
+    const handleCreated = () => refresh()
+    window.addEventListener("eventCreated", handleCreated)
+    return () => window.removeEventListener("eventCreated", handleCreated)
+  }, [refresh])
 
   useEffect(() => {
     const el = loaderRef.current
@@ -82,6 +69,6 @@ export function useEventsFeed({ pageSize = 12 }: UseEventsFeedOptions = {}) {
     loading,
     hasMore,
     loaderRef,
-    currentUserId,
+    refresh,
   }
 }

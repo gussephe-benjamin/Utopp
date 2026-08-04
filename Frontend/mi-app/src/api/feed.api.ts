@@ -12,6 +12,8 @@
  *   tags         — múltiples tags (OR)
  *   page         — número de página (1-indexed)
  *   size         — tamaño de página
+ *   sort         — 'recent' (más recientes primero) o 'recommended' (score
+ *                  heurístico personalizado); por defecto, orden por urgencia
  */
 
 import api from "./axios"
@@ -22,7 +24,7 @@ export interface FeedParams {
   subtype?: string
   tags?: string[]
   time_status?: string
-  sort?: string
+  sort?: "recent" | "recommended" | string
   page?: number
   size?: number
 }

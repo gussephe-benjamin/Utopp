@@ -45,7 +45,10 @@ class FeedPostOut(BaseModel):
     reaction_count: int = 0
     user_reacted: bool = False
     comment_count: int = 0
-    
+
+    relevance_score: Optional[float] = None
+    score_breakdown: Optional[dict[str, float]] = None
+
     class Config:
         from_attributes = True
 

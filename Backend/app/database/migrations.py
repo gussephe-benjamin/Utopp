@@ -579,3 +579,49 @@ def run_migrations(engine: Engine) -> None:
             ON user_sessions (user_id, started_at DESC);
         """))
         conn.commit()
+
+        # 21. Personalización Nivel 2: ajustes de pesos por usuario (feed recomendado)
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS user_weight_adjustments (
+                id BIGSERIAL PRIMARY KEY,
+                user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                post_type post_type_enum NOT NULL,
+                factor VARCHAR(32) NOT NULL,
+                delta_ema DOUBLE PRECISION NOT NULL DEFAULT 0,
+                evidence_count INTEGER NOT NULL DEFAULT 0,
+                last_event_at TIMESTAMPTZ,
+                updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                CONSTRAINT uq_user_weight_adjustments UNIQUE (user_id, post_type, factor)
+            );
+        """))
+        conn.execute(text("""
+            CREATE INDEX IF NOT EXISTS idx_user_weight_adjustments_user
+            ON user_weight_adjustments (user_id);
+        """))
+        conn.commit()
+
+        # 22. Imágenes por URL externa: distinguir origen de la imagen (upload vs external_url)
+        conn.execute(text("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_name = 'post_images' AND column_name = 'source_type'
+                ) THEN
+                    ALTER TABLE post_images ADD COLUMN source_type VARCHAR(20) NOT NULL DEFAULT 'upload';
+                END IF;
+            END$$;
+        """))
+        conn.execute(text("""
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM pg_constraint WHERE conname = 'chk_post_images_source_type'
+                ) THEN
+                    ALTER TABLE post_images
+                        ADD CONSTRAINT chk_post_images_source_type
+                        CHECK (source_type IN ('upload', 'external_url'));
+                END IF;
+            END$$;
+        """))
+        conn.commit()

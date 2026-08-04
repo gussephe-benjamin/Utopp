@@ -8,11 +8,13 @@ export type FeedViewProps = {
   onOpenCreate?: () => void
 }
 
+export type FeedSortOrder = "urgency" | "recent" | "recommended"
+
 export type FeedFiltersPanelProps = {
   statusFilter: string | undefined
   setStatusFilter: (v: string | undefined) => void
-  sortOrder: "urgency" | "recent"
-  setSortOrder: (v: "urgency" | "recent") => void
+  sortOrder: FeedSortOrder
+  setSortOrder: (v: FeedSortOrder) => void
   selectedTags: string[]
   setSelectedTags: Dispatch<SetStateAction<string[]>>
 }

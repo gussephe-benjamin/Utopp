@@ -42,6 +42,7 @@ import { ProfileLink } from "../../profile/components/ProfileLink";
 import { trackEvent, trackPostViewedThrottled } from "../../../features/analytics/analyticsTracker";
 import { PostCommentsSection } from "./PostCommentsSection";
 import { ParticipantBubbles } from "./ParticipantBubbles";
+import { ScoreExplanation } from "./ScoreExplanation";
 
 type PostCardProps = {
   post: FeedPostOut;
@@ -636,15 +637,18 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted, edgeToEdge 
             </div>
           </div>
 
-          {post.status === "archived" && (
-          <div className="max-w-[48%] shrink-0 text-right">
-              <div className="flex flex-wrap justify-end gap-1.5">
-                <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-bold text-amber-700">
-                  Archivado
-                </span>
+          <div className="flex shrink-0 items-start gap-1.5">
+            {post.status === "archived" && (
+              <div className="max-w-[48%] text-right">
+                <div className="flex flex-wrap justify-end gap-1.5">
+                  <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-bold text-amber-700">
+                    Archivado
+                  </span>
+                </div>
               </div>
+            )}
+            <ScoreExplanation score={post.relevance_score} breakdown={post.score_breakdown} />
           </div>
-          )}
         </div>
 
         <div className="px-4 pb-3 pt-1.5">

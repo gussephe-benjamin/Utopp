@@ -1,4 +1,4 @@
-/** URL pública del API en producción. */
+/** URL pública del API en producción (siempre con www; apex redirige y rompe CORS). */
 export const PRODUCTION_API_URL = "https://www.api.utopp.app"
 
 const PRODUCTION_API_BY_HOST: Record<string, string> = {
@@ -26,15 +26,31 @@ function isFrontendProductionUrl(url: string): boolean {
   }
 }
 
+/** Normaliza apex api.utopp.app → www (el 307 de Cloudflare rompe fetch con credentials). */
+function normalizeApiBaseUrl(url: string): string {
+  const cleaned = url.replace(/\/+$/, "")
+  try {
+    const parsed = new URL(cleaned)
+    if (parsed.hostname === "api.utopp.app") {
+      parsed.hostname = "www.api.utopp.app"
+      return parsed.toString().replace(/\/+$/, "")
+    }
+  } catch {
+    /* ignore */
+  }
+  return cleaned
+}
+
 /**
  * Resuelve la base URL del API.
  * - Respeta VITE_API_URL si apunta a un host de API (no al frontend).
- * - En utopp.app / Vercel, usa www.api.utopp.app aunque el build tenga localhost o el FE.
+ * - Corrige api.utopp.app → www.api.utopp.app.
+ * - En utopp.app, usa www.api.utopp.app aunque el build tenga localhost o el FE.
  */
 export function resolveApiBaseUrl(): string {
   const fromEnv = (import.meta.env.VITE_API_URL as string | undefined)?.trim()
   if (fromEnv && !isLocalApiUrl(fromEnv) && !isFrontendProductionUrl(fromEnv)) {
-    return fromEnv.replace(/\/+$/, "")
+    return normalizeApiBaseUrl(fromEnv)
   }
 
   if (typeof window !== "undefined") {
@@ -42,5 +58,5 @@ export function resolveApiBaseUrl(): string {
     if (mapped) return mapped
   }
 
-  return (fromEnv || "http://localhost:8000").replace(/\/+$/, "")
+  return normalizeApiBaseUrl(fromEnv || "http://localhost:8000")
 }

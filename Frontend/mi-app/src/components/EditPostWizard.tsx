@@ -145,6 +145,7 @@ export default function EditPostWizard({ post, onClose, onSaved }: EditPostWizar
           previewUrl:    img.url,
           cloudinaryUrl: img.url,
           cloudinaryId:  img.cloudinary_id,
+          sourceType:    img.source_type ?? 'upload',
           status:        'done' as const,
           objectPosition: img.object_position ?? 'center center',
           scale:          img.scale ?? 1,
@@ -251,13 +252,17 @@ export default function EditPostWizard({ post, onClose, onSaved }: EditPostWizar
         }
       }
 
-      // 2b. New images (no backendId)
-      const newImages = images.filter(img => parseBackendId(img.tempId) === null && img.status === 'done' && img.cloudinaryId && img.cloudinaryUrl)
+      // 2b. New images (no backendId) — subidas a Cloudinary o links externos
+      const newImages = images.filter(
+        img => parseBackendId(img.tempId) === null && img.status === 'done' && img.cloudinaryUrl &&
+          (img.sourceType === 'external_url' || img.cloudinaryId)
+      )
       if (newImages.length > 0) setSaveProgress(`Agregando imágenes (${newImages.length})...`)
       for (let i = 0; i < newImages.length; i++) {
         const img = newImages[i]
         await addImage(postId, {
-          cloudinary_id:   img.cloudinaryId!,
+          source_type:     img.sourceType ?? 'upload',
+          ...(img.cloudinaryId ? { cloudinary_id: img.cloudinaryId } : {}),
           url:             img.cloudinaryUrl!,
           position:        images.indexOf(img),
           object_position: img.objectPosition,
@@ -281,6 +286,7 @@ export default function EditPostWizard({ post, onClose, onSaved }: EditPostWizar
         setSaveProgress('Actualizando encuadre...')
         await deleteImage(postId, bid).catch(console.error)
         await addImage(postId, {
+          source_type:     img.sourceType ?? 'upload',
           cloudinary_id:   img.cloudinaryId ?? img.cloudinaryUrl!,
           url:             img.cloudinaryUrl!,
           position:        images.indexOf(img),

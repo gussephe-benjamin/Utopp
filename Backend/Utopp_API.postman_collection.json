@@ -1,0 +1,3642 @@
+{
+  "info": {
+    "_postman_id": "6cd26c85-db9c-4b2a-9970-f6ab70d6f854",
+    "name": "Utopp API",
+    "description": "# Utopp API\n\nColección completa del backend Utopp (FastAPI).\n\n## Setup rápido\n1. Importa este archivo en Postman.\n2. Ajusta `base_url` (local: `http://localhost:8000`).\n3. Flujo típico:\n   - `Legal → Terms Current` y `Privacy Current` (guardan ids automáticamente)\n   - `Auth → Login` (guarda `token` automáticamente) **o** Register\n   - Si hace falta: `Legal → Accept`\n   - `Onboarding → Update`\n   - Crear/publicar posts, feed, engagement, admin…\n\n## Auth\nLa colección usa **Bearer Token** (`{{token}}`) a nivel colección.\n`POST /auth/login` y `POST /auth/register` también setean cookie `utopp_session`; Postman la reenvía si “Send cookies” está activo.\n\n## Variables\n- `base_url`, `token`, `user_id`, `post_id`, `image_id`, `link_id`, `comment_id`\n- `terms_document_id`, `privacy_document_id`, `role_identifier`, `follower_id`, `target_user_id`\n- `session_token`, `pending_token`\n\n## Credenciales de seed (dev)\n- Estudiante: `esteban@utec.edu.pe` / `Password123!`\n- Admin: `alum@utec.edu.pe` / `Password123!`\n",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "user_id",
+      "value": "4"
+    },
+    {
+      "key": "post_id",
+      "value": "1"
+    },
+    {
+      "key": "image_id",
+      "value": "1"
+    },
+    {
+      "key": "link_id",
+      "value": "1"
+    },
+    {
+      "key": "comment_id",
+      "value": "1"
+    },
+    {
+      "key": "role_identifier",
+      "value": "1"
+    },
+    {
+      "key": "follower_id",
+      "value": "1"
+    },
+    {
+      "key": "target_user_id",
+      "value": "1"
+    },
+    {
+      "key": "terms_document_id",
+      "value": "1"
+    },
+    {
+      "key": "privacy_document_id",
+      "value": "2"
+    },
+    {
+      "key": "session_token",
+      "value": ""
+    },
+    {
+      "key": "pending_token",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "01. Sistema",
+      "description": "Diagnóstico del sistema.",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health",
+                ""
+              ]
+            },
+            "description": "Verifica que FastAPI esté activo. No auth.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Root Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                ""
+              ]
+            },
+            "description": "Root status. No auth.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "02. Auth",
+      "description": "Autenticación: email/password, Google OAuth, sesión.",
+      "item": [
+        {
+          "name": "Me (sin sesión)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Sin auth → `{authenticated:false}`. Con cookie/Bearer → usuario.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Me (autenticado)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Con Bearer/cookie válido."
+          },
+          "response": []
+        },
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Registro email/password. Requiere terms/privacy document ids vigentes.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"nuevo.alumno@utec.edu.pe\",\n  \"password\": \"Password123!\",\n  \"full_name\": \"Nuevo Alumno\",\n  \"terms_document_id\": \"{{terms_document_id}}\",\n  \"privacy_document_id\": \"{{privacy_document_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const d = pm.response.json();",
+                  "  if (d.access_token) { pm.collectionVariables.set('token', d.access_token); }",
+                  "  if (d.user && d.user.id) { pm.collectionVariables.set('user_id', String(d.user.id)); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Login email/password. Guarda `token` automáticamente. Seed: esteban@utec.edu.pe / Password123!",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"esteban@utec.edu.pe\",\n  \"password\": \"Password123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const d = pm.response.json();",
+                  "  if (d.access_token) { pm.collectionVariables.set('token', d.access_token); }",
+                  "  if (d.user && d.user.id) { pm.collectionVariables.set('user_id', String(d.user.id)); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Google Login (redirect)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/google/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "google",
+                "login"
+              ]
+            },
+            "description": "Inicia OAuth Google (302). Abrir en navegador.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Google Callback",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/google/callback?code=&state=",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "google",
+                "callback"
+              ],
+              "query": [
+                {
+                  "key": "code",
+                  "value": ""
+                },
+                {
+                  "key": "state",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Callback OAuth (browser). Rara vez se llama desde Postman.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Google Pending",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/google/pending?pending_token={{pending_token}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "google",
+                "pending"
+              ],
+              "query": [
+                {
+                  "key": "pending_token",
+                  "value": "{{pending_token}}"
+                }
+              ]
+            },
+            "description": "Perfil Google pendiente de registro/consentimiento.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Session Exchange",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/session/exchange",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "session",
+                "exchange"
+              ]
+            },
+            "description": "Intercambia session_token one-time (post-OAuth frontend).",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"session_token\": \"{{session_token}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Google Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/google/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "google",
+                "register"
+              ]
+            },
+            "description": "Completa signup Google tras aceptar términos.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"terms_document_id\": \"{{terms_document_id}}\",\n  \"privacy_document_id\": \"{{privacy_document_id}}\",\n  \"pending_token\": \"{{pending_token}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Google Cancel Pending",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/google/cancel-pending",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "google",
+                "cancel-pending"
+              ]
+            },
+            "description": "Limpia cookie OAuth pending.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/logout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "logout"
+              ]
+            },
+            "description": "Limpia cookie de sesión."
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/refresh",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "refresh"
+              ]
+            },
+            "description": "Renueva JWT/sesión. Requiere auth."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "03. Legal",
+      "description": "Documentos legales y consentimiento.",
+      "item": [
+        {
+          "name": "Terms Current",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/legal/terms/current",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "legal",
+                "terms",
+                "current"
+              ]
+            },
+            "description": "Documento de términos vigente. Guarda terms_document_id.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const d = pm.response.json();",
+                  "  if (d.id) { pm.collectionVariables.set('terms_document_id', String(d.id)); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Privacy Current",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/legal/privacy/current",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "legal",
+                "privacy",
+                "current"
+              ]
+            },
+            "description": "Documento de privacidad vigente. Guarda privacy_document_id.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const d = pm.response.json();",
+                  "  if (d.id) { pm.collectionVariables.set('privacy_document_id', String(d.id)); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Accept (terms + privacy)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/legal/accept",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "legal",
+                "accept"
+              ]
+            },
+            "description": "Registra aceptación de documentos vigentes. Requiere auth.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"terms_document_id\": \"{{terms_document_id}}\",\n  \"privacy_document_id\": \"{{privacy_document_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Accept (legacy document_id)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/legal/accept",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "legal",
+                "accept"
+              ]
+            },
+            "description": "Variante legacy con document_id único.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"document_id\": \"{{terms_document_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Terms (admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/legal/terms",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "legal",
+                "terms"
+              ]
+            },
+            "description": "Actualiza términos activos. Admin/root.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Términos y Condiciones\",\n  \"content\": \"Contenido actualizado de términos.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Privacy (admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/legal/privacy",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "legal",
+                "privacy"
+              ]
+            },
+            "description": "Actualiza privacidad activa. Admin/root.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Política de Privacidad\",\n  \"content\": \"Contenido actualizado de privacidad.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "04. Setup",
+      "description": "Bootstrap inicial.",
+      "item": [
+        {
+          "name": "Bootstrap Admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Setup-Token",
+                "value": "{{setup_token}}",
+                "disabled": true
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/setup/bootstrap-admin",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "setup",
+                "bootstrap-admin"
+              ]
+            },
+            "description": "Asigna admin al primer bootstrap. Header X-Setup-Token si está habilitado.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"alum@utec.edu.pe\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Ensure Default Roles",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/setup/ensure-default-roles",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "setup",
+                "ensure-default-roles"
+              ]
+            },
+            "description": "Sincroniza catálogo canónico de roles.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "05. Onboarding",
+      "description": "Onboarding de perfil académico.",
+      "item": [
+        {
+          "name": "Is Complete",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/onboarding/isComplete",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "onboarding",
+                "isComplete"
+              ]
+            },
+            "description": "¿Onboarding completo para user id?",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"{{user_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Me",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/onboarding/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "onboarding",
+                "me"
+              ]
+            },
+            "description": "Estado de onboarding del usuario autenticado."
+          },
+          "response": []
+        },
+        {
+          "name": "Update",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/onboarding/update",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "onboarding",
+                "update"
+              ]
+            },
+            "description": "Completa onboarding (una vez).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"career\": \"Ingeniería de Software\",\n  \"cycle\": 6\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "06. Users",
+      "description": "Usuarios, perfil, follows y organizaciones.",
+      "item": [
+        {
+          "name": "List All Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/all-users",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "all-users"
+              ]
+            },
+            "description": "Lista todos los usuarios (full).",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "By Email",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/by-email?email=esteban@utec.edu.pe",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "by-email"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "esteban@utec.edu.pe"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "By Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/by-id/{{user_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "by-id",
+                "{{user_id}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Students",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/students",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "students"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Organizations All",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/organizations/all",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "organizations",
+                "all"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Organizations (paged)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/organizations?page=1&size=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "organizations"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Me",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "me"
+              ]
+            },
+            "description": "Mi perfil."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Me",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "me"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"Esteban Alumno\",\n  \"career\": \"Ingeniería de Software\",\n  \"cycle\": 6,\n  \"interests\": [\n    \"tech\",\n    \"academic\",\n    \"entrepreneurship\"\n  ],\n  \"description\": \"Estudiante de prueba\",\n  \"contacts\": {\n    \"instagram\": \"https://instagram.com/ejemplo\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Replace Interests",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/me/interests",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "interests"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"interests\": [\n    \"tech\",\n    \"academic\",\n    \"music\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Check Username",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/check-username?username=Esteban%20Alumno",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "check-username"
+              ],
+              "query": [
+                {
+                  "key": "username",
+                  "value": "Esteban%20Alumno"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Check Email",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/check-email?email=esteban@utec.edu.pe",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "check-email"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "esteban@utec.edu.pe"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Public Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/{{user_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "{{user_id}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "User Posts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/{{user_id}}/posts?page=1&size=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "{{user_id}}",
+                "posts"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "My Following Orgs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/me/following-organizations?page=1&size=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "following-organizations"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "User Following Orgs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/{{user_id}}/following-organizations?page=1&size=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "{{user_id}}",
+                "following-organizations"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Follow User",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/{{user_id}}/follow",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "{{user_id}}",
+                "follow"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Unfollow User",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/{{user_id}}/follow",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "{{user_id}}",
+                "follow"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Followers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/{{user_id}}/followers?page=1&size=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "{{user_id}}",
+                "followers"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Following",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/{{user_id}}/following?page=1&size=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "{{user_id}}",
+                "following"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Remove Follower",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/me/followers/{{follower_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "followers",
+                "{{follower_id}}"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Set Profile Image",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/me/profile-images",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "profile-images"
+              ]
+            },
+            "description": "Sube/registra imagen de perfil (Cloudinary).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cloudinary_id\": \"profile/example_avatar\",\n  \"url\": \"https://res.cloudinary.com/demo/image/upload/sample.jpg\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "07. Posts",
+      "description": "CRUD de publicaciones y ciclo de vida.",
+      "item": [
+        {
+          "name": "Create (generic event)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/posts/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                ""
+              ]
+            },
+            "description": "Crea draft genérico. Guarda post_id.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Hackathon Utopp 2026\",\n  \"description\": \"Evento de prueba para Postman. Participa en 36h de innovación.\",\n  \"post_type\": \"event\",\n  \"subtype\": \"emprendimiento\",\n  \"tags\": [\n    \"tech\",\n    \"competitions\"\n  ],\n  \"specific_fields\": {},\n  \"deadline_at\": \"2026-12-31T23:59:59Z\",\n  \"is_pinned\": false,\n  \"aspect_ratio\": \"4:5\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201 || pm.response.code === 200) {",
+                  "  const d = pm.response.json();",
+                  "  if (d.id) { pm.collectionVariables.set('post_id', String(d.id)); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create (international opportunity)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/posts/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                ""
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Intercambio MIT 2027\",\n  \"description\": \"Oportunidad internacional de prueba.\",\n  \"post_type\": \"international_opportunity\",\n  \"subtype\": \"intercambio\",\n  \"tags\": [\n    \"exchanges\",\n    \"academic\"\n  ],\n  \"deadline_at\": \"2026-11-30T23:59:59Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201 || pm.response.code === 200) {",
+                  "  const d = pm.response.json();",
+                  "  if (d.id) { pm.collectionVariables.set('post_id', String(d.id)); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Academic Project",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/posts/academic-projects",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "academic-projects"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subtype\": \"proyecto_investigacion\",\n  \"title\": \"Proyecto IoT Campus\",\n  \"description\": \"Buscamos colaboradores para investigación IoT.\",\n  \"tags\": [\n    \"tech\",\n    \"academic\"\n  ],\n  \"deadline_at\": \"2026-10-01T00:00:00Z\",\n  \"participants_needed\": 4,\n  \"estimated_time\": \"3 meses\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201 || pm.response.code === 200) {",
+                  "  const d = pm.response.json();",
+                  "  if (d.id) { pm.collectionVariables.set('post_id', String(d.id)); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Simple Post",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/posts/simple-posts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "simple-posts"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"subtype\": \"pregunta\",\n  \"description\": \"¿Alguien tiene tips para el curso de algoritmos?\",\n  \"tags\": [\n    \"academic\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201 || pm.response.code === 200) {",
+                  "  const d = pm.response.json();",
+                  "  if (d.id) { pm.collectionVariables.set('post_id', String(d.id)); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Announcement",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/posts/announcements",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "announcements"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Comunicado importante\",\n  \"description\": \"Anuncio de prueba desde Postman.\",\n  \"tags\": [\n    \"academic\"\n  ],\n  \"deadline_at\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201 || pm.response.code === 200) {",
+                  "  const d = pm.response.json();",
+                  "  if (d.id) { pm.collectionVariables.set('post_id', String(d.id)); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Admin List Posts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/posts?page=1&size=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Lista admin de todos los posts."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Post",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/posts/{{post_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "{{post_id}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Post",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/posts/{{post_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "{{post_id}}"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Hackathon Utopp 2026 (actualizado)\",\n  \"description\": \"Descripción actualizada.\",\n  \"tags\": [\n    \"tech\",\n    \"entrepreneurship\"\n  ],\n  \"is_pinned\": false,\n  \"aspect_ratio\": \"1:1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Publish",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/posts/{{post_id}}/publish",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "{{post_id}}",
+                "publish"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Archive",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/posts/{{post_id}}/archive",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "{{post_id}}",
+                "archive"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Unarchive",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/posts/{{post_id}}/unarchive",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "{{post_id}}",
+                "unarchive"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Check Time Status",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/posts/{{post_id}}/check-time-status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "{{post_id}}",
+                "check-time-status"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Close Academic Project",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/posts/{{post_id}}/close",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "{{post_id}}",
+                "close"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Set Deadline",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/posts/{{post_id}}/deadline",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "{{post_id}}",
+                "deadline"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"deadline_at\": \"2026-12-15T23:59:59Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Clear Deadline",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/posts/{{post_id}}/deadline",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "{{post_id}}",
+                "deadline"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Post",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/posts/{{post_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "{{post_id}}"
+              ]
+            },
+            "description": "Solo posts archivados (owner/admin)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "08. Post Images",
+      "description": "Imágenes de posts: upload Cloudinary o URL externa.",
+      "item": [
+        {
+          "name": "Add Image (Cloudinary upload)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/posts/{{post_id}}/images",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "{{post_id}}",
+                "images"
+              ]
+            },
+            "description": "source_type=upload (default). Requiere cloudinary_id.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"source_type\": \"upload\",\n  \"cloudinary_id\": \"utopp/posts/example_upload\",\n  \"url\": \"https://res.cloudinary.com/demo/image/upload/sample.jpg\",\n  \"position\": 0,\n  \"object_position\": \"center center\",\n  \"scale\": 1.0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const d = pm.response.json();",
+                  "  if (d.id) { pm.collectionVariables.set('image_id', String(d.id)); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Add Image (external URL)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/posts/{{post_id}}/images",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "{{post_id}}",
+                "images"
+              ]
+            },
+            "description": "source_type=external_url. Sin cloudinary_id (el backend genera uno sintético). No hace fetch server-side.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"source_type\": \"external_url\",\n  \"url\": \"https://picsum.photos/seed/utopp-postman/800/600\",\n  \"position\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const d = pm.response.json();",
+                  "  if (d.id) { pm.collectionVariables.set('image_id', String(d.id)); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Images",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/posts/{{post_id}}/images",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "{{post_id}}",
+                "images"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reorder Images",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/posts/{{post_id}}/images/reorder",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "{{post_id}}",
+                "images",
+                "reorder"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"images\": [\n    {\n      \"image_id\": \"{{image_id}}\",\n      \"position\": 0\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Image",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/posts/{{post_id}}/images/{{image_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "{{post_id}}",
+                "images",
+                "{{image_id}}"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "09. Post Links",
+      "description": "Links asociados a posts.",
+      "item": [
+        {
+          "name": "Add Link",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/posts/{{post_id}}/links",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "{{post_id}}",
+                "links"
+              ]
+            },
+            "description": "Estudiantes no pueden agregar links a simple_post.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"label\": \"Inscripción\",\n  \"url\": \"https://forms.gle/ejemplo\",\n  \"type\": \"registration\",\n  \"display_type\": \"button\",\n  \"position\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const d = pm.response.json();",
+                  "  if (d.id) { pm.collectionVariables.set('link_id', String(d.id)); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Links",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/posts/{{post_id}}/links",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "{{post_id}}",
+                "links"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Link",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/posts/{{post_id}}/links/{{link_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "{{post_id}}",
+                "links",
+                "{{link_id}}"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"label\": \"Formulario de inscripción\",\n  \"display_type\": \"link\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reorder Links",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/posts/{{post_id}}/links/reorder",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "{{post_id}}",
+                "links",
+                "reorder"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"links\": [\n    {\n      \"link_id\": \"{{link_id}}\",\n      \"position\": 0\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Link",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/posts/{{post_id}}/links/{{link_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "{{post_id}}",
+                "links",
+                "{{link_id}}"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "10. Feed",
+      "description": "Feed publicado con filtros y ordenamiento (recent / recommended).",
+      "item": [
+        {
+          "name": "Feed (público)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/feed?page=1&size=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "feed"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Feed sin auth.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Feed (autenticado)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/feed?page=1&size=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "feed"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Incluye is_saved, participation_status, user_reacted."
+          },
+          "response": []
+        },
+        {
+          "name": "Feed sort=recent",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/feed?sort=recent&page=1&size=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "feed"
+              ],
+              "query": [
+                {
+                  "key": "sort",
+                  "value": "recent"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Feed sort=recommended (Para ti)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/feed?sort=recommended&page=1&size=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "feed"
+              ],
+              "query": [
+                {
+                  "key": "sort",
+                  "value": "recommended"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Score heurístico Nivel 1 + personalización Nivel 2. Devuelve relevance_score y score_breakdown."
+          },
+          "response": []
+        },
+        {
+          "name": "Feed filter type=event",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/feed?type=event&page=1&size=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "feed"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "event"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Feed exclude_type=event",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/feed?exclude_type=event&page=1&size=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "feed"
+              ],
+              "query": [
+                {
+                  "key": "exclude_type",
+                  "value": "event"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Feed filter subtype",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/feed?subtype=emprendimiento&page=1&size=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "feed"
+              ],
+              "query": [
+                {
+                  "key": "subtype",
+                  "value": "emprendimiento"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Feed filter tags",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/feed?tags=tech&tags=academic&page=1&size=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "feed"
+              ],
+              "query": [
+                {
+                  "key": "tags",
+                  "value": "tech"
+                },
+                {
+                  "key": "tags",
+                  "value": "academic"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Feed time_status=vigente",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/feed?time_status=vigente&page=1&size=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "feed"
+              ],
+              "query": [
+                {
+                  "key": "time_status",
+                  "value": "vigente"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Feed time_status=vencida",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/feed?time_status=vencida&page=1&size=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "feed"
+              ],
+              "query": [
+                {
+                  "key": "time_status",
+                  "value": "vencida"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "11. Saved Posts",
+      "description": "Favoritos.",
+      "item": [
+        {
+          "name": "Save Post",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/posts/{{post_id}}/save",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "{{post_id}}",
+                "save"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Unsave Post",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/posts/{{post_id}}/save",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "{{post_id}}",
+                "save"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "My Saved Posts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/me/saved-posts?page=1&size=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "saved-posts"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "12. Reactions",
+      "description": "Reacciones (likes).",
+      "item": [
+        {
+          "name": "Toggle Like",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/posts/{{post_id}}/reactions",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "{{post_id}}",
+                "reactions"
+              ]
+            },
+            "description": "Toggle like. También dispara personalización Nivel 2."
+          },
+          "response": []
+        },
+        {
+          "name": "Reaction Count",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/posts/{{post_id}}/reactions/count",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "{{post_id}}",
+                "reactions",
+                "count"
+              ]
+            },
+            "description": "Conteo + user_reacted si hay auth."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "13. Comments",
+      "description": "Comentarios.",
+      "item": [
+        {
+          "name": "List Comments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/posts/{{post_id}}/comments?page=1&size=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "{{post_id}}",
+                "comments"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Comment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/posts/{{post_id}}/comments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "{{post_id}}",
+                "comments"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Comentario de prueba desde Postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const d = pm.response.json();",
+                  "  if (d.id) { pm.collectionVariables.set('comment_id', String(d.id)); }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Comment",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/posts/{{post_id}}/comments/{{comment_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "{{post_id}}",
+                "comments",
+                "{{comment_id}}"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "14. Participants",
+      "description": "Participación en eventos.",
+      "item": [
+        {
+          "name": "Participate",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/posts/{{post_id}}/participate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "{{post_id}}",
+                "participate"
+              ]
+            },
+            "description": "Solo posts tipo event publicados.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"going\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Participation",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/posts/{{post_id}}/participation",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "{{post_id}}",
+                "participation"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"attended\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Participation",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/posts/{{post_id}}/participation",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "{{post_id}}",
+                "participation"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "List Participants",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/posts/{{post_id}}/participants?page=1&size=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "{{post_id}}",
+                "participants"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Participants (going)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/posts/{{post_id}}/participants?status=going&page=1&size=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "{{post_id}}",
+                "participants"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "going"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Participant Counts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/posts/{{post_id}}/participants/count",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "posts",
+                "{{post_id}}",
+                "participants",
+                "count"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "15. Roles",
+      "description": "Catálogo y asignación de roles.",
+      "item": [
+        {
+          "name": "List Roles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/roles/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "roles",
+                ""
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Create Role (admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/roles/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "roles",
+                ""
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"rol_custom\",\n  \"description\": \"Rol de prueba\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "My Roles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/roles/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "roles",
+                "me"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Roles By Email",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/roles/by-email?email=esteban@utec.edu.pe",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "roles",
+                "by-email"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "esteban@utec.edu.pe"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "User Roles",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/roles/users/{{user_id}}/roles",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "roles",
+                "users",
+                "{{user_id}}",
+                "roles"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Assign Role (admin)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/roles/users/{{user_id}}/roles/{{role_identifier}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "roles",
+                "users",
+                "{{user_id}}",
+                "roles",
+                "{{role_identifier}}"
+              ]
+            },
+            "description": "role_identifier: 1=estudiante, 2=org, 3=oficina, 4=admin, 5=root"
+          },
+          "response": []
+        },
+        {
+          "name": "Remove Role (admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/roles/users/{{user_id}}/roles/{{role_identifier}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "roles",
+                "users",
+                "{{user_id}}",
+                "roles",
+                "{{role_identifier}}"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "16. Admin",
+      "description": "Administración de usuarios (admin/root).",
+      "item": [
+        {
+          "name": "Am I Admin?",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "me"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "List Admins",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/admins",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "admins"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/users?role=all&q=&page=1&size=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "role",
+                  "value": "all"
+                },
+                {
+                  "key": "q",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/users/{{user_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "{{user_id}}"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Create User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/users",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "users"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"nuevo.org@utec.edu.pe\",\n  \"password\": \"Password123!\",\n  \"full_name\": \"Nueva Org\",\n  \"role\": \"organización estudiantil\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/users/{{user_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "{{user_id}}"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"Nombre Actualizado\",\n  \"career\": \"Ingeniería Industrial\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/users/{{target_user_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "{{target_user_id}}"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "17. Analytics",
+      "description": "Tracking de actividad (estudiantes).",
+      "item": [
+        {
+          "name": "Track Event",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/analytics/events",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "analytics",
+                "events"
+              ]
+            },
+            "description": "Telemetría de estudiantes. No afecta el algoritmo de recomendación.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event_type\": \"post_viewed\",\n  \"metadata\": {\n    \"post_id\": 1\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "18. Admin Analytics",
+      "description": "Dashboards de analytics (admin/root).",
+      "item": [
+        {
+          "name": "Summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/analytics/summary?from=2026-01-01&to=2026-12-31&organizationId=",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "analytics",
+                "summary"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "2026-01-01"
+                },
+                {
+                  "key": "to",
+                  "value": "2026-12-31"
+                },
+                {
+                  "key": "organizationId",
+                  "value": ""
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Activity Timeseries",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/analytics/activity-timeseries?from=2026-01-01&to=2026-12-31&groupBy=day",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "analytics",
+                "activity-timeseries"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "2026-01-01"
+                },
+                {
+                  "key": "to",
+                  "value": "2026-12-31"
+                },
+                {
+                  "key": "groupBy",
+                  "value": "day"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Engagement Timeseries",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/analytics/engagement-timeseries?from=2026-01-01&to=2026-12-31&groupBy=day",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "analytics",
+                "engagement-timeseries"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "2026-01-01"
+                },
+                {
+                  "key": "to",
+                  "value": "2026-12-31"
+                },
+                {
+                  "key": "groupBy",
+                  "value": "day"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Organizations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/analytics/organizations?from=2026-01-01&to=2026-12-31",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "analytics",
+                "organizations"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "2026-01-01"
+                },
+                {
+                  "key": "to",
+                  "value": "2026-12-31"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Students",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/analytics/students?from=2026-01-01&to=2026-12-31&page=1&limit=20&sort=activityScore&search=",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "analytics",
+                "students"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "2026-01-01"
+                },
+                {
+                  "key": "to",
+                  "value": "2026-12-31"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "sort",
+                  "value": "activityScore"
+                },
+                {
+                  "key": "search",
+                  "value": ""
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "At-Risk Students",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/analytics/at-risk-students?inactiveDays=7",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "analytics",
+                "at-risk-students"
+              ],
+              "query": [
+                {
+                  "key": "inactiveDays",
+                  "value": "7"
+                }
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-import { Clock, Timer } from "lucide-react"
+import { Clock, Sparkles, Timer } from "lucide-react"
 import { INTERESTS } from "../../../constants/interests"
 import { TW_AUTH_FOOTER_LINK, TW_UTOPP_GRADIENT_R } from "../../../shared/constants/brand"
 import type { FeedFiltersPanelProps } from "../types"
@@ -53,6 +53,7 @@ export function FeedFiltersPanel({
             [
               { value: "recent" as const, label: "Recientes", Icon: Clock },
               { value: "urgency" as const, label: "Urgencia", Icon: Timer },
+              { value: "recommended" as const, label: "Para ti", Icon: Sparkles },
             ] as const
           ).map((opt) => (
             <button

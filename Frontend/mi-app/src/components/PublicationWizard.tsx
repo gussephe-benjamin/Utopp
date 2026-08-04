@@ -286,16 +286,17 @@ export default function PublicationWizard({ isOpen, onClose, allowedTypes }: Pub
 
       const postId: number = post.id
 
-      // 2. Registrar imágenes (solo las que subieron exitosamente a Cloudinary)
+      // 2. Registrar imágenes (subidas a Cloudinary o links externos, ambas con status 'done')
       const readyImages = formData.images.filter(
-        img => img.status === 'done' && img.cloudinaryId && img.cloudinaryUrl
+        img => img.status === 'done' && img.cloudinaryUrl && (img.sourceType === 'external_url' || img.cloudinaryId)
       )
       if (readyImages.length > 0) {
         setPublishProgress(`Guardando imágenes (${readyImages.length})...`)
         for (let i = 0; i < readyImages.length; i++) {
           const img = readyImages[i]
           await addImage(postId, {
-            cloudinary_id: img.cloudinaryId!,
+            source_type: img.sourceType ?? 'upload',
+            ...(img.cloudinaryId ? { cloudinary_id: img.cloudinaryId } : {}),
             url: img.cloudinaryUrl!,
             position: i,
             object_position: img.objectPosition,

@@ -1,18 +1,41 @@
 import { useState } from "react";
 import { Info } from "lucide-react";
 
-const SCORE_FACTORS = [
-  { name: "Intereses", pct: 40 },
-  { name: "Proximidad social", pct: 25 },
-  { name: "Recencia", pct: 20 },
-  { name: "Ciclo académico", pct: 10 },
-  { name: "Disponibilidad", pct: 5 },
-] as const;
+/** Etiquetas legibles para los factores que devuelve `score_breakdown` del backend. */
+const FACTOR_LABELS: Record<string, string> = {
+  interest_overlap: "Intereses",
+  social_proximity: "Proximidad social",
+  recency: "Recencia",
+  engagement: "Interacción",
+  urgency: "Urgencia",
+  availability_match: "Disponibilidad",
+};
 
-/** Popover explicando factores del score de relevancia */
-export function ScoreExplanation({ score }: { score?: number }) {
+// Reservado en el backend (peso 0 en todos los perfiles): no hay campo
+// estructurado de fecha/hora de evento para calcularlo todavía.
+const HIDDEN_FACTORS = new Set(["availability_match"]);
+
+type ScoreExplanationProps = {
+  /** Score total del post (suma del breakdown). Ausente para posts pineados. */
+  score?: number;
+  /** Desglose feature × peso efectivo por factor, tal como lo devuelve el backend. */
+  breakdown?: Record<string, number>;
+};
+
+/** Popover explicando los factores reales del score de relevancia (sort=recommended). */
+export function ScoreExplanation({ score, breakdown }: ScoreExplanationProps) {
   const [show, setShow] = useState(false);
-  if (!score) return null;
+  if (score == null || !breakdown) return null;
+
+  const total = Object.values(breakdown).reduce((sum, v) => sum + v, 0);
+  const factors = Object.entries(breakdown)
+    .filter(([key]) => !HIDDEN_FACTORS.has(key))
+    .map(([key, value]) => ({
+      key,
+      label: FACTOR_LABELS[key] ?? key,
+      pct: total > 0 ? (value / total) * 100 : 0,
+    }))
+    .sort((a, b) => b.pct - a.pct);
 
   return (
     <div className="relative">
@@ -28,14 +51,14 @@ export function ScoreExplanation({ score }: { score?: number }) {
         <div className="absolute top-full right-0 w-72 bg-white rounded-lg shadow-lg p-4 z-50 border border-gray-200">
           <h4 className="font-semibold mb-3 text-gray-900 text-sm">¿Por qué te lo recomendamos?</h4>
           <div className="space-y-2">
-            {SCORE_FACTORS.map((f) => (
-              <div key={f.name} className="flex justify-between items-center">
-                <span className="text-xs text-gray-700">{f.name}</span>
+            {factors.map((f) => (
+              <div key={f.key} className="flex justify-between items-center">
+                <span className="text-xs text-gray-700">{f.label}</span>
                 <div className="flex items-center gap-2">
                   <div className="w-16 bg-gray-200 rounded-full h-1.5">
-                    <div className="bg-purple-500 h-1.5 rounded-full" style={{ width: `${f.pct}%` }} />
+                    <div className="bg-purple-500 h-1.5 rounded-full" style={{ width: `${Math.min(100, f.pct)}%` }} />
                   </div>
-                  <span className="text-xs text-gray-400">{f.pct}%</span>
+                  <span className="text-xs text-gray-400">{f.pct.toFixed(0)}%</span>
                 </div>
               </div>
             ))}

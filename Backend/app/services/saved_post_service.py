@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session, selectinload
 from app.models.saved_post import SavedPost
 from app.models.post import Post, PostStatus
 from app.core.exceptions import NotFoundException, ConflictException
+from app.services import weight_adjustment_service
 
 
 def save_post(db: Session, user_id: int, post_id: int) -> SavedPost:
@@ -32,7 +33,9 @@ def save_post(db: Session, user_id: int, post_id: int) -> SavedPost:
     db.add(saved)
     db.commit()
     db.refresh(saved)
-    
+
+    weight_adjustment_service.record_interaction(db, user_id=user_id, post=post, event_type="saved")
+
     return saved
 
 

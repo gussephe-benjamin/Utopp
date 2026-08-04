@@ -31,7 +31,13 @@ def get_feed(
     subtype: Optional[SubPostType] = Query(None, description="Filtrar por subtipo"),
     tags: Optional[List[str]] = Query(None, description="Filtrar por tags"),
     time_status: Optional[str] = Query(None, description="Filtrar por vigencia: 'vigente' o 'vencida'"),
-    sort: Optional[str] = Query(None, description="Orden: 'recent' para más recientes primero"),
+    sort: Optional[str] = Query(
+        None,
+        description=(
+            "Orden: 'recent' para más recientes primero, "
+            "'recommended' para score heurístico personalizado (Nivel 1 + Nivel 2)"
+        ),
+    ),
     pagination: PaginationParams = Depends(),
     db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(get_optional_user),

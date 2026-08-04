@@ -222,10 +222,12 @@ export interface WizardImage {
   file?: File
   /** URL de previsualización local (Object URL) para mostrar thumbnail. */
   previewUrl: string
-  /** ID en Cloudinary, disponible tras subida exitosa. */
+  /** ID en Cloudinary, disponible tras subida exitosa. Vacío si sourceType === 'external_url'. */
   cloudinaryId?: string
-  /** URL final en Cloudinary (HTTPS), disponible tras subida exitosa. */
+  /** URL final en Cloudinary (HTTPS), disponible tras subida exitosa; o la URL externa pegada por el usuario. */
   cloudinaryUrl?: string
+  /** Origen de la imagen: subida a Cloudinary (default) o link externo pegado por el usuario. */
+  sourceType?: 'upload' | 'external_url'
   /** Estado actual de la imagen en el proceso de subida. */
   status: 'pending' | 'uploading' | 'done' | 'error'
   /** Mensaje de error si status === 'error'. */
@@ -313,6 +315,10 @@ export interface FeedPostOut {
   comment_count?: number
   /** Formato (aspect ratio) de las imágenes de la publicación. */
   aspect_ratio?: PostAspectRatio
+  /** Score de relevancia (solo presente con sort=recommended; nunca para pineados). */
+  relevance_score?: number
+  /** Desglose del score por factor (feature × peso efectivo), solo con sort=recommended. */
+  score_breakdown?: Record<string, number>
 }
 
 /** Respuesta paginada del endpoint /feed. */

@@ -15,6 +15,7 @@ from app.database.session import SessionLocal, engine
 from app.models import legal as _legal_models  # noqa: F401 — registra tablas legales en metadata
 from app.models import activity_event as _activity_event_models  # noqa: F401
 from app.models import user_session as _user_session_models  # noqa: F401
+from app.models import user_weight_adjustment as _user_weight_adjustment_models  # noqa: F401
 from app.services import role_service
 logger = logging.getLogger("utopp.api")
 _slow_request_ms = int(os.getenv("SLOW_REQUEST_MS", "1000"))
@@ -34,6 +35,7 @@ from app.routers import (
     feed,
     saved_posts,
     participants,
+    shared_events,
     post_reactions,
     post_comments,
     roles,
@@ -140,6 +142,11 @@ app.include_router(post_comments.router, tags=["post-comments"])
 # ═══════════════════════════════════════════════════════════
 app.include_router(feed.router, tags=["feed"])
 app.include_router(participants.router, tags=["participants"])
+
+# ═══════════════════════════════════════════════════════════
+# EVENTOS (tabla compartida con Utopp Formulario)
+# ═══════════════════════════════════════════════════════════
+app.include_router(shared_events.router, tags=["events"])
 
 # ═══════════════════════════════════════════════════════════
 # ADMINISTRACIÓN

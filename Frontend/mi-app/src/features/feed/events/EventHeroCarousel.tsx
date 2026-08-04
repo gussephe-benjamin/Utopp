@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { ChevronLeft, ChevronRight, Calendar } from "lucide-react"
-import type { FeedPostOut } from "../../../types/post.types"
-import { SUBTYPE_LABELS, POST_TYPE_ICONS } from "../../../types/post.types"
-import { TYPE_GRADIENTS } from "../constants/typeGradients"
-import { PostImageCarousel } from "../components/PostImageCarousel"
+import type { SharedEvent } from "../../../api/events.api"
+import { getEventType } from "./eventTypes"
+import { getEventGradient } from "./eventThemes"
 import { formatEventDate, getEventCountdown, mergeFeaturedEvents } from "./eventUtils"
 
 const AUTO_PLAY_MS = 4500
@@ -16,9 +15,9 @@ const REDUCED_TRANSITION_S = 0.15
 const PREMIUM_EASE = [0.22, 1, 0.36, 1] as const
 
 type EventHeroCarouselProps = {
-  events: FeedPostOut[]
+  events: SharedEvent[]
   loading?: boolean
-  onOpenEvent: (event: FeedPostOut) => void
+  onOpenEvent: (event: SharedEvent) => void
   className?: string
 }
 
@@ -28,7 +27,7 @@ function wrapIndex(index: number, count: number): number {
 }
 
 type EventHeroCardProps = {
-  event: FeedPostOut
+  event: SharedEvent
   isActive: boolean
   isSingle?: boolean
   isAutoplayPaused?: boolean
@@ -40,15 +39,15 @@ function EventHeroCard({
   event,
   isActive,
   isSingle = false,
-  isAutoplayPaused = false,
   onOpen,
 }: EventHeroCardProps) {
-  const gradient = TYPE_GRADIENTS[event.post_type] ?? TYPE_GRADIENTS.event
-  const TypeIcon = POST_TYPE_ICONS[event.post_type] ?? Calendar
+  const type = getEventType(event.category)
+  const gradient = getEventGradient(event.theme)
+  const TypeIcon = type?.icon ?? Calendar
   const title = event.title?.trim() || "Evento universitario"
-  const hasImages = event.images_count > 0 || Boolean(event.image_url)
   const countdown = getEventCountdown(event)
   const isExpired = countdown?.tone === "expired"
+  const organizer = event.creator?.full_name || event.creator?.email
 
   return (
     <button
@@ -62,20 +61,11 @@ function EventHeroCard({
       }`}
     >
       <div className="absolute inset-0 bg-[#1b1035]">
-        {hasImages ? (
-          <PostImageCarousel
-            key={event.id}
-            postId={event.id}
-            imagesCount={event.images_count}
-            fallbackImageUrl={event.image_url}
+        {event.banner_url ? (
+          <img
+            src={event.banner_url}
             alt={title}
-            className="absolute inset-0 h-full w-full"
-            imageClassName="h-full w-full object-cover transition-transform duration-[1200ms] ease-out group-hover:scale-[1.05]"
-            autoPlay={isActive}
-            pauseAutoPlay={!isActive || isAutoplayPaused}
-            showControls={false}
-            showDots={false}
-            enableSwipe={false}
+            className="absolute inset-0 h-full w-full object-cover transition-transform duration-[1200ms] ease-out group-hover:scale-[1.05]"
           />
         ) : (
           <div className={`absolute inset-0 flex items-center justify-center ${gradient}`}>
@@ -91,11 +81,9 @@ function EventHeroCard({
 
         <div className="pointer-events-none absolute inset-x-0 bottom-0 p-5 sm:p-6">
           <div className="flex flex-wrap items-center gap-2">
-            {event.subtype ? (
-              <span className="rounded-full border border-white/25 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-white shadow-sm backdrop-blur-md">
-                {SUBTYPE_LABELS[event.subtype]}
-              </span>
-            ) : null}
+            <span className="rounded-full border border-white/25 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-white shadow-sm backdrop-blur-md">
+              {type?.label ?? "Evento"}
+            </span>
             {countdown ? (
               <span
                 className={`rounded-full px-3 py-1 text-[11px] font-bold shadow-sm backdrop-blur-md ${
@@ -114,15 +102,13 @@ function EventHeroCard({
           </h2>
 
           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-white/90 sm:text-[13px]">
-            {event.user_name ? (
-              <span className="font-semibold text-white/95">{event.user_name}</span>
+            {organizer ? (
+              <span className="font-semibold text-white/95">{organizer}</span>
             ) : null}
-            {event.deadline_at ? (
-              <span className="inline-flex items-center gap-1.5 text-white/80">
-                <Calendar className="h-3.5 w-3.5 shrink-0 text-[#5eead4]" />
-                {formatEventDate(event.deadline_at)}
-              </span>
-            ) : null}
+            <span className="inline-flex items-center gap-1.5 text-white/80">
+              <Calendar className="h-3.5 w-3.5 shrink-0 text-[#5eead4]" />
+              {formatEventDate(event.date_time)}
+            </span>
           </div>
         </div>
 
@@ -143,8 +129,8 @@ export function EventHeroCarousel({
   className = "",
 }: EventHeroCarouselProps) {
   const eventIdsKey = events.map((e) => e.id).join(",")
-  const orderedRef = useRef<FeedPostOut[]>([])
-  const [orderedEvents, setOrderedEvents] = useState<FeedPostOut[]>([])
+  const orderedRef = useRef<SharedEvent[]>([])
+  const [orderedEvents, setOrderedEvents] = useState<SharedEvent[]>([])
   const [activeIndex, setActiveIndex] = useState(0)
   const [isAutoplayPaused, setIsAutoplayPaused] = useState(false)
   const [isDragging, setIsDragging] = useState(false)

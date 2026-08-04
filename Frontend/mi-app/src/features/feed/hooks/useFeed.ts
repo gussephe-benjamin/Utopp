@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { getFeed } from "../../../api/feed.api"
 import { getMyProfile, type UserProfileResponse } from "../../../api/users.api"
 import type { FeedPostOut, FeedResponse } from "../../../types/post.types"
+import type { FeedSortOrder } from "../types"
 
 type UseFeedOptions = {
   pageSize?: number
@@ -31,7 +32,7 @@ export function useFeed({ pageSize = 10, type, excludeType }: UseFeedOptions = {
 
   const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined)
   const [selectedTags, setSelectedTags] = useState<string[]>([])
-  const [sortOrder, setSortOrder] = useState<"urgency" | "recent">("urgency")
+  const [sortOrder, setSortOrder] = useState<FeedSortOrder>("urgency")
 
   useEffect(() => {
     getMyProfile()
@@ -69,7 +70,7 @@ export function useFeed({ pageSize = 10, type, excludeType }: UseFeedOptions = {
           exclude_type: excludeType,
           time_status: statusFilter,
           tags: selectedTags.length > 0 ? selectedTags : undefined,
-          sort: sortOrder === "recent" ? "recent" : undefined,
+          sort: sortOrder === "urgency" ? undefined : sortOrder,
         })
         setPosts((prev) => (pageNum === 1 ? data.items : [...prev, ...data.items]))
         setHasMore(data.has_next)

@@ -11,9 +11,12 @@ from app.models.saved_post import SavedPost
 from app.models.event_participant import PostParticipant
 from app.models.post_reaction import PostReaction
 from app.models.post_comment import PostComment
+from app.models.follow import Follow
 from app.models.user import User
 from app.models.user_profile_image import UserProfileImage
 from app.schemas.feed import FeedPostOut, FeedResponse
+from app.services import recommendation_service
+from app.services.recommendation_service import PostSignals, ScoreResult, UserContext
 
 
 def build_feed(
@@ -169,6 +172,55 @@ def build_feed(
             ).all()
             user_reacted_ids = set(reacted)
 
+    # sort=recommended: reordena los no-pineados por score heurístico (Nivel 1)
+    # ajustado por personalización del usuario (Nivel 2). Los pineados nunca
+    # entran al cálculo — mantienen su orden actual. Ver recommendation_service.py.
+    score_by_id: dict[int, ScoreResult] = {}
+    if sort == 'recommended' and posts:
+        following_ids: set[int] = set()
+        if current_user:
+            following_ids = set(
+                db.scalars(
+                    select(Follow.following_id).where(Follow.follower_id == current_user.id)
+                ).all()
+            )
+
+        user_ctx = UserContext(
+            interests=frozenset((current_user.interests or []) if current_user else []),
+            following_ids=frozenset(following_ids),
+        )
+
+        effective_profiles = None
+        if current_user:
+            adjustments_by_type = recommendation_service.load_weight_adjustments(db, current_user.id)
+            effective_profiles = recommendation_service.effective_weight_profiles_for_user(
+                adjustments_by_type, now
+            )
+
+        signals = [
+            PostSignals(
+                id=p.id,
+                post_type=p.post_type,
+                author_id=p.user_id,
+                created_at=p.created_at,
+                deadline_at=p.deadline_at,
+                tags=p.tags or (),
+                reaction_count=reaction_count_map.get(p.id, 0),
+                comment_count=comment_count_map.get(p.id, 0),
+                is_pinned=p.is_pinned,
+                pin_priority=p.pin_priority,
+            )
+            for p in posts
+        ]
+
+        ranked = recommendation_service.rank_posts(
+            signals, user_ctx, now=now, weight_profiles=effective_profiles
+        )
+
+        posts_by_id = {p.id: p for p in posts}
+        posts = [posts_by_id[sig.id] for sig, _ in ranked]
+        score_by_id = {sig.id: result for sig, result in ranked if result is not None}
+
     # Batch-fetch active profile images for all post authors
     author_ids = list({p.user_id for p in posts})
     profile_image_map: dict[int, str] = {}
@@ -244,6 +296,12 @@ def build_feed(
                 reaction_count=reaction_count_map.get(post.id, 0),
                 user_reacted=post.id in user_reacted_ids,
                 comment_count=comment_count_map.get(post.id, 0),
+                relevance_score=(
+                    score_by_id[post.id].total if post.id in score_by_id else None
+                ),
+                score_breakdown=(
+                    score_by_id[post.id].breakdown if post.id in score_by_id else None
+                ),
             )
         )
     

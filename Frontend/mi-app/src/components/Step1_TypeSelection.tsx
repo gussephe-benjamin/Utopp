@@ -7,10 +7,11 @@ import {
   POST_TYPE_DESCRIPTIONS,
 } from '../types/post.types'
 
-// Lista ordenada de tipos de publicación disponibles
+// Lista ordenada de tipos de publicación disponibles.
+// 'event' no está: los eventos se crean en la sección Eventos, sobre la tabla
+// que Utopp Plataforma comparte con Utopp Formulario.
 const ALL_POST_TYPES: PostType[] = [
   'international_opportunity',
-  'event',
   'academic_project',
   'announcement',
   'simple_post',
@@ -34,8 +35,10 @@ export default function Step1TypeSelection({ onSelectType, selectedType, allowed
     ? ALL_POST_TYPES.filter(t => allowedTypes.includes(t))
     : ALL_POST_TYPES
 
-  // Solo se ofrece crear evento con boletos si el rol ya puede crear "Evento".
-  const showUtoppFormularioCard = Boolean(onOpenUtoppFormulario) && visibleTypes.includes('event')
+  // Solo se ofrece crear evento si el rol tiene permitido el tipo 'event',
+  // aunque ya no aparezca entre los tipos de publicación.
+  const canCreateEvents = !allowedTypes || allowedTypes.length === 0 || allowedTypes.includes('event')
+  const showUtoppFormularioCard = Boolean(onOpenUtoppFormulario) && canCreateEvents
 
   return (
     <div>

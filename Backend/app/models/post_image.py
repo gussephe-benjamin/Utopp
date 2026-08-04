@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional
-from sqlalchemy import BigInteger, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint, func
+from sqlalchemy import BigInteger, CheckConstraint, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.base import Base, BIGINT_PK
@@ -27,10 +27,16 @@ class PostImage(Base):
 
     scale: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
 
+    # 'upload' (Cloudinary, vía uploadToCloudinary) o 'external_url' (link pegado por el usuario).
+    # cloudinary_id sigue siendo NOT NULL/UNIQUE en ambos casos: para 'external_url' se genera
+    # un valor sintético a partir de la URL (ver image_service.build_external_cloudinary_id).
+    source_type: Mapped[str] = mapped_column(String(20), nullable=False, server_default="upload")
+
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     post = relationship("Post", back_populates="images")
 
     __table_args__ = (
         UniqueConstraint("post_id", "position", name="uq_post_images_post_position"),
+        CheckConstraint("source_type IN ('upload', 'external_url')", name="chk_post_images_source_type"),
     )

@@ -8,7 +8,7 @@ from app.models.post_comment import PostComment
 from app.models.user_profile_image import UserProfileImage
 from app.schemas.engagement import CommentCreate, CommentOut
 from app.core.exceptions import NotFoundException, ForbiddenException
-from app.services import role_service
+from app.services import role_service, weight_adjustment_service
 
 
 def _to_comment_out(comment: PostComment, profile_image_url: str | None) -> CommentOut:
@@ -38,6 +38,8 @@ def create_comment(db: Session, user_id: int, post_id: int, data: CommentCreate)
     db.add(comment)
     db.commit()
     db.refresh(comment)
+
+    weight_adjustment_service.record_interaction(db, user_id=user_id, post=post, event_type="commented")
 
     db.refresh(comment, attribute_names=["user"])
     profile_image_url = db.scalar(

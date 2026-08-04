@@ -1,3 +1,11 @@
+# Utopp Plataforma. Este proyecto es dueño del contenedor de Postgres, que
+# comparte con Utopp Formulario a través del network externo 'utopp_default'.
+#
+# Antes del primer 'docker compose up', crear el network una sola vez:
+#   docker network create utopp_default
+#
+# Con el network ya creado, los dos proyectos pueden levantarse en cualquier
+# orden. Postgres es alcanzable como 'db' desde ambos.
 services:
   db:
     image: postgres:16
@@ -10,6 +18,10 @@ services:
       - "${POSTGRES_PORT}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    networks:
+      utopp_default:
+        aliases:
+          - db
   backend:
     build: ./Backend
     env_file: .env
@@ -22,6 +34,8 @@ services:
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     depends_on:
       - db
+    networks:
+      - utopp_default
   frontend:
     build: ./Frontend/mi-app
     env_file: .env
@@ -33,6 +47,8 @@ services:
     depends_on:
       - backend
     command: sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 5173"
+    networks:
+      - utopp_default
   # pgadmin:
   #   image: dpage/pgadmin4
   #   environment:
@@ -44,3 +60,7 @@ services:
   #     - db
 volumes:
   pgdata:
+networks:
+  utopp_default:
+    name: utopp_default
+    external: true

@@ -15,6 +15,7 @@ ALLOWED_EVENT_TYPES = frozenset(
         "post_viewed",
         "post_liked",
         "post_commented",
+        "post_saved",
         "profile_viewed",
         "organization_viewed",
         "notification_opened",

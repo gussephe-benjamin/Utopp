@@ -90,7 +90,19 @@ class PostBase(BaseModel):
 
 class PostCreate(PostBase):
     """Schema para crear un post (draft)."""
-    pass
+
+    @field_validator("post_type", mode="after")
+    @classmethod
+    def reject_event_type(cls, v: PostType):
+        # Los eventos viven en la tabla compartida con Utopp Formulario
+        # (POST /events). El valor sigue existiendo en el enum para no
+        # romper la lectura de los posts históricos de tipo evento.
+        if v == PostType.event:
+            raise ValueError(
+                "Los eventos ya no se crean como publicación. "
+                "Usa POST /events para crear un evento."
+            )
+        return v
 
 
 # ============================================================
@@ -217,6 +229,7 @@ class PostImageOut(BaseModel):
     object_position: Optional[str] = None
     scale: Optional[float] = None
     position: int
+    source_type: str = "upload"
     
     class Config:
         from_attributes = True

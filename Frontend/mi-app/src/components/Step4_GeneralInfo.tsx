@@ -1,5 +1,5 @@
 import { useRef, useState, useCallback, useEffect } from 'react'
-import { ImageIcon } from 'lucide-react'
+import { ImageIcon, Link2 } from 'lucide-react'
 import { type WizardImage } from '../types/post.types'
 import { uploadToCloudinary } from '../api/cloudinary'
 import { INTERESTS } from '../constants/interests'
@@ -41,6 +41,9 @@ export default function Step4GeneralInfo({
   const fileInputRef = useRef<HTMLInputElement>(null)
   // Controla si el usuario está arrastrando un archivo sobre la zona de drop
   const [isDragOver, setIsDragOver] = useState(false)
+  // Campo de texto para pegar el link de una imagen externa
+  const [imageUrlInput, setImageUrlInput] = useState('')
+  const [imageUrlError, setImageUrlError] = useState<string | null>(null)
   // Índice del thumbnail que se está arrastrando para reordenar
   const dragIndexRef = useRef<number | null>(null)
 
@@ -131,6 +134,28 @@ export default function Step4GeneralInfo({
   /** Elimina una imagen de la lista por su tempId */
   const removeImage = (tempId: string) => {
     onImagesChange(images.filter(img => img.tempId !== tempId))
+  }
+
+  /** Valida y agrega una imagen a partir de un link externo (sin subirla a Cloudinary).
+   *  El backend nunca descarga esta URL — la valida solo por formato y confía en que
+   *  el navegador del cliente la cargue directamente vía <img src>. */
+  const handleAddImageUrl = () => {
+    const url = imageUrlInput.trim()
+    if (!url) return
+    if (!/^https?:\/\/\S+$/i.test(url)) {
+      setImageUrlError('Ingresa un link válido que empiece con http:// o https://')
+      return
+    }
+    const newImage: WizardImage = {
+      tempId: crypto.randomUUID(),
+      previewUrl: url,
+      cloudinaryUrl: url,
+      sourceType: 'external_url',
+      status: 'done',
+    }
+    onImagesChange([...images, newImage])
+    setImageUrlInput('')
+    setImageUrlError(null)
   }
 
   const now = new Date()
@@ -273,6 +298,36 @@ export default function Step4GeneralInfo({
             className="hidden"
             onChange={e => handleFiles(e.target.files)}
           />
+        </div>
+
+        {/* Alternativa: pegar el link de una imagen ya publicada en internet */}
+        <div className="mt-3 flex items-start gap-2">
+          <div className="flex-1">
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="url"
+                  value={imageUrlInput}
+                  onChange={e => { setImageUrlInput(e.target.value); setImageUrlError(null) }}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddImageUrl() } }}
+                  placeholder="O pega el link de una imagen (https://...)"
+                  className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={handleAddImageUrl}
+                disabled={!imageUrlInput.trim()}
+                className="px-4 py-2 text-sm font-medium rounded-lg bg-gray-100 text-gray-700 hover:bg-purple-100 hover:text-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Agregar
+              </button>
+            </div>
+            {imageUrlError && (
+              <p className="text-xs text-red-600 mt-1">{imageUrlError}</p>
+            )}
+          </div>
         </div>
 
         {/* Thumbnails de imágenes subidas/subiendo — arrastra para reordenar */}

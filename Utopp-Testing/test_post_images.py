@@ -43,7 +43,7 @@ class TestPostImagesAPI:
 
             me = client.get("/auth/me", headers=headers)
             assert me.status_code == 200, me.text
-            return {"id": me.json()["id"], "headers": headers}
+            return {"id": me.json()["user"]["id"], "headers": headers}
 
         return _create_user_and_token
 

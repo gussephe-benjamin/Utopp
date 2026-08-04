@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.models.post import Post, PostStatus
 from app.models.post_reaction import PostReaction
 from app.core.exceptions import NotFoundException
+from app.services import weight_adjustment_service
 
 
 def _reaction_count(db: Session, post_id: int) -> int:
@@ -37,6 +38,9 @@ def toggle_reaction(db: Session, user_id: int, post_id: int) -> tuple[bool, int]
     reaction = PostReaction(user_id=user_id, post_id=post_id)
     db.add(reaction)
     db.commit()
+
+    weight_adjustment_service.record_interaction(db, user_id=user_id, post=post, event_type="liked")
+
     return True, _reaction_count(db, post_id)
 
 

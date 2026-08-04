@@ -1,3 +1,4 @@
+import hashlib
 from typing import List
 
 from sqlalchemy import select
@@ -8,12 +9,30 @@ from app.models.post import Post
 from app.schemas.image import ImageCreate, ImageReorderRequest
 from app.core.exceptions import NotFoundException, BadRequestException
 
+_EXTERNAL_ID_PREFIX = "external:"
+
+
+def build_external_cloudinary_id(url: str) -> str:
+    """Genera un cloudinary_id sintético y determinístico para imágenes por URL externa.
+
+    post_images.cloudinary_id sigue siendo NOT NULL + UNIQUE; para no romper esa
+    constraint (ni requerir una migración de esquema mayor) usamos un hash de la
+    propia URL, siguiendo el mismo patrón ya presente en el repo para imágenes
+    no-Cloudinary (ver seed_data.py con avatares Dicebear).
+    """
+    digest = hashlib.sha256(url.strip().encode("utf-8")).hexdigest()[:32]
+    return f"{_EXTERNAL_ID_PREFIX}{digest}"
+
 
 def create_image(db: Session, post_id: int, data: ImageCreate) -> PostImage:
-    """Crea una nueva imagen para un post."""
+    """Crea una nueva imagen para un post (subida a Cloudinary o link externo)."""
+    cloudinary_id = data.cloudinary_id
+    if data.source_type == "external_url" and not cloudinary_id:
+        cloudinary_id = build_external_cloudinary_id(data.url)
+
     # Verificar que no existe ya una imagen con el mismo cloudinary_id
     existing = db.query(PostImage).filter(
-        PostImage.cloudinary_id == data.cloudinary_id
+        PostImage.cloudinary_id == cloudinary_id
     ).first()
     
     if existing:
@@ -26,11 +45,12 @@ def create_image(db: Session, post_id: int, data: ImageCreate) -> PostImage:
     
     image = PostImage(
         post_id=post_id,
-        cloudinary_id=data.cloudinary_id,
+        cloudinary_id=cloudinary_id,
         url=data.url,
         position=data.position if data.position is not None else max_position,
         object_position=data.object_position,
         scale=data.scale,
+        source_type=data.source_type,
     )
     
     db.add(image)
