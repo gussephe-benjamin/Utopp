@@ -121,13 +121,9 @@ def list_events(
     search: Optional[str] = None,
     category: Optional[str] = None,
 ) -> tuple[List[dict], int]:
-    """Eventos de todos los creadores que el organizador marcó como visibles."""
-    stmt = select(SharedEvent).where(SharedEvent.visible_on_plataforma.is_(True))
-    count_stmt = (
-        select(func.count())
-        .select_from(SharedEvent)
-        .where(SharedEvent.visible_on_plataforma.is_(True))
-    )
+    """Todos los eventos de todos los creadores, más recientes primero."""
+    stmt = select(SharedEvent)
+    count_stmt = select(func.count()).select_from(SharedEvent)
 
     if upcoming_only:
         stmt = stmt.where(SharedEvent.date_time >= func.now())
@@ -159,9 +155,7 @@ def list_events(
 
 def get_event(db: Session, event_id: uuid.UUID) -> dict:
     event = db.get(SharedEvent, event_id)
-    # Un evento propio de Formulario no existe para Plataforma, aunque su
-    # formulario público de inscripción siga siendo accesible por id.
-    if event is None or not event.visible_on_plataforma:
+    if event is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Evento no encontrado"
         )

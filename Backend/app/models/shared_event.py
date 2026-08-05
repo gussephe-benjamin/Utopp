@@ -50,10 +50,10 @@ class SharedEvent(SharedBase):
     theme: Mapped[str | None] = mapped_column(String(40), nullable=True)
     highlights: Mapped[list | None] = mapped_column(JSON, nullable=True)
     allow_only_utec_emails: Mapped[bool] = mapped_column(Boolean, default=False)
-    # Solo los eventos con el flag activo se listan en la sección Eventos de
-    # Plataforma; el resto son eventos propios de Utopp Formulario.
+    # Columna conservada por compatibilidad; por ahora todos los eventos
+    # se listan en Plataforma (filtro de listado suspendido).
     visible_on_plataforma: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=False
+        Boolean, nullable=False, default=True
     )
     utopp_post_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     creator_utopp_user_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)

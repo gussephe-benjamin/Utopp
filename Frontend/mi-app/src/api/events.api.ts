@@ -2,9 +2,7 @@ import api from "./axios"
 
 /**
  * Eventos de la tabla compartida con Utopp Formulario.
- * A diferencia del dashboard de Formulario, que muestra solo los eventos del
- * organizador, aquí el listado trae los de todos los creadores, pero limitado a
- * los que el organizador marcó como visibles en Plataforma.
+ * El listado trae los de todos los creadores (Plataforma y Formulario).
  */
 
 export interface SharedEventCreator {
@@ -30,7 +28,7 @@ export interface SharedEvent {
   capacity?: number | null
   banner_url?: string | null
   allow_only_utec_emails: boolean
-  /** Siempre true en las respuestas de este endpoint: solo se listan los visibles */
+  /** Informativo: por ahora siempre true (eventos siempre compartidos) */
   visible_on_plataforma: boolean
   utopp_post_id?: number | null
   creator_utopp_user_id?: number | null
