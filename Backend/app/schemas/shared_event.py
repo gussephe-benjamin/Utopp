@@ -35,6 +35,7 @@ class SharedEventCreate(BaseModel):
     capacity: Optional[int] = Field(None, ge=1)
     banner_url: Optional[str] = None
     allow_only_utec_emails: bool = False
+    ticket_style: str = "clasico"
 
 
 class SharedEventOut(BaseModel):
@@ -54,6 +55,7 @@ class SharedEventOut(BaseModel):
     banner_url: Optional[str] = None
     allow_only_utec_emails: bool = False
     visible_on_plataforma: bool = True
+    ticket_style: str = "clasico"
     utopp_post_id: Optional[int] = None
     creator_utopp_user_id: Optional[int] = None
     created_at: datetime

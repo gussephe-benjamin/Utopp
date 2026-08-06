@@ -30,6 +30,8 @@ export interface SharedEvent {
   allow_only_utec_emails: boolean
   /** Informativo: por ahora siempre true (eventos siempre compartidos) */
   visible_on_plataforma: boolean
+  /** Estilo del boleto del asistente: clasico | stub | pase */
+  ticket_style: string
   utopp_post_id?: number | null
   creator_utopp_user_id?: number | null
   created_at: string
@@ -80,6 +82,8 @@ export interface CreateEventPayload {
   capacity?: number | null
   banner_url?: string | null
   allow_only_utec_emails?: boolean
+  /** clasico | stub | pase (por defecto clasico) */
+  ticket_style?: string
 }
 
 export async function createEvent(payload: CreateEventPayload): Promise<SharedEvent> {

@@ -55,6 +55,12 @@ class SharedEvent(SharedBase):
     visible_on_plataforma: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True
     )
+    # Estilo del boleto que verá el asistente: clasico | stub | pase.
+    ticket_style: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="clasico"
+    )
+    # Un borrador solo existe para su creador en el dashboard de Formulario.
+    is_draft: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     utopp_post_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     creator_utopp_user_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     created_at: Mapped[datetime] = mapped_column(

@@ -103,6 +103,7 @@ def _serialize(event: SharedEvent, counts: dict, creators: dict, utopp_ids: dict
         "banner_url": event.banner_url,
         "allow_only_utec_emails": event.allow_only_utec_emails,
         "visible_on_plataforma": event.visible_on_plataforma,
+        "ticket_style": event.ticket_style,
         "utopp_post_id": event.utopp_post_id,
         "creator_utopp_user_id": event.creator_utopp_user_id,
         "created_at": event.created_at,
@@ -121,9 +122,14 @@ def list_events(
     search: Optional[str] = None,
     category: Optional[str] = None,
 ) -> tuple[List[dict], int]:
-    """Todos los eventos de todos los creadores, más recientes primero."""
-    stmt = select(SharedEvent)
-    count_stmt = select(func.count()).select_from(SharedEvent)
+    """Todos los eventos publicados de todos los creadores, más recientes primero."""
+    # Los borradores de Utopp Formulario no existen para Plataforma.
+    stmt = select(SharedEvent).where(SharedEvent.is_draft.is_(False))
+    count_stmt = (
+        select(func.count())
+        .select_from(SharedEvent)
+        .where(SharedEvent.is_draft.is_(False))
+    )
 
     if upcoming_only:
         stmt = stmt.where(SharedEvent.date_time >= func.now())
@@ -155,7 +161,7 @@ def list_events(
 
 def get_event(db: Session, event_id: uuid.UUID) -> dict:
     event = db.get(SharedEvent, event_id)
-    if event is None:
+    if event is None or event.is_draft:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Evento no encontrado"
         )
@@ -217,8 +223,10 @@ def create_event(db: Session, *, user: User, data: SharedEventCreate) -> dict:
         capacity=data.capacity,
         banner_url=data.banner_url,
         allow_only_utec_emails=data.allow_only_utec_emails,
-        # Un evento creado desde Plataforma nace visible ahí.
+        ticket_style=data.ticket_style,
+        # Un evento creado desde Plataforma nace visible y publicado.
         visible_on_plataforma=True,
+        is_draft=False,
     )
     db.add(event)
     db.commit()
