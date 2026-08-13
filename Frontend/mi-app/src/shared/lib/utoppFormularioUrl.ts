@@ -1,7 +1,7 @@
 import api from "../../api/axios"
 
-/** URL pública de Utopp Formulario en producción. */
-export const PRODUCTION_UF_URL = "https://www.formulario.utopp.app"
+/** URL pública de Utopp Formulario en producción (custom domain real). */
+export const PRODUCTION_UF_URL = "https://www.forms.utopp.app"
 const FORMULARIO_RETURN_STORAGE_KEY = "utopp_formulario_return_url"
 
 const PRODUCTION_UF_BY_HOST: Record<string, string> = {
@@ -9,6 +9,17 @@ const PRODUCTION_UF_BY_HOST: Record<string, string> = {
   "utopp.app": PRODUCTION_UF_URL,
   "www.utopp.app": PRODUCTION_UF_URL,
 }
+
+const ALLOWED_UF_HOSTS = new Set([
+  "localhost",
+  "127.0.0.1",
+  "utopp-formulario.onrender.com",
+  "forms.utopp.app",
+  "www.forms.utopp.app",
+  // legacy / docs antiguos
+  "formulario.utopp.app",
+  "www.formulario.utopp.app",
+])
 
 /** Resuelve la base URL del frontend de Utopp Formulario (mismo patrón que resolveApiBaseUrl). */
 export function resolveUfBaseUrl(): string {
@@ -23,23 +34,35 @@ export function resolveUfBaseUrl(): string {
   return "http://localhost:5174"
 }
 
-function allowedUfOrigins(): Set<string> {
-  return new Set(
-    [
-      resolveUfBaseUrl(),
-      PRODUCTION_UF_URL,
-      "https://formulario.utopp.app",
-      "https://utopp-formulario.onrender.com",
-      "http://localhost:5174",
-    ].map((value) => new URL(value).origin),
-  )
+function isAllowedUfHostname(hostname: string): boolean {
+  return ALLOWED_UF_HOSTS.has(hostname.toLowerCase())
+}
+
+/**
+ * Apex `forms.utopp.app` redirige 301 a `www.forms.utopp.app` y puede
+ * perder `?sso_token=`. Siempre devolvemos al host canónico.
+ */
+export function canonicalizeUtoppFormularioUrl(value: string): string {
+  try {
+    const url = new URL(value)
+    if (url.hostname === "forms.utopp.app" || url.hostname === "formulario.utopp.app" || url.hostname === "www.formulario.utopp.app") {
+      url.hostname = "www.forms.utopp.app"
+    }
+    return url.toString()
+  } catch {
+    return value
+  }
 }
 
 export function isAllowedUtoppFormularioUrl(value: string | null | undefined): value is string {
   if (!value) return false
   try {
     const target = new URL(value)
-    return allowedUfOrigins().has(target.origin)
+    if (target.protocol === "http:") {
+      return target.hostname === "localhost" || target.hostname === "127.0.0.1"
+    }
+    if (target.protocol !== "https:") return false
+    return isAllowedUfHostname(target.hostname)
   } catch {
     return false
   }
@@ -48,7 +71,7 @@ export function isAllowedUtoppFormularioUrl(value: string | null | undefined): v
 export function rememberUtoppFormularioReturnUrl(value: string | null | undefined): void {
   if (!isAllowedUtoppFormularioUrl(value) || typeof window === "undefined") return
   try {
-    window.sessionStorage.setItem(FORMULARIO_RETURN_STORAGE_KEY, value)
+    window.sessionStorage.setItem(FORMULARIO_RETURN_STORAGE_KEY, canonicalizeUtoppFormularioUrl(value))
   } catch {
     /* sessionStorage can fail in private browsing; the direct redirect path still works. */
   }
@@ -58,7 +81,7 @@ export function getRememberedUtoppFormularioReturnUrl(): string | null {
   if (typeof window === "undefined") return null
   try {
     const value = window.sessionStorage.getItem(FORMULARIO_RETURN_STORAGE_KEY)
-    return isAllowedUtoppFormularioUrl(value) ? value : null
+    return isAllowedUtoppFormularioUrl(value) ? canonicalizeUtoppFormularioUrl(value) : null
   } catch {
     return null
   }
@@ -69,14 +92,14 @@ export function consumeRememberedUtoppFormularioReturnUrl(): string | null {
   try {
     const value = window.sessionStorage.getItem(FORMULARIO_RETURN_STORAGE_KEY)
     window.sessionStorage.removeItem(FORMULARIO_RETURN_STORAGE_KEY)
-    return isAllowedUtoppFormularioUrl(value) ? value : null
+    return isAllowedUtoppFormularioUrl(value) ? canonicalizeUtoppFormularioUrl(value) : null
   } catch {
     return null
   }
 }
 
 export function buildUtoppFormularioSsoUrl(targetUrl: string, token: string): string {
-  const url = new URL(targetUrl)
+  const url = new URL(canonicalizeUtoppFormularioUrl(targetUrl))
   url.searchParams.set("sso_token", token)
   return url.toString()
 }

@@ -10,7 +10,7 @@ Guía para que Google OAuth funcione con frontend y backend en dos servicios de 
 | `GOOGLE_CLIENT_SECRET` | Client secret |
 | `GOOGLE_REDIRECT_URI` | `https://utopp.onrender.com/auth/google/callback` |
 | `FRONTEND_URL` | `https://www.utopp.app` |
-| `UF_FRONTEND_URL` | `https://www.formulario.utopp.app` |
+| `UF_FRONTEND_URL` | `https://www.forms.utopp.app` |
 | `COOKIE_SECURE` | `true` |
 | `COOKIE_SAMESITE` | `none` |
 | `SECRET_KEY` | Valor aleatorio fuerte (distinto a local) |
@@ -28,7 +28,7 @@ Solo `VITE_*` (no secretos de Google ni Cloudinary API secret):
 | Variable | Valor |
 |----------|--------|
 | `VITE_API_URL` | `https://www.api.utopp.app` |
-| `VITE_UF_FRONTEND_URL` | `https://www.formulario.utopp.app` |
+| `VITE_UF_FRONTEND_URL` | `https://www.forms.utopp.app` |
 | `VITE_CLOUDINARY_CLOUD_NAME` | tu cloud name |
 | `VITE_CLOUDINARY_UPLOAD_PRESET` | tu unsigned preset |
 
@@ -54,7 +54,7 @@ El backend usa **PKCE (S256)** en el flujo OAuth: al iniciar sesión se envían 
 
 ## 4. CORS
 
-El backend añade automáticamente `FRONTEND_URL` y `ALLOWED_ORIGINS` (lista separada por comas) a los orígenes CORS permitidos. Orígenes conocidos (`utopp.app`, `formulario.utopp.app`, localhost y el frontend antiguo de Render) ya están incluidos.
+El backend añade automáticamente `FRONTEND_URL` y `ALLOWED_ORIGINS` (lista separada por comas) a los orígenes CORS permitidos. Orígenes conocidos (`utopp.app`, `www.forms.utopp.app`, localhost y el frontend antiguo de Render) ya están incluidos.
 
 ## 5. Session handoff (login de usuarios existentes)
 
@@ -118,8 +118,8 @@ El backend en Render fuerza automáticamente `COOKIE_SAMESITE=none` y `COOKIE_SE
 |---|----------------|--------|
 | `GOOGLE_REDIRECT_URI` | `http://localhost:8000/auth/google/callback` | `https://www.api.utopp.app/auth/google/callback` |
 | `FRONTEND_URL` | `http://localhost:5173` | `https://www.utopp.app` |
-| `UF_FRONTEND_URL` | `http://localhost:5174` | `https://www.formulario.utopp.app` |
+| `UF_FRONTEND_URL` | `http://localhost:5174` | `https://www.forms.utopp.app` |
 | `VITE_API_URL` | `http://localhost:8000` | `https://www.api.utopp.app` |
-| `VITE_UF_FRONTEND_URL` | `http://localhost:5174` | `https://www.formulario.utopp.app` |
+| `VITE_UF_FRONTEND_URL` | `http://localhost:5174` | `https://www.forms.utopp.app` |
 | `COOKIE_SECURE` | `false` | `true` |
 | `COOKIE_SAMESITE` | `lax` | `none` |

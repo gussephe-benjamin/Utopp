@@ -28,6 +28,7 @@ import {
 import { ProfileAvatar } from "../../features/profile/components/ProfileAvatar"
 import { parseAuthApiError } from "../../shared/lib/apiErrors"
 import {
+  canonicalizeUtoppFormularioUrl,
   getRememberedUtoppFormularioReturnUrl,
   isAllowedUtoppFormularioUrl,
   rememberUtoppFormularioReturnUrl,
@@ -77,7 +78,7 @@ export default function AuthEntry() {
 
   const errorMessage = resolveErrorMessage(errorCode)
   const formularioReturnTarget = isAllowedUtoppFormularioUrl(formularioRedirect)
-    ? formularioRedirect
+    ? canonicalizeUtoppFormularioUrl(formularioRedirect)
     : googleRegisterParam
       ? rememberedFormularioRedirect
       : null

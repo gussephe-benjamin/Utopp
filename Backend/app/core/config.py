@@ -22,6 +22,8 @@ _KNOWN_PRODUCTION_CORS_ORIGINS = [
     "https://utopp.app",
     "https://formulario.utopp.app",
     "https://www.formulario.utopp.app",
+    "https://forms.utopp.app",
+    "https://www.forms.utopp.app",
 ]
 
 _DEFAULT_LOCAL_REDIRECT_URI = "http://localhost:8000/auth/google/callback"

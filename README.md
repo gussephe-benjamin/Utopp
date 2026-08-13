@@ -282,8 +282,8 @@ Resumen rápido:
 
 | Servicio | Variables clave |
 |----------|-----------------|
-| **Backend** | `GOOGLE_REDIRECT_URI=https://utopp.onrender.com/auth/google/callback`, `FRONTEND_URL=https://www.utopp.app`, `UF_FRONTEND_URL=https://www.formulario.utopp.app`, `COOKIE_SECURE=true`, `COOKIE_SAMESITE=none` |
-| **Frontend** | `VITE_API_URL=https://utopp.onrender.com`, `VITE_UF_FRONTEND_URL=https://www.formulario.utopp.app` (requiere **rebuild** tras cambiar) |
+| **Backend** | `GOOGLE_REDIRECT_URI=https://utopp.onrender.com/auth/google/callback`, `FRONTEND_URL=https://www.utopp.app`, `UF_FRONTEND_URL=https://www.forms.utopp.app`, `COOKIE_SECURE=true`, `COOKIE_SAMESITE=none` |
+| **Frontend** | `VITE_API_URL=https://utopp.onrender.com`, `VITE_UF_FRONTEND_URL=https://www.forms.utopp.app` (requiere **rebuild** tras cambiar) |
 | **Google Console** | Registrar la misma redirect URI de producción en Authorized redirect URIs |
 
 ---
