@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom"
 import { ProfileLink } from "../components/ProfileLink"
 import { AnimatePresence, motion } from "framer-motion"
 import {
+  Calendar,
+  ExternalLink,
   Check,
   Copy,
   Pencil,
@@ -15,6 +17,7 @@ import {
   BarChart3,
   Clock,
   Trophy,
+  Award,
   Bookmark,
   LogOut,
   Shield,
@@ -25,7 +28,7 @@ import {
 } from "lucide-react"
 import { useAuth } from "../../../auth/useAuth"
 import { AVAILABILITY_OPTIONS, CAREER_OPTIONS } from "../constants/profileOptions"
-import type { OrganizationSummary } from "../../../api/users.api"
+import type { OrganizationSummary, UserParticipatedEvent } from "../../../api/users.api"
 import type { FeedPostOut } from "../../../types/post.types"
 import type { ProfileUserData } from "./types"
 import { ProfileMetricCard } from "../components/ProfileMetricCard"
@@ -49,6 +52,7 @@ interface StudentProfileSelfProps {
   avatarUrl: string | null
   posts: FeedPostOut[]
   eventSavedPosts: FeedPostOut[]
+  participatedEvents: UserParticipatedEvent[]
   followingOrganizations: OrganizationSummary[]
   allOrganizations: OrganizationSummary[]
   onSaveProfile: (payload: ProfileSettingsPayload) => Promise<void>
@@ -78,6 +82,7 @@ export function StudentProfileSelf({
   avatarUrl,
   posts,
   eventSavedPosts,
+  participatedEvents,
   followingOrganizations,
   allOrganizations,
   onSaveProfile,
@@ -121,6 +126,101 @@ export function StudentProfileSelf({
   )
   const availabilityLabel = availabilityOption?.label ?? "No definida"
   const availabilityEmoji = availabilityOption?.emoji ?? "⏰"
+
+  const upcomingEvents = useMemo(
+    () => participatedEvents.filter((e) => e.status === "registered"),
+    [participatedEvents],
+  )
+  const attendedEvents = useMemo(
+    () => participatedEvents.filter((e) => e.status === "attended"),
+    [participatedEvents],
+  )
+
+  const formatEventDate = (iso: string) => {
+    try {
+      return new Date(iso).toLocaleDateString("es-PE", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    } catch {
+      return iso
+    }
+  }
+
+  const renderEventCards = (events: UserParticipatedEvent[]) => (
+    <ul className="space-y-3">
+      {events.map((event) => {
+        const cardClass =
+          "group flex gap-3 rounded-[16px] border border-gray-100 bg-gray-50/40 p-3 transition-colors"
+        const attended = event.status === "attended"
+        const cardInner = (
+          <>
+            {event.banner_url ? (
+              <img
+                src={event.banner_url}
+                alt=""
+                className="h-14 w-14 shrink-0 rounded-xl object-cover"
+              />
+            ) : (
+              <div
+                className={
+                  attended
+                    ? "flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600"
+                    : "flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-600"
+                }
+              >
+                {attended ? <Award className="h-5 w-5" /> : <Calendar className="h-5 w-5" />}
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-start justify-between gap-2">
+                <p className="truncate text-sm font-bold text-gray-800 group-hover:text-violet-700">
+                  {event.title}
+                </p>
+                <span
+                  className={
+                    attended
+                      ? "shrink-0 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700"
+                      : "shrink-0 rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-violet-700"
+                  }
+                >
+                  {attended ? "Asistió" : "Inscrito"}
+                </span>
+              </div>
+              <p className="mt-0.5 text-xs text-gray-500">{formatEventDate(event.date_time)}</p>
+              <p className="truncate text-xs text-gray-400">{event.location}</p>
+              {event.ticket_url ? (
+                <span className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-violet-600 opacity-0 transition-opacity group-hover:opacity-100">
+                  Ver boleto
+                  <ExternalLink className="h-3 w-3" />
+                </span>
+              ) : null}
+            </div>
+          </>
+        )
+
+        return (
+          <li key={event.event_id}>
+            {event.ticket_url ? (
+              <a
+                href={event.ticket_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`${cardClass} hover:border-violet-200 hover:bg-violet-50/40`}
+              >
+                {cardInner}
+              </a>
+            ) : (
+              <div className={cardClass}>{cardInner}</div>
+            )}
+          </li>
+        )
+      })}
+    </ul>
+  )
 
   const copyEmail = async () => {
     if (!user.email) return
@@ -358,10 +458,11 @@ export function StudentProfileSelf({
       {/* ─── Métricas ─── */}
       <section className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
         <ProfileMetricCard
-          locked
           label="Asistencia"
-          value="12"
-          subValue="Eventos este ciclo"
+          value={`${attendedEvents.length}`}
+          subValue={
+            attendedEvents.length === 0 ? "Sin check-in aún" : "Eventos con asistencia"
+          }
           icon={<BarChart3 className="h-5 w-5 text-violet-500" />}
           iconBg="bg-violet-50"
           textColor="text-violet-700"
@@ -448,6 +549,42 @@ export function StudentProfileSelf({
                   </ProfileLink>
                 ))}
               </div>
+            )}
+          </article>
+
+          {/* Inscritos vigentes (QR aún válido) */}
+          <article className="rounded-[22px] border border-violet-100 bg-white p-5 shadow-[0_4px_20px_rgba(0,0,0,0.015)]">
+            <div className="mb-4 flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-violet-500" />
+              <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400">
+                Mis eventos
+              </h2>
+            </div>
+
+            {upcomingEvents.length === 0 ? (
+              <p className="rounded-[18px] border border-dashed border-gray-200 bg-gray-50/50 px-3 py-6 text-center text-sm text-gray-500">
+                Aún no te has registrado a eventos próximos con este correo.
+              </p>
+            ) : (
+              renderEventCards(upcomingEvents)
+            )}
+          </article>
+
+          {/* Asistencias permanentes (check-in / logro) */}
+          <article className="rounded-[22px] border border-violet-100 bg-white p-5 shadow-[0_4px_20px_rgba(0,0,0,0.015)]">
+            <div className="mb-4 flex items-center gap-2">
+              <Award className="h-4 w-4 text-emerald-500" />
+              <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400">
+                Asistencias
+              </h2>
+            </div>
+
+            {attendedEvents.length === 0 ? (
+              <p className="rounded-[18px] border border-dashed border-gray-200 bg-gray-50/50 px-3 py-6 text-center text-sm text-gray-500">
+                Cuando un organizador escanee tu QR, el evento quedará aquí como evidencia de asistencia.
+              </p>
+            ) : (
+              renderEventCards(attendedEvents)
             )}
           </article>
 

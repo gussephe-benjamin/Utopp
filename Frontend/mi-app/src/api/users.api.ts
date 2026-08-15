@@ -6,6 +6,7 @@
  *   GET    /users/check-email         — Verifica si un email ya está registrado
  *   GET    /users/all-users          — Lista todos los usuarios (legacy)
  *   GET    /users/me                 — Perfil completo del usuario autenticado
+ *   GET    /users/me/events          — Eventos Formulario donde figura el email (asistente)
  *   PATCH  /users/me                 — Actualiza perfil del usuario autenticado
  *   PUT    /users/me/interests       — Reemplaza lista de intereses
  *   GET    /users/{user_id}          — Perfil público de un usuario
@@ -116,6 +117,38 @@ export async function updateInterests(interests: string[]) {
  */
 export async function getMyFollowingOrganizations(params?: { page?: number; size?: number }): Promise<OrganizationSummary[]> {
   const { data } = await api.get("/users/me/following-organizations", { params })
+  return data
+}
+
+/** Evento de Formulario en el que el usuario figura como asistente (JOIN por email). */
+export interface UserParticipatedEvent {
+  event_id: string
+  title: string
+  date_time: string
+  location: string
+  banner_url?: string | null
+  category?: string | null
+  theme?: string | null
+  registered_at: string
+  checked_in: boolean
+  checked_in_at?: string | null
+  status: "registered" | "attended"
+  ticket_id?: string | null
+  ticket_url?: string | null
+}
+
+/**
+ * GET /users/me/events
+ * Eventos de Utopp Formulario donde el email del usuario aparece en attendees.
+ * Soft-join: registro guest previo + signup Utopp posterior aparecen sin backfill.
+ * Auth: Requerida.
+ */
+export async function getMyParticipatedEvents(params?: {
+  page?: number
+  size?: number
+  status?: "registered" | "attended"
+}): Promise<UserParticipatedEvent[]> {
+  const { data } = await api.get<UserParticipatedEvent[]>("/users/me/events", { params })
   return data
 }
 

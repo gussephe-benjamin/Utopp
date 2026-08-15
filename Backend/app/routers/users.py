@@ -1,6 +1,6 @@
-from typing import List
+from typing import List, Literal, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select, func, text
 from sqlalchemy.orm import Session, selectinload
 
@@ -24,6 +24,7 @@ from app.schemas.user import (
     OrganizationSummaryOut,
 )
 from app.schemas.post import PostOut
+from app.schemas.user_events import UserParticipatedEventOut
 from app.services.users_service import (
     get_all_users_complete,
     get_user_by_email,
@@ -33,6 +34,7 @@ from app.services.users_service import (
 )
 from app.services.profile_service import follow as svc_follow, unfollow as svc_unfollow, update_interests as svc_update_interests
 from app.services.role_service import ORG_ROLE_NAME, STUDENT_ROLE_NAME, assign_student_role
+from app.services.user_events_service import list_my_participated_events
 from app.dependencies.permissions import get_user_roles
 
 router = APIRouter()
@@ -340,6 +342,32 @@ def get_current_user_profile(
     current_user: User = Depends(require_terms_accepted),
 ):
     return _make_user_out(db, current_user)
+
+
+# ============================================================
+# GET /users/me/events
+# Eventos de Formulario donde el email del usuario figura en attendees.
+# Soft-join por email: guest → signup posterior aparece sin backfill.
+# Auth: Requerida (+ términos aceptados)
+# ============================================================
+@router.get("/me/events", response_model=List[UserParticipatedEventOut])
+def get_my_participated_events(
+    pagination: PaginationParams = Depends(),
+    status_filter: Optional[Literal["registered", "attended"]] = Query(
+        None,
+        alias="status",
+        description="Filtrar por inscrito o asistió (checked_in)",
+    ),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_terms_accepted),
+):
+    return list_my_participated_events(
+        db,
+        email=current_user.email or "",
+        status=status_filter,
+        limit=pagination.size,
+        offset=pagination.offset,
+    )
 
 
 # ============================================================

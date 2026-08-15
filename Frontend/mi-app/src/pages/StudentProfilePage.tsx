@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom"
 import {
   followUser,
   getMyFollowingOrganizations,
+  getMyParticipatedEvents,
   getMyProfile,
   getOrganizations,
   getUserFollowingOrganizations,
@@ -13,6 +14,7 @@ import {
   updateMyProfile,
   updateInterests,
   type OrganizationSummary,
+  type UserParticipatedEvent,
 } from "../api/users.api"
 import { uploadToCloudinary } from "../api/cloudinary"
 import { getMyRoles } from "../api/roles.api"
@@ -50,6 +52,7 @@ export default function StudentProfilePage({ viewedUserId }: StudentProfilePageP
   const [followingOrganizations, setFollowingOrganizations] = useState<OrganizationSummary[]>([])
   const [allOrganizations, setAllOrganizations] = useState<OrganizationSummary[]>([])
   const [eventSavedPosts, setEventSavedPosts] = useState<FeedPostOut[]>([])
+  const [participatedEvents, setParticipatedEvents] = useState<UserParticipatedEvent[]>([])
   const [posts, setPosts] = useState<FeedPostOut[]>([])
   const [loading, setLoading] = useState(true)
   const [profileSaving, setProfileSaving] = useState(false)
@@ -65,6 +68,7 @@ export default function StudentProfilePage({ viewedUserId }: StudentProfilePageP
     setUser(null)
     setFollowingOrganizations([])
     setEventSavedPosts([])
+    setParticipatedEvents([])
     setPosts([])
 
     ;(async () => {
@@ -75,12 +79,13 @@ export default function StudentProfilePage({ viewedUserId }: StudentProfilePageP
         if (mounted) setIsOwnProfile(viewingSelf)
 
         if (viewingSelf) {
-          const [savedRaw, followingOrgs, orgs, roles, userPostsRaw] = await Promise.all([
+          const [savedRaw, followingOrgs, orgs, roles, userPostsRaw, myEvents] = await Promise.all([
             getSavedPosts().catch(() => [] as PostOutRaw[]),
             getMyFollowingOrganizations().catch(() => []),
             getOrganizations().catch(() => []),
             getMyRoles().catch(() => []),
             getUserPosts(myProfile.id).catch(() => [] as PostOutRaw[]),
+            getMyParticipatedEvents({ size: 50 }).catch(() => [] as UserParticipatedEvent[]),
           ])
           if (!mounted) return
           setUser(toProfileUserData({ ...myProfile, role_name: roles[0]?.name ?? myProfile.role_name ?? "alumno" }))
@@ -92,6 +97,7 @@ export default function StudentProfilePage({ viewedUserId }: StudentProfilePageP
             .filter((post: PostOutRaw) => post.post_type === "event")
             .map((post: PostOutRaw) => mapPostOutToFeedPost(post, { is_saved: true }))
           setEventSavedPosts(savedFeedPosts as FeedPostOut[])
+          setParticipatedEvents(myEvents)
           return
         }
 
@@ -307,6 +313,7 @@ export default function StudentProfilePage({ viewedUserId }: StudentProfilePageP
           {...sharedProps}
           posts={posts}
           eventSavedPosts={eventSavedPosts}
+          participatedEvents={participatedEvents}
           followingOrganizations={followingOrganizations}
           allOrganizations={allOrganizations}
           onSaveProfile={handleSaveProfile}
@@ -346,6 +353,7 @@ export default function StudentProfilePage({ viewedUserId }: StudentProfilePageP
     isOwnProfile,
     avatarUrl,
     eventSavedPosts,
+    participatedEvents,
     posts,
     followingOrganizations,
     allOrganizations,
