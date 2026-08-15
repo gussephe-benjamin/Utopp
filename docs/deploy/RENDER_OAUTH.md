@@ -136,7 +136,12 @@ sustituye esa variable (otros clientes / Postman seguirán viendo localhost).
 
 SSO de vuelta a Formulario (`?redirect=` en `/login`): solo hosts allowlist
 (`localhost`, `utopp-formulario.onrender.com`, `www.forms.utopp.app` y
-legacy). Tras login, `POST /auth/refresh` + `sso_token` en la URL destino.
+legacy). La URL se guarda en `sessionStorage` para sobrevivir el round-trip
+de Google. Tras login, si ya hay términos + onboarding: `POST /auth/refresh`
+y `{url}?sso_token=...`. Si faltan, primero `/app/terms` u onboarding.
+
+El catálogo de eventos (`GET/POST /events`, `registration_url` → `/e/{id}`)
+está en [Backend/docs/shared-events-catalog.md](../../Backend/docs/shared-events-catalog.md).
 
 ## Desarrollo local vs producción
 
