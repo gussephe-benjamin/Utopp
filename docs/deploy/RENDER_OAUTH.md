@@ -112,6 +112,8 @@ El backend en Render fuerza automáticamente `COOKIE_SAMESITE=none` y `COOKIE_SE
 
 **Acción requerida en el panel de Render (servicio backend):** verificar `GOOGLE_REDIRECT_URI`, `FRONTEND_URL`, redeploy backend. En el frontend, fijar `VITE_API_URL=https://utopp.onrender.com` y rebuild.
 
+SSO de vuelta a Formulario (`?redirect=`, `sso_token`, reescritura de localhost): **[docs/formulario-integration.md](../formulario-integration.md)**.
+
 ## Desarrollo local vs producción
 
 | | Local (Docker) | Render |

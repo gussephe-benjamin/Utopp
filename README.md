@@ -41,6 +41,7 @@ Cada usuario tiene un rol que determina qué puede publicar, qué nivel de visib
 - [API — Endpoints principales](#api--endpoints-principales)
 - [Roles y permisos](#roles-y-permisos)
 - [Publicaciones prioritarias v1.1.0](#publicaciones-prioritarias-v110)
+- [Eventos y Utopp Formulario](#eventos-y-utopp-formulario)
 
 ---
 
@@ -53,16 +54,19 @@ Cada usuario tiene un rol que determina qué puede publicar, qué nivel de visib
 │  ┌────────────────┐    ┌─────────────────┐   ┌───────────┐  │
 │  │   Frontend     │───▶│    Backend      │──▶│ PostgreSQL│  │
 │  │  React + Vite  │    │    FastAPI      │   │  :5432    │  │
-│  │    :5173       │    │    :8000        │   └───────────┘  │
-│  └────────────────┘    └─────────────────┘                  │
-│          │                     │                            │
-│          └──────┐     ┌────────┘                            │
-│                 ▼     ▼                                     │
-│          ┌─────────────────┐                                │
-│          │   Cloudinary    │  (almacenamiento de imágenes)  │
-│          └─────────────────┘                                │
+│  │    :5173       │    │    :8000        │   │           │  │
+│  └────────────────┘    └─────────────────┘   │ public +  │  │
+│          │                     │             │ formulario│  │
+│          └──────┐     ┌────────┘             └─────▲─────┘  │
+│                 ▼     ▼                            │        │
+│          ┌─────────────────┐                       │        │
+│          │   Cloudinary    │                       │        │
+│          └─────────────────┘              Utopp Formulario  │
+│                                           :5174 (SSO + /e/) │
 └──────────────────────────────────────────────────────────────┘
 ```
+
+Eventos, SSO y permisos cross-schema: **[docs/formulario-integration.md](docs/formulario-integration.md)**.
 
 ---
 
@@ -93,41 +97,19 @@ Cada usuario tiene un rol que determina qué puede publicar, qué nivel de visib
            ┌───────────────────▼────────────────────┐
            │               DASHBOARD                 │
            │                                         │
-           │  ┌─────────┐  ┌──────────┐  ┌───────┐  │
-           │  │  Feed   │  │  Perfil  │  │ Sched │  │
-           │  └────┬────┘  └──────────┘  └───────┘  │
-           └───────┼─────────────────────────────────┘
-                   │
-     ┌─────────────▼──────────────────────────┐
-     │               FEED                      │
-     │                                         │
-     │  [+] Crear publicación (Wizard)         │
-     │                                         │
-     │  📌 Post prioritario (root)   ──┐       │
-     │  📌 Post prioritario (admin)    ├─ Fijo │
-     │  📌 Post prioritario (oficina) ─┘ arriba│
-     │  ── Publicaciones generales ──          │
-     │     Post evento                         │
-     │     Post proyecto                       │
-     │     Post convocatoria...                │
-     │                                         │
-     │  Filtros: tipo · tags · deadline        │
-     │  Orden: urgencia | reciente             │
-     └─────────────────────────────────────────┘
-                   │
-     ┌─────────────▼──────────────────────────┐
-     │       WIZARD DE PUBLICACIÓN             │
-     │                                         │
-     │  1. Tipo de publicación                 │
-     │  2. Subtipo                             │
-     │  3. Links / botones CTA                 │
-     │  4. Título, descripción, imágenes, tags │
-     │  5. Encuadre de imágenes                │
-     │  6. Vista previa → Publicar             │
-     │                                         │
-     │  📌 [Prioridad máxima]  ← admin/root/  │
-     │                            oficina only │
-     └─────────────────────────────────────────┘
+           │  ┌─────────┐  ┌──────────┐  ┌─────────┐ │
+           │  │  Feed   │  │ Eventos  │  │  Perfil │ │
+           │  └────┬────┘  └────┬─────┘  └────┬────┘ │
+           └───────┼────────────┼─────────────┼──────┘
+                   │            │             │
+     ┌─────────────▼─────┐  ┌───▼────────┐  ┌─▼──────────────┐
+     │ FEED publicaciones│  │ /app/eventos│  │ Inscritos +    │
+     │ (exclude event)   │  │ tabla       │  │ asistencias    │
+     │                   │  │ formulario. │  │ GET /users/me/ │
+     │ [+] Wizard posts  │  │ events      │  │ events         │
+     │ 📌 Pins           │  │ CreateEvent │  │ → /ticket/{id} │
+     │ Filtros / sort    │  │ Wizard      │  └────────────────┘
+     └───────────────────┘  └─────────────┘
 ```
 
 ---
@@ -170,8 +152,8 @@ Cada usuario tiene un rol que determina qué puede publicar, qué nivel de visib
 
 ### Feed inteligente
 - Paginación con botón "Cargar más"
-- Filtrado por **tipo** (evento / proyecto / convocatoria / anuncio / simple)
-- Filtrado por **tags** de interés (lógica OR)
+- El feed de publicaciones **excluye** `post_type=event` (`exclude_type=event`); los eventos viven en `/app/eventos`
+- Filtrado por **tipo** (proyecto / convocatoria / anuncio / simple) y por **tags** (lógica OR)
 - Filtrado por **estado de deadline** (vigente / vencida / sin fecha)
 - Ordenamiento por **urgencia** (deadline más próximo arriba) o **más reciente**
 - Publicaciones **prioritarias** siempre al tope con divisor visual entre secciones
@@ -203,15 +185,21 @@ Cada usuario tiene un rol que determina qué puede publicar, qué nivel de visib
 - Lista de publicaciones guardadas
 
 ### Wizard de publicación (6 pasos)
-- Selección de tipo de publicación y subtipo
+- Selección de tipo de publicación y subtipo (`event` ya no está en el wizard)
 - Configuración de botones de acción (links CTA con tipo e ícono)
 - Carga y previsualización de imágenes con encuadre ajustable
 - Tags, deadline opcional, título y descripción enriquecida
 - Preview completa antes de publicar
 
+### Eventos (tabla compartida con Formulario)
+- Sección `/app/eventos`: listado público de `formulario.events` (sin borradores)
+- Creación desde `CreateEventWizard` (formulario estándar: nombre + email; sin campos custom)
+- Inscripción y boletos en Utopp Formulario (`/e/{id}`, `/ticket/{id}`) con SSO
+- Perfil propio: inscritos vigentes y asistencias confirmadas (`GET /users/me/events`)
+
 ### Participación en eventos
-- Botón de inscripción / cancelación directamente desde la card del feed
-- Estado de participación visible en tiempo real
+- Inscritos de Formulario se unen a los participantes del post legado (dedupe por email)
+- En el perfil, una sola tarjeta por evento aunque haya inscripciones duplicadas
 
 ### Gestión de roles (admin)
 - Asignación y cambio de rol por usuario desde el panel de administración
@@ -255,9 +243,14 @@ GOOGLE_CLIENT_ID=tu_client_id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=tu_client_secret
 GOOGLE_REDIRECT_URI=http://localhost:8000/auth/google/callback
 FRONTEND_URL=http://localhost:5173
+UF_FRONTEND_URL=http://localhost:5174
 SESSION_COOKIE_NAME=utopp_session
 COOKIE_SECURE=false
 COOKIE_SAMESITE=lax
+
+# Frontend: API y Utopp Formulario (Vite embebe VITE_* al build)
+VITE_API_URL=http://localhost:8000
+VITE_UF_FRONTEND_URL=http://localhost:5174
 
 # Orígenes CORS adicionales (opcional, separados por coma). FRONTEND_URL se añade automáticamente.
 # ALLOWED_ORIGINS=https://otro-dominio.ejemplo.com
@@ -386,6 +379,9 @@ Este endpoint solo funciona una vez (cuando no existe ningún administrador).
 ```
 Utopp/
 ├── docker-compose.yml               # Orquestación: db + backend + frontend
+├── docs/
+│   ├── formulario-integration.md    # Eventos compartidos, SSO, perfil
+│   └── deploy/RENDER_OAUTH.md       # OAuth / cookies en Render
 ├── .env                             # Variables de entorno (no commitear)
 │
 ├── Backend/
@@ -407,6 +403,7 @@ Utopp/
 │       │   ├── post_link.py
 │       │   ├── saved_post.py
 │       │   ├── event_participant.py
+│       │   ├── shared_event.py      # Espejo de formulario.events (SharedBase)
 │       │   ├── follow.py
 │       │   └── user_profile_image.py
 │       ├── schemas/                 # Pydantic DTOs (request / response)
@@ -419,12 +416,15 @@ Utopp/
 │       │   ├── setup.py             # POST /setup/bootstrap-admin
 │       │   ├── posts.py             # CRUD posts + publish
 │       │   ├── feed.py              # GET /feed
-│       │   ├── users.py             # Perfil, follows, guardados
+│       │   ├── users.py             # Perfil, follows, GET /users/me/events
+│       │   ├── shared_events.py     # GET/POST /events
 │       │   ├── roles.py             # Asignación de roles
 │       │   └── ...
 │       └── services/                # Lógica de negocio pura
 │           ├── post_service.py      # + get_user_pin_priority()  ← v1.1.0
 │           ├── feed_service.py      # + ORDER BY is_pinned, pin_priority
+│           ├── shared_event_service.py
+│           ├── user_events_service.py
 │           ├── role_service.py
 │           └── ...
 │
@@ -466,8 +466,12 @@ Utopp/
 | `POST` | `/auth/refresh` | Renueva JWT en cookie HttpOnly | ✅ |
 | `POST` | `/setup/bootstrap-admin` | Crear primer admin (token) | Token |
 | `GET` | `/feed` | Feed paginado con filtros | ✅ |
-| `GET` | `/feed?type=evento` | Feed filtrado por tipo | ✅ |
+| `GET` | `/feed?exclude_type=event` | Feed de publicaciones (sin posts evento) | ✅ |
 | `GET` | `/feed?tags=ia&tags=datos` | Feed filtrado por tags | ✅ |
+| `GET` | `/events` | Eventos compartidos (sin borradores) | ❌ |
+| `GET` | `/events/{id}` | Detalle de evento compartido | ❌ |
+| `POST` | `/events` | Crear evento en `formulario.events` | ✅ + términos |
+| `GET` | `/users/me/events` | Inscritos / asistencias del perfil (JOIN por email) | ✅ + términos |
 | `POST` | `/posts/` | Crear post (borrador) | ✅ |
 | `PATCH` | `/posts/{id}` | Actualizar post | ✅ owner/admin |
 | `POST` | `/posts/{id}/publish` | Publicar borrador | ✅ owner |
@@ -478,7 +482,6 @@ Utopp/
 | `GET` | `/users/{id}` | Perfil público de usuario | ✅ |
 | `POST` | `/users/{id}/roles/{role}` | Asignar rol a usuario | ✅ admin |
 | `POST` | `/saved-posts/{id}` | Guardar / quitar publicación | ✅ |
-| `POST` | `/events/{id}/join` | Inscribirse a evento | ✅ |
 | `GET` | `/health` | Estado del servicio | ❌ |
 
 Documentación interactiva completa disponible en **http://localhost:8000/docs**
@@ -532,6 +535,21 @@ Feed resultante:
 ```
 
 Al desactivar el pin, la publicación regresa al flujo normal del feed sin necesidad de recrearla.
+
+---
+
+## Eventos y Utopp Formulario
+
+Los eventos **nuevos** no se crean como posts: viven en `formulario.events` (misma Postgres, schema de Formulario). Plataforma lista y crea; la inscripción y los boletos ocurren en `www.forms.utopp.app`.
+
+| Qué | Dónde |
+|-----|--------|
+| Listado y alta | `/app/eventos` → `GET/POST /events` |
+| Perfil: inscritos y asistencias | `GET /users/me/events` (una tarjeta por evento) |
+| SSO / return post-login | `POST /auth/refresh` + `?sso_token=` |
+| Guía completa (permisos, pitfalls, setup) | **[docs/formulario-integration.md](docs/formulario-integration.md)** |
+
+`SECRET_KEY` / `JWT_SECRET_KEY` deben coincidir con el repo Formulario. En producción, `UF_FRONTEND_URL` y `VITE_UF_FRONTEND_URL` deben ser `https://www.forms.utopp.app` (el apex puede perder el token SSO).
 
 ---
 
