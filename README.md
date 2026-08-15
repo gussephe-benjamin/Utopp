@@ -41,6 +41,7 @@ Cada usuario tiene un rol que determina qué puede publicar, qué nivel de visib
 - [API — Endpoints principales](#api--endpoints-principales)
 - [Roles y permisos](#roles-y-permisos)
 - [Publicaciones prioritarias v1.1.0](#publicaciones-prioritarias-v110)
+- [Analytics de actividad](#analytics-de-actividad)
 
 ---
 
@@ -216,7 +217,7 @@ Cada usuario tiene un rol que determina qué puede publicar, qué nivel de visib
 ### Gestión de roles (admin)
 - Asignación y cambio de rol por usuario desde el panel de administración
 - Bootstrap del primer admin mediante endpoint protegido por token
-- Dashboard de **Métricas** en `/app/admin/metricas` (solo admin/root): KPIs, gráficos de actividad/engagement y tablas de alumnos con score de actividad. Los eventos se registran vía `POST /analytics/events` (solo estudiantes).
+- Dashboard de **Métricas** en `/app/admin/metricas` (solo admin/root): KPIs, gráficos de actividad/engagement y tablas de alumnos con score de actividad. Los eventos se registran vía `POST /analytics/events` (solo estudiantes). Incluye `event_viewed` al abrir el detalle de un evento compartido. Runbook: **[Backend/docs/analytics-activity-events.md](Backend/docs/analytics-activity-events.md)**.
 
 ---
 
@@ -391,7 +392,7 @@ Utopp/
 ├── Backend/
 │   ├── Dockerfile                   # Python 3.11-slim + uvicorn
 │   ├── requirements.txt             # Dependencias Python
-│   └── app/
+│   ├── app/
 │       ├── main.py                  # FastAPI app + middlewares + routers
 │       ├── core/                    # Configuración, seguridad, excepciones
 │       ├── database/
@@ -421,12 +422,18 @@ Utopp/
 │       │   ├── feed.py              # GET /feed
 │       │   ├── users.py             # Perfil, follows, guardados
 │       │   ├── roles.py             # Asignación de roles
+│       │   ├── analytics.py         # POST /analytics/events (alumnos)
+│       │   ├── admin_analytics.py   # GET /admin/analytics/* (admin/root)
 │       │   └── ...
 │       └── services/                # Lógica de negocio pura
 │           ├── post_service.py      # + get_user_pin_priority()  ← v1.1.0
 │           ├── feed_service.py      # + ORDER BY is_pinned, pin_priority
 │           ├── role_service.py
+│           ├── analytics/           # Tracking, sesiones, activity score
 │           └── ...
+│   └── docs/
+│       ├── legal-session-state-machine.md
+│       └── analytics-activity-events.md   # Allowlist, event_viewed, métricas
 │
 └── Frontend/mi-app/
     └── src/
@@ -479,6 +486,8 @@ Utopp/
 | `POST` | `/users/{id}/roles/{role}` | Asignar rol a usuario | ✅ admin |
 | `POST` | `/saved-posts/{id}` | Guardar / quitar publicación | ✅ |
 | `POST` | `/events/{id}/join` | Inscribirse a evento | ✅ |
+| `POST` | `/analytics/events` | Registrar actividad (allowlist; no-op 204 si no es alumno) | ✅ alumno |
+| `GET` | `/admin/analytics/summary` | KPIs de actividad / engagement | ✅ admin/root |
 | `GET` | `/health` | Estado del servicio | ❌ |
 
 Documentación interactiva completa disponible en **http://localhost:8000/docs**
@@ -532,6 +541,18 @@ Feed resultante:
 ```
 
 Al desactivar el pin, la publicación regresa al flujo normal del feed sin necesidad de recrearla.
+
+---
+
+## Analytics de actividad
+
+Solo se persisten eventos de **alumnos** (`estudiante` o usuario sin rol). Staff recibe `204` en `POST /analytics/events`.
+
+Tipos que emite la SPA hoy: `app_opened`, `page_view`, `feed_viewed`, `post_created`, `post_viewed`, `post_liked`, `post_commented`, `event_viewed`, `logout`, `session_ended`.
+
+`event_viewed` se dispara al abrir `EventDetailModal` en la página de eventos (UUID de la tabla compartida con Formulario). Throttle de **1 hora** por `event_id` en el tab. No cuenta como engagement (likes/comentarios/posts); sí cuenta como actividad/sesión.
+
+Detalle de contrato, sesiones (idle 30 min), activity score y pitfalls: **[Backend/docs/analytics-activity-events.md](Backend/docs/analytics-activity-events.md)**.
 
 ---
 
