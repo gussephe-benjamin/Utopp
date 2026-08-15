@@ -42,6 +42,7 @@ Cada usuario tiene un rol que determina qué puede publicar, qué nivel de visib
 - [Roles y permisos](#roles-y-permisos)
 - [Publicaciones prioritarias v1.1.0](#publicaciones-prioritarias-v110)
 - [Analytics de actividad](#analytics-de-actividad)
+- [Catálogo de eventos compartidos](#catálogo-de-eventos-compartidos)
 - [Eventos del perfil](#eventos-del-perfil)
 
 ---
@@ -213,9 +214,11 @@ Cada usuario tiene un rol que determina qué puede publicar, qué nivel de visib
 - Preview completa antes de publicar
 
 ### Participación en eventos
-- Catálogo público en `GET /events` (tabla compartida `formulario.events`; excluye borradores)
+- Catálogo público en `GET /events` (tabla compartida `formulario.events`; excluye borradores; **no** filtra `visible_on_plataforma`)
+- Creación en `POST /events` (cualquier usuario con términos). No existe `POST /events/{id}/join`
 - Inscripción en Utopp Formulario (`registration_url` → `/e/{id}`); el clic en producción nunca debe quedar en `localhost:5174`
 - Perfil propio: inscritos vigentes + asistencias (check-in) vía `GET /users/me/events`
+- Runbook del catálogo: **[Backend/docs/shared-events-catalog.md](Backend/docs/shared-events-catalog.md)**
 
 ### Gestión de roles (admin)
 - Asignación y cambio de rol por usuario desde el panel de administración
@@ -438,6 +441,7 @@ Utopp/
 │   └── docs/
 │       ├── legal-session-state-machine.md
 │       ├── analytics-activity-events.md   # Allowlist, event_viewed, métricas
+│       ├── shared-events-catalog.md       # GET/POST /events (tabla formulario)
 │       └── user-profile-events.md         # GET /users/me/events (inscritos / asistió)
 │
 └── Frontend/mi-app/
@@ -494,7 +498,7 @@ Utopp/
 | `POST` | `/events` | Crear evento en `formulario.events` | ✅ |
 | `POST` | `/users/{id}/roles/{role}` | Asignar rol a usuario | ✅ admin |
 | `POST` | `/saved-posts/{id}` | Guardar / quitar publicación | ✅ |
-| `POST` | `/events/{id}/join` | Inscribirse a evento | ✅ |
+| `POST` | `/posts/{id}/participate` | Participar en un **post** histórico de tipo evento | ✅ |
 | `POST` | `/analytics/events` | Registrar actividad (allowlist; no-op 204 si no es alumno) | ✅ alumno |
 | `GET` | `/admin/analytics/summary` | KPIs de actividad / engagement | ✅ admin/root |
 | `GET` | `/health` | Estado del servicio | ❌ |
@@ -562,6 +566,25 @@ Tipos que emite la SPA hoy: `app_opened`, `page_view`, `feed_viewed`, `post_crea
 `event_viewed` se dispara al abrir `EventDetailModal` en la página de eventos (UUID de la tabla compartida con Formulario). Throttle de **1 hora** por `event_id` en el tab. No cuenta como engagement (likes/comentarios/posts); sí cuenta como actividad/sesión.
 
 Detalle de contrato, sesiones (idle 30 min), activity score y pitfalls: **[Backend/docs/analytics-activity-events.md](Backend/docs/analytics-activity-events.md)**.
+
+---
+
+## Catálogo de eventos compartidos
+
+La página **Eventos** lee `GET /events`: todos los creadores, `is_draft IS FALSE`,
+orden `date_time DESC`. `visible_on_plataforma` se expone en el JSON pero **no**
+filtra (filtro suspendido). El detalle de un borrador responde `404`.
+
+Crear: `POST /events` (sesión + términos, sin gate de rol). El evento nace
+publicado; la inscripción es el landing de Formulario (`/e/{id}`), no un join
+en esta API. El wizard de publicaciones ya no ofrece tipo `event`
+(`PostCreate` lo rechaza).
+
+`UF_FRONTEND_URL` arma `registration_url`. No se auto-corrige en Render; la SPA
+reescribe localhost cuando corre en `utopp.app`.
+
+Detalle, permisos del schema `formulario` y pitfalls:
+**[Backend/docs/shared-events-catalog.md](Backend/docs/shared-events-catalog.md)**.
 
 ---
 

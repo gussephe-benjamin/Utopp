@@ -146,6 +146,9 @@ Sin `ticket_id` la tarjeta no es enlace.
 | UI | Perfil propio | Página Eventos | `EventDetailModal` |
 | Link | `/ticket/{id}` | `/e/{id}` (inscripción) | — |
 
+Runbook del catálogo (visibilidad, `is_draft`, creación):
+[shared-events-catalog.md](shared-events-catalog.md).
+
 `eventSavedPosts` del perfil son posts de tipo `event` **guardados** en
 Plataforma (`saved_posts`), no inscritos de Formulario.
 
