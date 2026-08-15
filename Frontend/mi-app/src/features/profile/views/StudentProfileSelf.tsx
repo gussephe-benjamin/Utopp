@@ -46,6 +46,7 @@ import { ProfileAvatar } from "../components/ProfileAvatar"
 import { AvatarCropModal } from "../components/AvatarCropModal"
 import { resolveOrgImageUrl } from "../../../shared/lib/cloudinaryUrl"
 import { isProfileSettingsIncomplete } from "../lib/profileSettingsComplete"
+import { publicFormularioHref } from "../../../shared/lib/utoppFormularioUrl"
 
 interface StudentProfileSelfProps {
   user: ProfileUserData
@@ -153,6 +154,7 @@ export function StudentProfileSelf({
   const renderEventCards = (events: UserParticipatedEvent[]) => (
     <ul className="space-y-3">
       {events.map((event) => {
+        const ticketHref = publicFormularioHref(event.ticket_url)
         const cardClass =
           "group flex gap-3 rounded-[16px] border border-gray-100 bg-gray-50/40 p-3 transition-colors"
         const attended = event.status === "attended"
@@ -192,7 +194,7 @@ export function StudentProfileSelf({
               </div>
               <p className="mt-0.5 text-xs text-gray-500">{formatEventDate(event.date_time)}</p>
               <p className="truncate text-xs text-gray-400">{event.location}</p>
-              {event.ticket_url ? (
+              {ticketHref ? (
                 <span className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-violet-600 opacity-0 transition-opacity group-hover:opacity-100">
                   Ver boleto
                   <ExternalLink className="h-3 w-3" />
@@ -204,9 +206,9 @@ export function StudentProfileSelf({
 
         return (
           <li key={event.event_id}>
-            {event.ticket_url ? (
+            {ticketHref ? (
               <a
-                href={event.ticket_url}
+                href={ticketHref}
                 target="_blank"
                 rel="noopener noreferrer"
                 className={`${cardClass} hover:border-violet-200 hover:bg-violet-50/40`}

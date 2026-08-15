@@ -1,4 +1,5 @@
 import type { SharedEvent } from "../../../api/events.api"
+import { canonicalizeUtoppFormularioUrl } from "../../../shared/lib/utoppFormularioUrl"
 
 export type CountdownTone = "urgent" | "soon" | "neutral" | "expired"
 
@@ -96,7 +97,8 @@ export function mergeFeaturedEvents(
 
 /** Abre el formulario de inscripción de Utopp Formulario para este evento. */
 export function getRegistrationUrl(event: SharedEvent): string {
-  if (event.registration_url) return event.registration_url
-  const base = (import.meta.env.VITE_UF_FRONTEND_URL as string | undefined) ?? "http://localhost:5174"
-  return `${base.replace(/\/$/, "")}/e/${event.id}`
+  const raw =
+    event.registration_url ||
+    `${((import.meta.env.VITE_UF_FRONTEND_URL as string | undefined) ?? "http://localhost:5174").replace(/\/$/, "")}/e/${event.id}`
+  return canonicalizeUtoppFormularioUrl(raw)
 }

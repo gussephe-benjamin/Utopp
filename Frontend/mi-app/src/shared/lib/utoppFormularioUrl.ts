@@ -6,6 +6,7 @@ const FORMULARIO_RETURN_STORAGE_KEY = "utopp_formulario_return_url"
 
 const PRODUCTION_UF_BY_HOST: Record<string, string> = {
   "utopp-fronted.onrender.com": PRODUCTION_UF_URL,
+  "utopp-q6o2.onrender.com": PRODUCTION_UF_URL,
   "utopp.app": PRODUCTION_UF_URL,
   "www.utopp.app": PRODUCTION_UF_URL,
 }
@@ -24,7 +25,9 @@ const ALLOWED_UF_HOSTS = new Set([
 /** Resuelve la base URL del frontend de Utopp Formulario (mismo patrón que resolveApiBaseUrl). */
 export function resolveUfBaseUrl(): string {
   const fromEnv = (import.meta.env.VITE_UF_FRONTEND_URL as string | undefined)?.trim()
-  if (fromEnv) return fromEnv.replace(/\/+$/, "")
+  if (fromEnv) {
+    return canonicalizeUtoppFormularioUrl(fromEnv.replace(/\/+$/, ""))
+  }
 
   if (typeof window !== "undefined") {
     const mapped = PRODUCTION_UF_BY_HOST[window.location.hostname]
@@ -34,6 +37,18 @@ export function resolveUfBaseUrl(): string {
   return "http://localhost:5174"
 }
 
+const PRODUCTION_UP_HOSTS = new Set([
+  "utopp.app",
+  "www.utopp.app",
+  "utopp-fronted.onrender.com",
+  "utopp-q6o2.onrender.com",
+])
+
+function runningOnProductionPlataforma(): boolean {
+  if (typeof window === "undefined") return false
+  return PRODUCTION_UP_HOSTS.has(window.location.hostname)
+}
+
 function isAllowedUfHostname(hostname: string): boolean {
   return ALLOWED_UF_HOSTS.has(hostname.toLowerCase())
 }
@@ -41,6 +56,9 @@ function isAllowedUfHostname(hostname: string): boolean {
 /**
  * Apex `forms.utopp.app` redirige 301 a `www.forms.utopp.app` y puede
  * perder `?sso_token=`. Siempre devolvemos al host canónico.
+ *
+ * Si la API aún envía `http://localhost:5174/...` (UF_FRONTEND_URL mal
+ * configurado en Render), en producción lo reescribimos al dominio real.
  */
 export function canonicalizeUtoppFormularioUrl(value: string): string {
   try {
@@ -48,10 +66,24 @@ export function canonicalizeUtoppFormularioUrl(value: string): string {
     if (url.hostname === "forms.utopp.app" || url.hostname === "formulario.utopp.app" || url.hostname === "www.formulario.utopp.app") {
       url.hostname = "www.forms.utopp.app"
     }
+    if (
+      runningOnProductionPlataforma() &&
+      (url.hostname === "localhost" || url.hostname === "127.0.0.1")
+    ) {
+      url.protocol = "https:"
+      url.hostname = "www.forms.utopp.app"
+      url.port = ""
+    }
     return url.toString()
   } catch {
     return value
   }
+}
+
+/** Href seguro hacia Formulario: nunca deja localhost si el usuario está en utopp.app. */
+export function publicFormularioHref(value: string | null | undefined): string | null {
+  if (!value) return null
+  return canonicalizeUtoppFormularioUrl(value)
 }
 
 export function isAllowedUtoppFormularioUrl(value: string | null | undefined): value is string {

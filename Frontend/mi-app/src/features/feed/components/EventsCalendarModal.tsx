@@ -4,6 +4,7 @@ import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, X } from "l
 import { AnimatePresence, motion } from "framer-motion"
 import { ProfileLink } from "../../profile/components/ProfileLink"
 import type { FeedPostOut, SubPostType } from "../../../types/post.types"
+import { publicFormularioHref } from "../../../shared/lib/utoppFormularioUrl"
 
 type EventsCalendarModalProps = {
   open: boolean
@@ -450,9 +451,9 @@ export function EventsCalendarModal({
                                 {post.user_name || "Organización"}
                               </span>
                             </div>
-                            {post.registration_url && (
+                            {publicFormularioHref(post.registration_url) && (
                               <a
-                                href={post.registration_url}
+                                href={publicFormularioHref(post.registration_url)!}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="mt-2.5 inline-flex items-center rounded-full bg-gradient-to-r from-blue-600 to-fuchsia-500 px-3 py-1 text-[11px] font-bold text-white shadow-sm transition-all hover:brightness-105 active:scale-95"

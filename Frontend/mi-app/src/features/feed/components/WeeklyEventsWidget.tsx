@@ -4,6 +4,7 @@ import { ProfileLink } from "../../profile/components/ProfileLink"
 import type { FeedPostOut } from "../../../types/post.types"
 import { formatDeadlineBadge } from "../lib/weeklyHighlightUtils"
 import { EventsCalendarModal } from "./EventsCalendarModal"
+import { publicFormularioHref } from "../../../shared/lib/utoppFormularioUrl"
 
 type WeeklyEventsWidgetProps = {
   posts: FeedPostOut[]
@@ -69,9 +70,9 @@ export function WeeklyEventsWidget({
                     <p className="mt-0.5 truncate text-[10px] text-gray-400">
                       Organizado por: {post.user_name || "Organización"}
                     </p>
-                    {post.registration_url && (
+                    {publicFormularioHref(post.registration_url) && (
                       <a
-                        href={post.registration_url}
+                        href={publicFormularioHref(post.registration_url)!}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="mt-1 inline-block text-[10px] font-bold text-violet-600 hover:text-violet-800"

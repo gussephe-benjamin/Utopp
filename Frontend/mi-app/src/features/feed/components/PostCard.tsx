@@ -32,6 +32,7 @@ import {
   normalizeAspectRatio,
 } from "../../../shared/lib/aspectRatio";
 import { timeAgo } from "../../../shared/lib/date";
+import { publicFormularioHref } from "../../../shared/lib/utoppFormularioUrl";
 import { UTOPP_BRAND } from "../../../shared/constants/brand";
 import { TYPE_GRADIENTS } from "../constants/typeGradients";
 import { getDisplayName } from "../lib/display";
@@ -679,10 +680,10 @@ export function PostCard({ post, currentUserId, onEdited, onDeleted, edgeToEdge 
         {post.post_type === "event" && (
           <>
             <ParticipantBubbles postId={post.id} />
-            {post.registration_url ? (
+            {publicFormularioHref(post.registration_url) ? (
               <div className="px-4 pb-3">
                 <a
-                  href={post.registration_url}
+                  href={publicFormularioHref(post.registration_url)!}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#2f55f6] to-[#ba4ef8] px-4 py-1.5 text-xs font-bold text-white shadow-sm transition-transform hover:scale-[1.03]"
