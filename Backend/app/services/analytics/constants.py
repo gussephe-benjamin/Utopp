@@ -20,6 +20,7 @@ ALLOWED_EVENT_TYPES = frozenset(
         "organization_viewed",
         "notification_opened",
         "search_performed",
+        "event_viewed",
         "session_started",
         "session_ended",
     }

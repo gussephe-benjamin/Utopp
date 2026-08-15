@@ -12,6 +12,7 @@ import {
   getEventCountdown,
   getRegistrationUrl,
 } from "./eventUtils"
+import { trackEventViewedThrottled } from "../../analytics/analyticsTracker"
 
 type EventDetailModalProps = {
   event: SharedEvent | null
@@ -21,6 +22,7 @@ type EventDetailModalProps = {
 export function EventDetailModal({ event, onClose }: EventDetailModalProps) {
   useEffect(() => {
     if (!event) return
+    trackEventViewedThrottled(event.id)
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose()
     }

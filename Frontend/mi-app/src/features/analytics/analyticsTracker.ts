@@ -15,6 +15,7 @@ export function trackEvent(
 }
 
 const postViewedAt = new Map<number, number>()
+const eventViewedAt = new Map<string, number>()
 
 export function trackPostViewedThrottled(postId: number) {
   if (!enabled) return
@@ -25,4 +26,15 @@ export function trackPostViewedThrottled(postId: number) {
   window.setTimeout(() => {
     trackEvent("post_viewed", { post_id: postId })
   }, 2000)
+}
+
+const ONE_HOUR_MS = 60 * 60 * 1000
+
+export function trackEventViewedThrottled(eventId: string) {
+  if (!enabled || !eventId) return
+  const now = Date.now()
+  const last = eventViewedAt.get(eventId) ?? 0
+  if (now - last < ONE_HOUR_MS) return
+  eventViewedAt.set(eventId, now)
+  trackEvent("event_viewed", { event_id: eventId })
 }
