@@ -112,6 +112,32 @@ El backend en Render fuerza automáticamente `COOKIE_SAMESITE=none` y `COOKIE_SE
 
 **Acción requerida en el panel de Render (servicio backend):** verificar `GOOGLE_REDIRECT_URI`, `FRONTEND_URL`, redeploy backend. En el frontend, fijar `VITE_API_URL=https://utopp.onrender.com` y rebuild.
 
+## 7. URLs de Formulario (`UF_FRONTEND_URL`)
+
+El backend arma `registration_url` (`/e/{id}`) y `ticket_url` (`/ticket/{id}`)
+con `settings.UF_FRONTEND_URL`. **Esa variable no se reescribe al arrancar en
+Render** (sí se corrigen `GOOGLE_REDIRECT_URI` y `FRONTEND_URL` si siguen en
+localhost).
+
+Si el servicio API hereda `http://localhost:5174` del `.env` local:
+
+- el JSON de `GET /events`, `GET /feed` y `GET /users/me/events` apunta a `:5174`;
+- en `utopp.app` el clic se iría a localhost.
+
+Mitigación en el cliente (`canonicalizeUtoppFormularioUrl`): si la SPA corre en
+`utopp.app` / hosts Render conocidos y la URL es `localhost` o `127.0.0.1`,
+reescribe a `https://www.forms.utopp.app`. También canoniza el apex
+`forms.utopp.app` y el host legacy `formulario.utopp.app` a `www` (el 301 del
+apex puede perder `?sso_token=`).
+
+**Acción:** en el backend de Render fijar
+`UF_FRONTEND_URL=https://www.forms.utopp.app`. El rewrite del frontend no
+sustituye esa variable (otros clientes / Postman seguirán viendo localhost).
+
+SSO de vuelta a Formulario (`?redirect=` en `/login`): solo hosts allowlist
+(`localhost`, `utopp-formulario.onrender.com`, `www.forms.utopp.app` y
+legacy). Tras login, `POST /auth/refresh` + `sso_token` en la URL destino.
+
 ## Desarrollo local vs producción
 
 | | Local (Docker) | Render |

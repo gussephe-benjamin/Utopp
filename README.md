@@ -42,6 +42,7 @@ Cada usuario tiene un rol que determina qué puede publicar, qué nivel de visib
 - [Roles y permisos](#roles-y-permisos)
 - [Publicaciones prioritarias v1.1.0](#publicaciones-prioritarias-v110)
 - [Analytics de actividad](#analytics-de-actividad)
+- [Eventos del perfil](#eventos-del-perfil)
 
 ---
 
@@ -202,6 +203,7 @@ Cada usuario tiene un rol que determina qué puede publicar, qué nivel de visib
 - Vista de publicaciones propias
 - Seguir / dejar de seguir a otros usuarios
 - Lista de publicaciones guardadas
+- En el perfil **propio**: eventos inscritos vigentes y asistencias confirmadas (JOIN por email contra Formulario). Runbook: **[Backend/docs/user-profile-events.md](Backend/docs/user-profile-events.md)**.
 
 ### Wizard de publicación (6 pasos)
 - Selección de tipo de publicación y subtipo
@@ -211,8 +213,9 @@ Cada usuario tiene un rol que determina qué puede publicar, qué nivel de visib
 - Preview completa antes de publicar
 
 ### Participación en eventos
-- Botón de inscripción / cancelación directamente desde la card del feed
-- Estado de participación visible en tiempo real
+- Catálogo público en `GET /events` (tabla compartida `formulario.events`; excluye borradores)
+- Inscripción en Utopp Formulario (`registration_url` → `/e/{id}`); el clic en producción nunca debe quedar en `localhost:5174`
+- Perfil propio: inscritos vigentes + asistencias (check-in) vía `GET /users/me/events`
 
 ### Gestión de roles (admin)
 - Asignación y cambio de rol por usuario desde el panel de administración
@@ -256,6 +259,7 @@ GOOGLE_CLIENT_ID=tu_client_id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=tu_client_secret
 GOOGLE_REDIRECT_URI=http://localhost:8000/auth/google/callback
 FRONTEND_URL=http://localhost:5173
+UF_FRONTEND_URL=http://localhost:5174
 SESSION_COOKIE_NAME=utopp_session
 COOKIE_SECURE=false
 COOKIE_SAMESITE=lax
@@ -433,7 +437,8 @@ Utopp/
 │           └── ...
 │   └── docs/
 │       ├── legal-session-state-machine.md
-│       └── analytics-activity-events.md   # Allowlist, event_viewed, métricas
+│       ├── analytics-activity-events.md   # Allowlist, event_viewed, métricas
+│       └── user-profile-events.md         # GET /users/me/events (inscritos / asistió)
 │
 └── Frontend/mi-app/
     └── src/
@@ -482,7 +487,11 @@ Utopp/
 | `POST` | `/posts/{id}/images` | Agregar imagen | ✅ owner |
 | `POST` | `/posts/{id}/links` | Agregar link CTA | ✅ owner |
 | `GET` | `/users/me` | Perfil del usuario autenticado | ✅ |
+| `GET` | `/users/me/events` | Eventos Formulario del email (inscrito / asistió) | ✅ |
 | `GET` | `/users/{id}` | Perfil público de usuario | ✅ |
+| `GET` | `/events` | Catálogo de eventos compartidos (sin borradores) | ❌ |
+| `GET` | `/events/{id}` | Detalle de evento compartido | ❌ |
+| `POST` | `/events` | Crear evento en `formulario.events` | ✅ |
 | `POST` | `/users/{id}/roles/{role}` | Asignar rol a usuario | ✅ admin |
 | `POST` | `/saved-posts/{id}` | Guardar / quitar publicación | ✅ |
 | `POST` | `/events/{id}/join` | Inscribirse a evento | ✅ |
@@ -553,6 +562,29 @@ Tipos que emite la SPA hoy: `app_opened`, `page_view`, `feed_viewed`, `post_crea
 `event_viewed` se dispara al abrir `EventDetailModal` en la página de eventos (UUID de la tabla compartida con Formulario). Throttle de **1 hora** por `event_id` en el tab. No cuenta como engagement (likes/comentarios/posts); sí cuenta como actividad/sesión.
 
 Detalle de contrato, sesiones (idle 30 min), activity score y pitfalls: **[Backend/docs/analytics-activity-events.md](Backend/docs/analytics-activity-events.md)**.
+
+---
+
+## Eventos del perfil
+
+El perfil propio consulta `GET /users/me/events`: JOIN on-read por email contra
+`formulario.attendees` (sin tabla espejo). Un guest de Formulario que luego se
+registra en Utopp con el mismo correo aparece sin backfill.
+
+| Bloque UI | `status` | Visibilidad |
+|-----------|----------|-------------|
+| **Mis eventos** | `registered` | Inscrito, evento aún no vencido, sin check-in |
+| **Asistencias** | `attended` | QR escaneado; permanece aunque el evento ya pasó |
+
+Inscripciones vencidas sin check-in **desaparecen**. Varios boletos del mismo
+evento se colapsan a una tarjeta (gana `attended`). El enlace es el boleto
+(`/ticket/{id}`), no el modal de Eventos → no genera `event_viewed`.
+
+`UF_FRONTEND_URL` del backend **no** se auto-corrige en Render. Si queda en
+`:5174`, la SPA reescribe el href a `www.forms.utopp.app` cuando corre en
+producción. Fijar la variable en el panel; el rewrite es red de seguridad.
+
+Detalle, contrato y pitfalls: **[Backend/docs/user-profile-events.md](Backend/docs/user-profile-events.md)**.
 
 ---
 
