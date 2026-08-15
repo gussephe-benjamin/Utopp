@@ -135,6 +135,29 @@ class TestListMyParticipatedEvents:
         assert "t.id AS ticket_id" in sql_text
         assert "e.date_time >= NOW()" in sql_text
         assert "checked_in" in sql_text
+        assert "DISTINCT ON" in sql_text
+
+    def test_duplicate_attendee_or_ticket_rows_collapse_to_one_event(self):
+        """Inscripciones viejas (2 attendees / 2 boletos) no duplican la tarjeta del perfil."""
+        other_ticket = uuid.UUID("99999999-8888-7777-6666-555555555555")
+        db = _pg_db([_row(ticket_id=TICKET_ID), _row(ticket_id=other_ticket)])
+        items = svc.list_my_participated_events(db, email="a@utec.edu.pe")
+        assert len(items) == 1
+        assert items[0].event_id == EVENT_ID
+        assert items[0].ticket_id == TICKET_ID
+
+    def test_duplicate_rows_prefer_checked_in(self):
+        other_ticket = uuid.UUID("99999999-8888-7777-6666-555555555555")
+        db = _pg_db(
+            [
+                _row(checked_in=False, ticket_id=TICKET_ID),
+                _row(checked_in=True, ticket_id=other_ticket),
+            ]
+        )
+        items = svc.list_my_participated_events(db, email="a@utec.edu.pe")
+        assert len(items) == 1
+        assert items[0].status == "attended"
+        assert items[0].ticket_id == other_ticket
 
     def test_expired_noshow_excluded_from_visibility_sql(self):
         """Inscritos vencidos sin check-in no aparecen: hace falta NOW() O attended."""

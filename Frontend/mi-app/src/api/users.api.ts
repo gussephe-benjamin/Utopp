@@ -137,6 +137,23 @@ export interface UserParticipatedEvent {
   ticket_url?: string | null
 }
 
+function dedupeParticipatedEvents(events: UserParticipatedEvent[]): UserParticipatedEvent[] {
+  const byId = new Map<string, UserParticipatedEvent>()
+  const order: string[] = []
+  for (const event of events) {
+    const prev = byId.get(event.event_id)
+    if (!prev) {
+      byId.set(event.event_id, event)
+      order.push(event.event_id)
+      continue
+    }
+    if (event.status === "attended" && prev.status !== "attended") {
+      byId.set(event.event_id, event)
+    }
+  }
+  return order.map((id) => byId.get(id)!)
+}
+
 /**
  * GET /users/me/events
  * Eventos de Utopp Formulario donde el email del usuario aparece en attendees.
@@ -149,7 +166,7 @@ export async function getMyParticipatedEvents(params?: {
   status?: "registered" | "attended"
 }): Promise<UserParticipatedEvent[]> {
   const { data } = await api.get<UserParticipatedEvent[]>("/users/me/events", { params })
-  return data
+  return dedupeParticipatedEvents(Array.isArray(data) ? data : [])
 }
 
 /**

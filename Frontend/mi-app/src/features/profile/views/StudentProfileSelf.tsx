@@ -205,7 +205,7 @@ export function StudentProfileSelf({
         )
 
         return (
-          <li key={event.event_id}>
+          <li key={`${event.event_id}-${event.ticket_id ?? "none"}`}>
             {ticketHref ? (
               <a
                 href={ticketHref}

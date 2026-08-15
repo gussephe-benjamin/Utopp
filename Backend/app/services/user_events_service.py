@@ -6,7 +6,7 @@ lista esos eventos sin backfill.
 """
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from sqlalchemy import text
 from sqlalchemy.exc import ProgrammingError
@@ -41,6 +41,23 @@ def _row_to_out(row) -> UserParticipatedEventOut:
         ticket_id=ticket_id,
         ticket_url=_ticket_url(ticket_id),
     )
+
+
+def _dedupe_by_event(
+    items: List[UserParticipatedEventOut],
+) -> List[UserParticipatedEventOut]:
+    """Un evento por email: inscripciones duplicadas o varios boletos no duplican la tarjeta."""
+    by_id: Dict[object, UserParticipatedEventOut] = {}
+    order: List[object] = []
+    for item in items:
+        prev = by_id.get(item.event_id)
+        if prev is None:
+            by_id[item.event_id] = item
+            order.append(item.event_id)
+            continue
+        if item.checked_in and not prev.checked_in:
+            by_id[item.event_id] = item
+    return [by_id[event_id] for event_id in order]
 
 
 def list_my_participated_events(
@@ -81,28 +98,35 @@ def list_my_participated_events(
         )
 
     sql = f"""
-        SELECT e.id AS event_id,
-               e.title,
-               e.date_time,
-               e.location,
-               e.banner_url,
-               e.category,
-               e.theme,
-               a.registered_at,
-               COALESCE(t.checked_in, false) AS checked_in,
-               t.checked_in_at,
-               t.id AS ticket_id
-        FROM formulario.attendees a
-        JOIN formulario.events e ON e.id = a.event_id
-        LEFT JOIN formulario.tickets t ON t.attendee_id = a.id
-        WHERE lower(a.email) = lower(:email)
-          AND e.is_draft IS FALSE
-          AND (
-            COALESCE(t.checked_in, false) IS TRUE
-            OR e.date_time >= NOW()
-          )
-          {status_clause}
-        ORDER BY e.date_time DESC
+        SELECT * FROM (
+            SELECT DISTINCT ON (e.id)
+                   e.id AS event_id,
+                   e.title,
+                   e.date_time,
+                   e.location,
+                   e.banner_url,
+                   e.category,
+                   e.theme,
+                   a.registered_at,
+                   COALESCE(t.checked_in, false) AS checked_in,
+                   t.checked_in_at,
+                   t.id AS ticket_id
+            FROM formulario.attendees a
+            JOIN formulario.events e ON e.id = a.event_id
+            LEFT JOIN formulario.tickets t ON t.attendee_id = a.id
+            WHERE lower(a.email) = lower(:email)
+              AND e.is_draft IS FALSE
+              AND (
+                COALESCE(t.checked_in, false) IS TRUE
+                OR e.date_time >= NOW()
+              )
+              {status_clause}
+            ORDER BY e.id,
+                     COALESCE(t.checked_in, false) DESC,
+                     a.registered_at ASC,
+                     t.id ASC NULLS LAST
+        ) q
+        ORDER BY q.date_time DESC
         LIMIT :limit OFFSET :offset
     """
 
@@ -115,4 +139,4 @@ def list_my_participated_events(
         db.rollback()
         return []
 
-    return [_row_to_out(row) for row in rows]
+    return _dedupe_by_event([_row_to_out(row) for row in rows])
