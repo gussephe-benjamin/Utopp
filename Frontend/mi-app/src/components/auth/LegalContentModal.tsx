@@ -7,6 +7,7 @@ import {
 } from "../../api/legal.api";
 import { AUTH_REGISTER } from "../../features/auth/constants/authCopy";
 import LegalMarkdownBody from "../legal/LegalMarkdownBody";
+import { useResetOnChange } from "../../hooks/useResetOnChange";
 
 export type LegalDocKind = "terms" | "privacy";
 
@@ -63,19 +64,18 @@ export default function LegalContentModal({
     setScrolledToEnd(atEnd);
   }, []);
 
-  useEffect(() => {
+  useResetOnChange([kind, preloadedDocument], () => {
     if (!kind) return;
     setError(null);
     setReady(false);
     setScrolledToEnd(false);
+    setDoc(preloadedDocument ?? null);
+  });
 
-    if (preloadedDocument) {
-      setDoc(preloadedDocument);
-      return;
-    }
+  useEffect(() => {
+    if (!kind || preloadedDocument) return;
 
     let cancelled = false;
-    setDoc(null);
     (async () => {
       try {
         const data =
@@ -105,14 +105,17 @@ export default function LegalContentModal({
     };
   }, [open, onClose]);
 
+  useResetOnChange([doc?.id, kind], () => setScrolledToEnd(false));
+
   useEffect(() => {
     scrollRef.current?.scrollTo(0, 0);
-    setScrolledToEnd(false);
   }, [doc?.id, kind]);
 
   useEffect(() => {
     if (!open || !ready) return;
-    updateScrollState();
+    // Tras pintar: en el commit el panel aún puede no tener su altura final.
+    const raf = requestAnimationFrame(updateScrollState);
+    return () => cancelAnimationFrame(raf);
   }, [open, ready, updateScrollState]);
 
   if (!open) return null;

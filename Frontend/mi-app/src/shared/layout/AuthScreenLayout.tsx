@@ -27,19 +27,18 @@ export function AuthScreenLayout({
   backgroundImageUrl,
 }: AuthScreenLayoutProps) {
   const resolvedBgUrl = (backgroundImageUrl?.trim() || AUTH_BACKGROUND_IMAGE_URL).trim();
-  const [bgImageReady, setBgImageReady] = useState(false);
+  const [bgImageLoaded, setBgImageLoaded] = useState(false);
+  // Sin URL no hay nada que esperar: el gradiente ya es el fondo definitivo.
+  const bgImageReady = bgImageLoaded || !resolvedBgUrl;
 
   // ─── Precarga del fondo (reutilizable para cualquier URL) ────────────────
   useEffect(() => {
-    if (!resolvedBgUrl) {
-      setBgImageReady(true);
-      return;
-    }
+    if (!resolvedBgUrl) return;
     let cancelled = false;
     const img = new Image();
     img.decoding = "async";
     const finish = () => {
-      if (!cancelled) setBgImageReady(true);
+      if (!cancelled) setBgImageLoaded(true);
     };
     img.onload = finish;
     img.onerror = finish;

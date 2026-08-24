@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { X, Plus, Trash2, Instagram, Globe, Linkedin, Info, Link as LinkIcon, Tag } from "lucide-react"
 import { INTERESTS } from "../../../constants/interests"
 import { motion, AnimatePresence } from "framer-motion"
+import { useResetOnChange } from "../../../hooks/useResetOnChange"
 
 interface EditOrgProfileModalProps {
   initialName: string
@@ -44,7 +45,7 @@ export function EditOrgProfileModal({
   // Dynamic inputs for other social networks
   const [customLinks, setCustomLinks] = useState<CustomLink[]>([])
 
-  useEffect(() => {
+  useResetOnChange([initialName, initialDescription, initialContacts, initialInterests], () => {
     setFullName(initialName)
     setDescription(initialDescription)
     setInterests(initialInterests)
@@ -62,7 +63,7 @@ export function EditOrgProfileModal({
       }
     })
     setCustomLinks(custom)
-  }, [initialName, initialDescription, initialContacts, initialInterests])
+  })
 
   const toggleInterest = (interestId: string) => {
     setInterests((prev) =>

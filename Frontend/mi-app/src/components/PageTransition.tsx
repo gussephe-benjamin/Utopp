@@ -9,7 +9,11 @@ export default function PageTransition({ children, className = "" }: PageTransit
   const [isVisible, setIsVisible] = useState(false)
 
   useEffect(() => {
-    setIsVisible(true)
+    // rAF en vez de setState directo: deja que el navegador pinte el estado
+    // inicial (opacity-0) antes de disparar la transición, que es justo lo que
+    // hace visible el fade.
+    const raf = requestAnimationFrame(() => setIsVisible(true))
+    return () => cancelAnimationFrame(raf)
   }, [])
 
   return (

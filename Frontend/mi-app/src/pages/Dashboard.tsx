@@ -12,6 +12,7 @@ import { AppTopBar } from '../features/dashboard/components/AppTopBar'
 import { measureMenuAnchor, type MenuPopoverAnchor } from '../features/dashboard/popoverAnchor'
 import FeedModeResolver from '../features/feed/FeedModeResolver'
 import { AppLink } from '../shared/navigation/AppLink'
+import { useResetOnChange } from '../hooks/useResetOnChange'
 
 const FALLBACK_MENU_ANCHOR: MenuPopoverAnchor = { top: 64, right: 12, minWidth: 40 }
 
@@ -132,12 +133,12 @@ export default function DashboardLayout() {
     }
   }, [isProfileActive, profileViewId, currentUserId, location.search, navigate])
 
-  useEffect(() => {
+  useResetOnChange([isFeedActive], () => {
     if (!isFeedActive) {
       setShowFeedFiltersSheet(false)
       setFilterPopoverAnchor(null)
     }
-  }, [isFeedActive])
+  })
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(min-width: 768px)')

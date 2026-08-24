@@ -3,6 +3,7 @@ import type { OrganizationSummary } from "../../../api/users.api";
 import { getOrgAvatarStyle } from "../../feed/lib/weeklyHighlightUtils";
 import { resolveOrgImageUrl } from "../../../shared/lib/cloudinaryUrl";
 import { TW_AUTH } from "../constants/authTheme";
+import { useResetOnChange } from "../../../hooks/useResetOnChange";
 
 type OrgCarouselProps = {
   organizations: OrganizationSummary[];
@@ -91,9 +92,12 @@ export function OrgCarousel({ organizations, loading, compact = false }: OrgCaro
     currentIndexRef.current = currentIndex;
   }, [currentIndex]);
 
-  useEffect(() => {
+  useResetOnChange([orgs.length], () => {
     setCurrentIndex(0);
     setAnimState("idle");
+  });
+
+  useEffect(() => {
     animStateRef.current = "idle";
     currentIndexRef.current = 0;
     clearTransitionTimeouts();

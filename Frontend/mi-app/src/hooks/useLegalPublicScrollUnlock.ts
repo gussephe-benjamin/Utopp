@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react"
+import { useResetOnChange } from "./useResetOnChange"
 
 /** Tolerancia para redondeo subpixel y padding del panel de scroll. */
 const SCROLL_END_THRESHOLD_PX = 64
@@ -22,7 +23,9 @@ export function useLegalPublicScrollUnlock(
 ) {
   const [reachedEnd, setReachedEnd] = useState(false)
   const activeRef = useRef(active)
-  activeRef.current = active
+  useEffect(() => {
+    activeRef.current = active
+  }, [active])
 
   const evaluate = useCallback(() => {
     if (!activeRef.current) return
@@ -31,14 +34,12 @@ export function useLegalPublicScrollUnlock(
     if (isScrollContainerAtEnd(el)) setReachedEnd(true)
   }, [scrollRef])
 
-  useEffect(() => {
-    if (!active) {
-      setReachedEnd(false)
-      return
-    }
-    setReachedEnd(false)
+  useResetOnChange([active, contentKey], () => setReachedEnd(false))
 
-    evaluate()
+  useEffect(() => {
+    if (!active) return
+
+    // Primera medición tras pintar: el contenido lazy aún no tiene su altura.
     const raf = requestAnimationFrame(() => {
       evaluate()
       requestAnimationFrame(evaluate)
@@ -58,7 +59,7 @@ export function useLegalPublicScrollUnlock(
     const el = scrollRef.current
     if (!el) return
 
-    evaluate()
+    const initialRaf = requestAnimationFrame(evaluate)
     el.addEventListener("scroll", evaluate, { passive: true })
     el.addEventListener("scrollend", evaluate)
 
@@ -72,6 +73,7 @@ export function useLegalPublicScrollUnlock(
     window.addEventListener("resize", evaluate)
 
     return () => {
+      cancelAnimationFrame(initialRaf)
       el.removeEventListener("scroll", evaluate)
       el.removeEventListener("scrollend", evaluate)
       ro.disconnect()

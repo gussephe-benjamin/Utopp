@@ -48,7 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [logout])
 
   useEffect(() => {
-    void refreshSession()
+    void Promise.resolve().then(refreshSession)
   }, [refreshSession])
 
   return (

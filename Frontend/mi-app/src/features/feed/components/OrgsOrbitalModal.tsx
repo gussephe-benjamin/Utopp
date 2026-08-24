@@ -6,6 +6,7 @@ import type { OrganizationSummary } from "../../../api/users.api"
 import { UTOPP_LOGO_SRC, TW_UTOPP_GRADIENT_R } from "../../../shared/constants/brand"
 import { getOrgAvatarStyle } from "../lib/weeklyHighlightUtils"
 import { ProfileLink } from "../../profile/components/ProfileLink"
+import { useResetOnChange } from "../../../hooks/useResetOnChange"
 
 type OrgsOrbitalModalProps = {
   open: boolean
@@ -58,9 +59,9 @@ export function OrgsOrbitalModal({
   }, [open, onClose])
 
   // Reinicia al abrir.
-  useEffect(() => {
+  useResetOnChange([open], () => {
     if (open) setActiveId(null)
-  }, [open])
+  })
 
   // Giro continuo y fluido cuando no hay nada seleccionado.
   useEffect(() => {

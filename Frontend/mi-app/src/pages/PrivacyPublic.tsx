@@ -5,6 +5,7 @@ import { getCurrentPrivacy, type TermsCurrent } from "../api/legal.api"
 import LegalMarkdownBody from "../components/legal/LegalMarkdownBody"
 import { useLegalPublicScrollUnlock } from "../hooks/useLegalPublicScrollUnlock"
 import { navigateBackFromLegalPublic } from "../shared/navigation/legalPublicExit"
+import { useResetOnChange } from "../hooks/useResetOnChange"
 
 function formatDate(iso: string): string {
   try {
@@ -56,9 +57,7 @@ export default function PrivacyPublic() {
     scrollRef.current?.scrollTo(0, 0)
   }, [doc?.id])
 
-  useEffect(() => {
-    setMarkdownReady(false)
-  }, [doc?.id])
+  useResetOnChange([doc?.id], () => setMarkdownReady(false))
 
   const scrollActive = Boolean(doc) && !error && markdownReady
   const scrollContentKey = doc ? `${doc.id}-${markdownReady ? 1 : 0}` : null

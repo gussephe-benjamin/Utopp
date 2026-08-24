@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
+import { useResetOnChange } from "../../../hooks/useResetOnChange"
 import { resolveAvatarUrl } from "../../../shared/lib/cloudinaryUrl"
 import { getAvatarInitial, getUserAvatarGradient } from "../../../shared/lib/avatarUtils"
 
@@ -36,9 +37,7 @@ export function ProfileAvatar({
   const gradient = fallbackClassName ?? getUserAvatarGradient(userId)
   const sizeClass = SIZE_CLASS[size]
 
-  useEffect(() => {
-    setImageFailed(false)
-  }, [imageUrl])
+  useResetOnChange([imageUrl], () => setImageFailed(false))
 
   const showImage = Boolean(resolvedUrl) && !imageFailed
 

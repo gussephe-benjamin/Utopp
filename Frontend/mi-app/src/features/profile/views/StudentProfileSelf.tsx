@@ -47,6 +47,7 @@ import { AvatarCropModal } from "../components/AvatarCropModal"
 import { resolveOrgImageUrl } from "../../../shared/lib/cloudinaryUrl"
 import { isProfileSettingsIncomplete } from "../lib/profileSettingsComplete"
 import { publicFormularioHref } from "../../../shared/lib/utoppFormularioUrl"
+import { useResetOnChange } from "../../../hooks/useResetOnChange"
 
 interface StudentProfileSelfProps {
   user: ProfileUserData
@@ -268,11 +269,13 @@ export function StudentProfileSelf({
     return eventSavedPosts
   }, [posts, eventSavedPosts, activeTab])
 
+  useResetOnChange([openSettingsOnMount], () => {
+    if (openSettingsOnMount) setEditing(true)
+  })
+
+  // Avisar al padre es un efecto secundario: nunca durante el render.
   useEffect(() => {
-    if (openSettingsOnMount) {
-      setEditing(true)
-      onSettingsOpened?.()
-    }
+    if (openSettingsOnMount) onSettingsOpened?.()
   }, [openSettingsOnMount, onSettingsOpened])
 
   return (

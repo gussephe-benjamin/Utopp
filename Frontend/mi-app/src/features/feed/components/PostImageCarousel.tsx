@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { listImages, type PostImage } from "../../../api/post-images.api"
 import { resolvePostImageUrl } from "../../../shared/lib/postImageUrl"
+import { useResetOnChange } from "../../../hooks/useResetOnChange"
 
 const SWIPE_THRESHOLD_PX = 40
 export const DEFAULT_AUTO_PLAY_INTERVAL_MS = 4000
@@ -57,9 +58,10 @@ export function PostImageCarousel({
   const didSwipeRef = useRef(false)
   const resumeAutoPlayTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  useResetOnChange([postId], () => setLoading(true))
+
   useEffect(() => {
     let cancelled = false
-    setLoading(true)
 
     listImages(postId)
       .then((imgs) => {
@@ -95,9 +97,9 @@ export function PostImageCarousel({
   const shouldAutoPlay = autoPlay && totalImages > 1
   const isAutoPlayPaused = pauseAutoPlay === true || autoPlayPaused
 
-  useEffect(() => {
+  useResetOnChange([totalImages], () => {
     setImgIndex((prev) => (prev >= totalImages ? 0 : prev))
-  }, [totalImages])
+  })
 
   const pauseAutoPlayTemporarily = () => {
     if (!shouldAutoPlay) return

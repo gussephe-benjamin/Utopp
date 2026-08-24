@@ -4,7 +4,7 @@ const ModernStepper: React.FC<{
   currentStep: number
   totalSteps?: number
   onStepClick: (step: number) => void
-}> = ({ currentStep, totalSteps = 5, onStepClick: _onStepClick }) => {
+}> = ({ currentStep, totalSteps = 5 }) => {
 
   return (
     <div className="w-full flex justify-center items-center py-3">

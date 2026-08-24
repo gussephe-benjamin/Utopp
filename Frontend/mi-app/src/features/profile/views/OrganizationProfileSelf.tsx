@@ -35,6 +35,7 @@ import { INTERESTS } from "../../../constants/interests"
 import { TW_UTOPP_GRADIENT_R } from "../../../shared/constants/brand"
 import { ProfileAvatar } from "../components/ProfileAvatar"
 import { AvatarCropModal } from "../components/AvatarCropModal"
+import { useResetOnChange } from "../../../hooks/useResetOnChange"
 
 interface OrganizationProfileSelfProps {
   user: ProfileUserData
@@ -111,11 +112,16 @@ export function OrganizationProfileSelf({
   const highlightPostId = searchParams.get("postId")
   const [activeHighlightId, setActiveHighlightId] = useState<string | null>(null)
 
-  useEffect(() => {
+  // El resaltado y la pestaña se marcan en el render; los temporizadores en el efecto.
+  useResetOnChange([highlightPostId], () => {
     if (highlightPostId) {
       setActiveHighlightId(highlightPostId)
       setActiveTab("posts") // Ensure we are on the posts tab
+    }
+  })
 
+  useEffect(() => {
+    if (highlightPostId) {
       const scrollTimer = setTimeout(() => {
         const element = document.getElementById(`post-${highlightPostId}`)
         if (element) {

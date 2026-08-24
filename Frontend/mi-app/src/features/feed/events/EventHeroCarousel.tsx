@@ -5,6 +5,7 @@ import type { SharedEvent } from "../../../api/events.api"
 import { getEventType } from "./eventTypes"
 import { getEventGradient } from "./eventThemes"
 import { formatEventDate, getEventCountdown, mergeFeaturedEvents } from "./eventUtils"
+import { useResetOnChange } from "../../../hooks/useResetOnChange"
 
 const AUTO_PLAY_MS = 4500
 const SWIPE_THRESHOLD_PX = 40
@@ -163,13 +164,13 @@ export function EventHeroCarousel({
   const count = orderedEvents.length
   const safeIndex = count > 0 ? wrapIndex(activeIndex, count) : 0
 
-  useEffect(() => {
+  useResetOnChange([count], () => {
     if (count === 0) {
       setActiveIndex(0)
       return
     }
     setActiveIndex((prev) => (prev >= count ? wrapIndex(prev, count) : prev))
-  }, [count])
+  })
 
   const goToIndex = useCallback(
     (index: number) => {

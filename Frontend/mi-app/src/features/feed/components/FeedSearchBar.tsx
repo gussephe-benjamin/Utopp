@@ -6,6 +6,7 @@ import { formatDeadlineBadge } from "../lib/weeklyHighlightUtils"
 import { ProfileLink } from "../../profile/components/ProfileLink"
 import { ProfileAvatar } from "../../profile/components/ProfileAvatar"
 import { TW_UTOPP_GRADIENT_BR } from "../../../shared/constants/brand"
+import { useResetOnChange } from "../../../hooks/useResetOnChange"
 
 type FeedSearchBarProps = {
   /** Contexto: publicaciones o eventos. */
@@ -37,10 +38,10 @@ export function FeedSearchBar({ mode, compact = false, className = "" }: FeedSea
   const rootRef = useRef<HTMLDivElement>(null)
   const copy = COPY[mode]
 
-  useEffect(() => {
+  useResetOnChange([mode], () => {
     setSearchQuery("")
     setIsOpen(false)
-  }, [mode])
+  })
 
   const filteredItems = useMemo(
     () => filterPostsByQuery(items, searchQuery).slice(0, compact ? 6 : 50),

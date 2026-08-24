@@ -23,6 +23,7 @@ import { BarChart3, FileText, Star, Users } from "lucide-react"
 import { INTERESTS } from "../../../constants/interests"
 import { TW_UTOPP_GRADIENT_R } from "../../../shared/constants/brand"
 import { ProfileAvatar } from "../components/ProfileAvatar"
+import { useResetOnChange } from "../../../hooks/useResetOnChange"
 
 interface OrganizationProfilePublicProps {
   user: ProfileUserData
@@ -87,10 +88,13 @@ export function OrganizationProfilePublic({
   const highlightPostId = searchParams.get("postId")
   const [activeHighlightId, setActiveHighlightId] = useState<string | null>(null)
 
+  // El resaltado se marca en el render; los temporizadores viven en el efecto.
+  useResetOnChange([highlightPostId, publishedPosts], () => {
+    if (highlightPostId) setActiveHighlightId(highlightPostId)
+  })
+
   useEffect(() => {
     if (highlightPostId) {
-      setActiveHighlightId(highlightPostId)
-
       const scrollTimer = setTimeout(() => {
         const element = document.getElementById(`post-${highlightPostId}`)
         if (element) {

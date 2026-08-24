@@ -1,5 +1,6 @@
 import type { RefObject } from "react";
 import { useEffect, useState } from "react";
+import { useResetOnChange } from "./useResetOnChange"
 
 type Options = {
   /** Margen negativo inferior del root (px); el sentinela debe entrar un poco más arriba del borde. */
@@ -28,13 +29,7 @@ export function useScrollSentinelVisible(
   const rootMargin =
     rootMarginOverride ?? `0px 0px -${Math.max(0, rootMarginBottomPx)}px 0px`;
 
-  useEffect(() => {
-    if (!active) {
-      setSentinelVisible(false);
-      return;
-    }
-    setSentinelVisible(false);
-  }, [active, contentKey]);
+  useResetOnChange([active, contentKey], () => setSentinelVisible(false));
 
   useEffect(() => {
     if (!active) return;

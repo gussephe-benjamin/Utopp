@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { getFeed } from "../../../api/feed.api"
 import { getMyProfile } from "../../../api/users.api"
 import type { FeedPostOut } from "../../../types/post.types"
+import { useResetOnChange } from "../../../hooks/useResetOnChange"
 
 type FeedSearchMode = "posts" | "events"
 
@@ -13,9 +14,10 @@ export function useFeedSearch(mode: FeedSearchMode) {
   const [loading, setLoading] = useState(true)
   const [currentUserId, setCurrentUserId] = useState<number | null>(null)
 
+  useResetOnChange([mode], () => setLoading(true))
+
   useEffect(() => {
     let cancelled = false
-    setLoading(true)
 
     const feedParams =
       mode === "events"

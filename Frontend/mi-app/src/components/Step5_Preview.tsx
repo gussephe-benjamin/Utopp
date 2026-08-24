@@ -22,6 +22,7 @@ import {
   FEED_POST_CARD_MAX_WIDTH,
   type PostAspectRatio,
 } from '../shared/lib/aspectRatio'
+import { useResetOnChange } from "../hooks/useResetOnChange"
 
 interface Step5PreviewProps {
   postType: PostType
@@ -102,11 +103,11 @@ export default function Step5Preview({
       .catch(() => { setUserName('Tú'); return })
   }, [setUserId, setUserName, setUserEmail, setAvatarUrl])
 
-  useEffect(() => {
+  useResetOnChange([totalImages], () => {
     if (currentImage >= totalImages && totalImages > 0) {
       setCurrentImage(totalImages - 1)
     }
-  }, [currentImage, totalImages])
+  })
 
   const prevImage = () => setCurrentImage((i) => Math.max(0, i - 1))
   const nextImage = () => setCurrentImage((i) => Math.min(totalImages - 1, i + 1))

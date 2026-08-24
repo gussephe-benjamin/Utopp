@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { INTERESTS } from "../../../constants/interests";
 import { AppLink } from "../../../shared/navigation/AppLink";
 import { ProfileAvatar } from "../../profile/components/ProfileAvatar";
+import { useResetOnChange } from "../../../hooks/useResetOnChange";
 
 /** Referencia estable: evita bucle infinito cuando `interests` no se pasa como prop. */
 const EMPTY_INTERESTS: string[] = []
@@ -49,7 +50,7 @@ export function LeftSidebar({
     [interestsList],
   )
 
-  useEffect(() => {
+  useResetOnChange([editingInterests, interestsList], () => {
     if (editingInterests) return
     setDraftInterests((prev) => {
       if (
@@ -60,7 +61,7 @@ export function LeftSidebar({
       }
       return [...interestsList]
     })
-  }, [editingInterests, interestsList])
+  })
 
   const toggleInterest = (interestId: string) => {
     setDraftInterests((prev) =>
