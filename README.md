@@ -43,6 +43,7 @@ Cada usuario tiene un rol que determina qué puede publicar, qué nivel de visib
 - [Publicaciones prioritarias v1.1.0](#publicaciones-prioritarias-v110)
 - [Analytics de actividad](#analytics-de-actividad)
 - [Eventos del perfil](#eventos-del-perfil)
+- [Reset de estado en el frontend](#reset-de-estado-en-el-frontend)
 
 ---
 
@@ -441,6 +442,8 @@ Utopp/
 │       └── user-profile-events.md         # GET /users/me/events (inscritos / asistió)
 │
 └── Frontend/mi-app/
+    ├── docs/
+    │   └── use-reset-on-change.md   # Ajustar estado al cambiar deps, sin useEffect
     └── src/
         ├── App.tsx                  # Rutas SPA (Login activo)  ← v1.1.0
         ├── auth/                    # AuthContext, ProtectedRoute, AppRoute
@@ -460,7 +463,9 @@ Utopp/
         │   └── auth/
         │       └── AuthEntry.tsx    # Continuar con Google (única pantalla)
         ├── hooks/
-        │   └── useRole.ts           # Detecta rol del usuario autenticado
+        │   ├── useRole.ts                 # Detecta rol del usuario autenticado
+        │   ├── useResetOnChange.ts        # Reset de estado durante el render
+        │   └── useLegalPublicScrollUnlock.ts
         └── types/
             └── post.types.ts        # + is_pinned, pin_priority en FeedPostOut
 ```
@@ -585,6 +590,24 @@ evento se colapsan a una tarjeta (gana `attended`). El enlace es el boleto
 producción. Fijar la variable en el panel; el rewrite es red de seguridad.
 
 Detalle, contrato y pitfalls: **[Backend/docs/user-profile-events.md](Backend/docs/user-profile-events.md)**.
+
+---
+
+## Reset de estado en el frontend
+
+Cuando una prop o clave cambia (p. ej. `postId`, modo de búsqueda, id de
+documento legal), la SPA ajusta el estado local **durante el render** con
+`useResetOnChange` en vez de `setState` dentro de un `useEffect`. Así no se
+pinta un frame con el estado viejo ni se dispara un render en cascada.
+
+El `reset` solo puede hacer `setState` del mismo componente. Fetch, `scrollTo`,
+observers y callbacks al padre siguen en `useEffect`.
+
+Deps comparadas con `Object.is`: no pasar arrays/objetos creados en cada
+render (`filter(...)`, `?? {}`). `LeftSidebar` usa una constante
+`EMPTY_INTERESTS` para evitar ese bucle.
+
+Runbook, callers y pitfalls: **[Frontend/mi-app/docs/use-reset-on-change.md](Frontend/mi-app/docs/use-reset-on-change.md)**.
 
 ---
 

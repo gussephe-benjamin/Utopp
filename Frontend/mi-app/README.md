@@ -1,3 +1,11 @@
+# Frontend (Utopp)
+
+SPA React + TypeScript + Vite. Setup, API y arquitectura: **[README raíz](../../README.md)**.
+
+Reset de estado al cambiar props (sin render en cascada): **[docs/use-reset-on-change.md](docs/use-reset-on-change.md)**.
+
+---
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
