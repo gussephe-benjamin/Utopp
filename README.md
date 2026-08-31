@@ -41,6 +41,7 @@ Cada usuario tiene un rol que determina qué puede publicar, qué nivel de visib
 - [API — Endpoints principales](#api--endpoints-principales)
 - [Roles y permisos](#roles-y-permisos)
 - [Publicaciones prioritarias v1.1.0](#publicaciones-prioritarias-v110)
+- [Feed recomendado (Para ti)](#feed-recomendado-para-ti)
 - [Analytics de actividad](#analytics-de-actividad)
 - [Eventos del perfil](#eventos-del-perfil)
 
@@ -175,7 +176,7 @@ Cada usuario tiene un rol que determina qué puede publicar, qué nivel de visib
 - Filtrado por **tipo** (evento / proyecto / convocatoria / anuncio / simple)
 - Filtrado por **tags** de interés (lógica OR)
 - Filtrado por **estado de deadline** (vigente / vencida / sin fecha)
-- Ordenamiento por **urgencia** (deadline más próximo arriba) o **más reciente**
+- Ordenamiento por **urgencia** (default), **más reciente** o **Para ti** (`sort=recommended`: score heurístico + pesos personalizados). Runbook: **[Backend/docs/feed-recommendation.md](Backend/docs/feed-recommendation.md)**.
 - Publicaciones **prioritarias** siempre al tope con divisor visual entre secciones
 
 ### Publicaciones prioritarias *(v1.1.0)*
@@ -423,7 +424,7 @@ Utopp/
 │       │   ├── session.py           # Cookie HttpOnly de sesión
 │       │   ├── setup.py             # POST /setup/bootstrap-admin
 │       │   ├── posts.py             # CRUD posts + publish
-│       │   ├── feed.py              # GET /feed
+│       │   ├── feed.py              # GET /feed (+ sort=recommended)
 │       │   ├── users.py             # Perfil, follows, guardados
 │       │   ├── roles.py             # Asignación de roles
 │       │   ├── analytics.py         # POST /analytics/events (alumnos)
@@ -431,14 +432,17 @@ Utopp/
 │       │   └── ...
 │       └── services/                # Lógica de negocio pura
 │           ├── post_service.py      # + get_user_pin_priority()  ← v1.1.0
-│           ├── feed_service.py      # + ORDER BY is_pinned, pin_priority
+│           ├── feed_service.py      # pin + urgencia; re-rank si recommended
+│           ├── recommendation_service.py  # Score Nivel 1 + lectura Nivel 2
+│           ├── weight_adjustment_service.py  # Escritura EMA (like/comment/save)
 │           ├── role_service.py
 │           ├── analytics/           # Tracking, sesiones, activity score
 │           └── ...
 │   └── docs/
 │       ├── legal-session-state-machine.md
 │       ├── analytics-activity-events.md   # Allowlist, event_viewed, métricas
-│       └── user-profile-events.md         # GET /users/me/events (inscritos / asistió)
+│       ├── user-profile-events.md         # GET /users/me/events (inscritos / asistió)
+│       └── feed-recommendation.md         # GET /feed?sort=recommended (Para ti)
 │
 └── Frontend/mi-app/
     └── src/
@@ -479,6 +483,8 @@ Utopp/
 | `POST` | `/setup/bootstrap-admin` | Crear primer admin (token) | Token |
 | `GET` | `/feed` | Feed paginado con filtros | ✅ |
 | `GET` | `/feed?type=evento` | Feed filtrado por tipo | ✅ |
+| `GET` | `/feed?exclude_type=event` | Feed sin posts de tipo evento (SPA Publicaciones) | ✅ |
+| `GET` | `/feed?sort=recommended` | Reordena la página por score Nivel 1+2 (Para ti) | ✅ |
 | `GET` | `/feed?tags=ia&tags=datos` | Feed filtrado por tags | ✅ |
 | `POST` | `/posts/` | Crear post (borrador) | ✅ |
 | `PATCH` | `/posts/{id}` | Actualizar post | ✅ owner/admin |
@@ -494,7 +500,7 @@ Utopp/
 | `POST` | `/events` | Crear evento en `formulario.events` | ✅ |
 | `POST` | `/users/{id}/roles/{role}` | Asignar rol a usuario | ✅ admin |
 | `POST` | `/saved-posts/{id}` | Guardar / quitar publicación | ✅ |
-| `POST` | `/events/{id}/join` | Inscribirse a evento | ✅ |
+| `POST` | `/posts/{id}/participate` | Participación legacy en post `event` (la SPA no lo llama) | ✅ |
 | `POST` | `/analytics/events` | Registrar actividad (allowlist; no-op 204 si no es alumno) | ✅ alumno |
 | `GET` | `/admin/analytics/summary` | KPIs de actividad / engagement | ✅ admin/root |
 | `GET` | `/health` | Estado del servicio | ❌ |
@@ -550,6 +556,23 @@ Feed resultante:
 ```
 
 Al desactivar el pin, la publicación regresa al flujo normal del feed sin necesidad de recrearla.
+
+---
+
+## Feed recomendado (Para ti)
+
+El filtro **Para ti** llama `GET /feed?sort=recommended`. El SQL sigue paginando
+por pin + urgencia; Python **reordena esa página**: pines sin score, el resto
+por heurística (intereses, follows, recencia, likes/comentarios, deadline).
+
+Tras 5+ likes/comentarios/guardados en un `post_type`, Nivel 2 mueve los pesos
+`interest_overlap`, `social_proximity` y `engagement` (±30 %, EMA). Unlike no
+desaprende. Inscribirse en Formulario **no** entrena el ranking.
+
+Default de la SPA: **Urgencia** (no manda `sort`). Publicaciones usa
+`exclude_type=event`.
+
+Contrato, fórmulas y pitfalls: **[Backend/docs/feed-recommendation.md](Backend/docs/feed-recommendation.md)**.
 
 ---
 

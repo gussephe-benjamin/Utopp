@@ -199,5 +199,5 @@ No inventar tipos en el cliente: el schema rechaza con 422.
 - **Doble `logout`:** el cliente llama `trackEvent("logout")` y el backend vuelve a persistir `logout` en `POST /auth/logout`. Esperable dos filas por cierre de sesión.
 - **Throttle solo en el tab:** `event_viewed` / `post_viewed` no se deduplican en servidor.
 - **Staff en 204, no 403:** un 204 en tracking no es error de auth.
-- **Personalización Nivel 2** (`personalization_service.apply_personalization_signal`) existe para `post_liked` / `post_commented` / `post_saved`, pero **no está cableada** a `track_activity_event`. No asumir que un like ajusta el feed.
+- **Personalización Nivel 2 del feed** vive en `weight_adjustment_service.record_interaction` (like / comentario / save en el mismo request). `analytics/personalization_service.apply_personalization_signal` existe para `post_liked` / `post_commented` / `post_saved` con factores `like_rate` / `comment_rate`, pero **no tiene callers** — no está cableada a `track_activity_event`. Un like **sí** puede ajustar `GET /feed?sort=recommended`; no lo hace este módulo. Runbook: [feed-recommendation.md](feed-recommendation.md).
 - Tests de contrato: `Utopp-Testing/test_analytics_tracking.py` y `Utopp-Testing/test_admin_analytics.py`. Score unitario: `Utopp-Testing/test_activity_score.py`.
